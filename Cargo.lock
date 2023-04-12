@@ -947,8 +947,8 @@ checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
 
 [[package]]
 name = "llm-chain"
-version = "0.1.4"
-source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#5ee1ab129ef4d076b79e067402fee41888da15bc"
+version = "0.4.0"
+source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#a9fb57011aaa64a919d5a21cb7ba9db59726e0a0"
 dependencies = [
  "async-trait",
  "dynfmt",
@@ -960,8 +960,8 @@ dependencies = [
 
 [[package]]
 name = "llm-chain-openai"
-version = "0.1.4"
-source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#5ee1ab129ef4d076b79e067402fee41888da15bc"
+version = "0.4.0"
+source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#a9fb57011aaa64a919d5a21cb7ba9db59726e0a0"
 dependencies = [
  "async-openai",
  "async-trait",
@@ -973,8 +973,8 @@ dependencies = [
 
 [[package]]
 name = "llm-chain-tools"
-version = "0.1.4"
-source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#5ee1ab129ef4d076b79e067402fee41888da15bc"
+version = "0.4.0"
+source = "git+https://github.com/ssoudan/llm-chain?branch=public_tool_api#a9fb57011aaa64a919d5a21cb7ba9db59726e0a0"
 dependencies = [
  "llm-chain",
  "serde",
