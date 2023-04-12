@@ -1,0 +1,17 @@
+[package]
+name = "botrs"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sebastien Soudan <sebastien.soudan@gmail.com>"]
+description = "A simple bot to conquer the world"
+repository = "https://github.com/ssoudan/botrs"
+license = "MIT/Apache-2.0"
+publish = false
+readme = "README.md"
+
+keywords = ["bot", "language-model"]
+categories = ["science"]
+
+[dependencies]
+clap = { version = "4.2.1", features = ["derive"] }
+dotenvy = "0.15.7"
