@@ -1,5 +1,8 @@
 //! Main for botrs
-use botrs::{something_with_bash, something_with_rooms};
+use std::net::IpAddr;
+use std::str::FromStr;
+
+use botrs::something_with_rooms;
 use dotenvy::dotenv;
 use huelib::bridge;
 
@@ -8,10 +11,15 @@ async fn main() {
     // load environment variables from .env file
     dotenv().expect(".env file not found");
 
-    // Discover bridges in the local network and save the first IP address as
-    // `bridge_ip`.
-    let bridge_ip = bridge::discover_nupnp().unwrap().pop().unwrap();
-    println!("Discovered bridge at IP address: {}", bridge_ip);
+    let bridge_ip = match std::env::var("HUE_BRIDGE_IP") {
+        Ok(ip) => IpAddr::from_str(&ip).expect("Invalid IP address"),
+        Err(_) => {
+            println!("HUE_BRIDGE_IP not set in .env file. Trying to discover bridge.");
+            let bridge_ip = bridge::discover_nupnp().unwrap().pop().unwrap();
+            println!("Discovered bridge at IP address: {}", bridge_ip);
+            bridge_ip
+        }
+    };
 
     let username = match std::env::var("HUE_USERNAME") {
         Ok(username) => username,
@@ -31,28 +39,8 @@ async fn main() {
 
     let bridge = bridge::Bridge::new(bridge_ip, username);
 
-    match bridge.get_all_lights() {
-        Ok(lights) => {
-            for light in lights {
-                println!("{:?}", light);
-            }
-        }
-        Err(e) => println!("Error: {:?}", e),
-    }
-
-    println!("====================");
-
-    match bridge.get_all_groups() {
-        Ok(groups) => {
-            for group in groups {
-                println!("{:?}", group);
-            }
-        }
-        Err(e) => println!("Error: {:?}", e),
-    }
-
-    // something_with_bash().await;
-    something_with_rooms(bridge).await;
-
-    println!("Hello, world!");
+    // let task = "List all the lights in the room with the most lights.";
+    // let task = "List all the lights in the room with the least lights.";
+    let task = "How many lights are in each room?";
+    something_with_rooms(bridge, task, 10).await;
 }

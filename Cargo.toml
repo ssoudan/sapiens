@@ -16,10 +16,15 @@ categories = ["science"]
 clap = { version = "4.2.1", features = ["derive"] }
 dotenvy = "0.15.7"
 huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
-llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "public_tool_api" }
-llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "public_tool_api" }
-llm-chain-tools = { git = "https://github.com/ssoudan/llm-chain", branch = "public_tool_api" }
+llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "main" }
+llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "main" }
+#llm-chain = { path = "../llm-chain/llm-chain" }
+#llm-chain-openai = { path = "../llm-chain/llm-chain-openai" }
 
-tokio = { version = "1.15.0", features = ["full"] }
-serde = { version = "1.0.159", features = ["derive"] }
+tokio = { version = "1.27.0", features = ["full"] }
+serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
+
+regex = "1.7.3"
+
+colored = "2.0.0"
