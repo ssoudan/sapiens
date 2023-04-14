@@ -16,10 +16,10 @@ categories = ["science"]
 #clap = { version = "4.2.2", features = ["derive"] }
 dotenvy = "0.15.7"
 huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
-#llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "tera_opt", default-features = false, features = [] }
-#llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "tera_opt" }
-llm-chain = { path = "../llm-chain/llm-chain", default-features = false, features = ["serialization"] }
-llm-chain-openai = { path = "../llm-chain/llm-chain-openai", default-features = false, features = [] }
+llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "tera_opt", default-features = false, features = [] }
+llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "tera_opt", default-features = false, features = ["serialization"] }
+#llm-chain = { path = "../llm-chain/llm-chain", default-features = false, features = ["serialization"] }
+#llm-chain-openai = { path = "../llm-chain/llm-chain-openai", default-features = false, features = [] }
 
 tokio = { version = "1.27.0", features = ["full"] }
 serde = { version = "1.0.160", features = ["derive"] }
