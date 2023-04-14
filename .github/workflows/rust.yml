@@ -23,6 +23,10 @@ jobs:
         toolchain: nightly
         override: true
         components: rustfmt, clippy
+    - name: Install protoc and protoc-gen-rust
+      uses: arduino/setup-protoc@v1
+    - name: Checkout
+      uses: actions/checkout@v2
     - name: Check
       uses: actions-rs/cargo@v1
       with:

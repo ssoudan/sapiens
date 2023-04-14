@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/// Tools to get information about rooms and lights.
 pub mod room;
 
 /// State of a light.
@@ -77,14 +78,14 @@ impl From<huelib::resource::light::Light> for Light {
 
 /// A group of lights.
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct Group {
+pub struct Room {
     /// Name of the group.
     pub name: String,
     /// Identifiers of lights that are in this group.
     pub lights: Vec<String>,
 }
 
-impl From<huelib::resource::group::Group> for Group {
+impl From<huelib::resource::group::Group> for Room {
     fn from(value: huelib::resource::group::Group) -> Self {
         Self {
             name: value.name,

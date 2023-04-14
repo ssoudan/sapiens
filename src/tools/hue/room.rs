@@ -1,7 +1,9 @@
-use llm_chain_tools::{Describe, Format, Tool, ToolDescription};
+use huelib::resource::group::CreatableKind;
+use huelib::resource::group::Kind::Creatable;
+use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
-use crate::tools::hue::Group;
+use crate::tools::hue::Room;
 
 /// A tool that get the lights of a Room
 pub struct RoomTool {
@@ -9,6 +11,7 @@ pub struct RoomTool {
 }
 
 impl RoomTool {
+    /// Create a new RoomTool
     pub fn new(bridge: huelib::bridge::Bridge) -> Self {
         RoomTool { bridge }
     }
@@ -29,21 +32,23 @@ impl Default for RoomTool {
     }
 }
 
+/// The input of the tool
 #[derive(Serialize, Deserialize)]
 pub struct RoomToolInput {
-    room_names: Vec<String>,
+    room_filter: Option<Vec<String>>,
 }
 
+/// The output of the tool
 #[derive(Serialize, Deserialize)]
 pub struct RoomToolOutput {
-    rooms: Vec<Group>,
+    rooms: Vec<Room>,
 }
 
 impl Describe for RoomToolInput {
     fn describe() -> Format {
         vec![(
-            "room_names",
-            "The name of the Rooms to get the lights for. If empty, returns all the lights for all the Rooms.",
+            "room_filter",
+            "The list of Room names (<string>) to get the lights for, e.g. `room_filter: [\"Bedroom\"]`. Use `[]` to get all Rooms.",
         )
             .into()]
         .into()
@@ -62,21 +67,27 @@ impl Describe for RoomToolOutput {
 }
 
 impl RoomTool {
-    fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, String> {
-        let room_names = &input.room_names;
+    fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
+        let room_filter = &input.room_filter;
 
         self.bridge
             .get_all_groups()
             .map(|groups| {
-                let mut rooms: Vec<Group> = Vec::new();
+                let mut rooms: Vec<Room> = Vec::new();
                 for group in groups {
-                    if room_names.is_empty() || room_names.contains(&group.name) {
-                        rooms.push(Group::from(group));
+                    if group.kind == Creatable(CreatableKind::Room) {
+                        if let Some(room_filter) = room_filter {
+                            if room_filter.is_empty() || room_filter.contains(&group.name) {
+                                rooms.push(group.into());
+                            }
+                        } else {
+                            rooms.push(group.into());
+                        }
                     }
                 }
                 Ok(RoomToolOutput { rooms })
             })
-            .map_err(|e| format!("Failed to get groups: {}", e))?
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
     }
 }
 
@@ -84,16 +95,16 @@ impl Tool for RoomTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
             "RoomTool",
-            "A tool that get the Lights of a Room.",
+            "A tool to use that the source of truth for the Lights of a Room.",
             "Use this to fetch the Lights of Rooms.",
             RoomToolInput::describe(),
             RoomToolOutput::describe(),
         )
     }
 
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, String> {
-        let input = serde_yaml::from_value(input).unwrap();
-        let output = self.invoke_typed(&input).unwrap();
-        Ok(serde_yaml::to_value(output).unwrap())
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        let input = serde_yaml::from_value(input)?;
+        let output = self.invoke_typed(&input)?;
+        Ok(serde_yaml::to_value(output)?)
     }
 }
