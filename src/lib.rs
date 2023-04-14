@@ -303,7 +303,7 @@ pub async fn something_with_rooms(
 
         let message_text = res.choices.first().unwrap().message.content.clone();
 
-        println!("{}", message_text.green());
+        println!("{}", message_text.blue());
 
         let l = chat_history
             .add_chitchat(Role::Assistant, message_text.clone())
@@ -315,7 +315,7 @@ pub async fn something_with_rooms(
             Ok(x) => {
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
 
-                println!("{}", content.blue());
+                println!("{}", content.green());
 
                 chat_history
                     .add_chitchat(Role::User, content.clone())

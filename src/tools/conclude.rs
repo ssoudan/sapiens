@@ -22,6 +22,7 @@ impl Default for ConcludeTool {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConcludeToolInput {
     conclusion: String,
+    original_question: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,8 +33,12 @@ impl Describe for ConcludeToolInput {
         vec![(
             "conclusion",
             "The final textual answer for this task. No string interpolation supported, only plain text. MANDATORY.",
-        )
-            .into()]
+            )
+            .into(),
+            (
+                "original_question",
+                "The original question that was asked to the user. No string interpolation supported, only plain text. MANDATORY.",
+            ).into(),]
         .into()
     }
 }
@@ -46,7 +51,11 @@ impl Describe for ConcludeToolOutput {
 
 impl ConcludeTool {
     fn invoke_typed(&self, input: &ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
-        println!("And the conclusion is: {} ", input.conclusion.yellow());
+        println!(
+            "The original question was: {} ",
+            input.original_question.green()
+        );
+        println!("And the conclusion is: {} ", input.conclusion.blue());
 
         // TODO(ssoudan) lame
         std::process::exit(0);
