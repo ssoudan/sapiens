@@ -819,7 +819,7 @@ dependencies = [
 [[package]]
 name = "llm-chain"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=tera_opt#c343e22854a65a6539c4c625811d67a872d807c5"
+source = "git+https://github.com/ssoudan/llm-chain?branch=main#2d25e62f6c25869d705a1fc96aad2bb9f6ce7be5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -836,7 +836,7 @@ dependencies = [
 [[package]]
 name = "llm-chain-openai"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=tera_opt#c343e22854a65a6539c4c625811d67a872d807c5"
+source = "git+https://github.com/ssoudan/llm-chain?branch=main#2d25e62f6c25869d705a1fc96aad2bb9f6ce7be5"
 dependencies = [
  "async-openai",
  "async-trait",
