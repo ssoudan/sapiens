@@ -36,65 +36,78 @@ const TOOL_PREFIX: &str = r"
 # The following are the ONLY Tools you can use for your Actions:
 ";
 
-// const SOMETHING: &str = r"
-// Please use the following format for your response - no need to be verbose:
-// ====================
-// Observations:
-// - ...
-// Orientation:
-// - ...
-// Decision:
-// - ...
-// The only Action: Do not give multiple command. Only one per response.
-// ```yaml
-// command: <ToolName>
-// input:
-//   <... using the `input_format` for the Tool ...>
-// ```
-// ====================
-// ";
-
-// TODO(ssoudan) use the chat history for the 'illustrative' exchange
-
 const FORMAT: &str = r"
-# The exchange between you (botGPT) and the WORLD will look like this - Note YAML is only used for the Action:
---------
-[WORLD]: Question: ...
-[botGPT]: 
-## Observations:
-- ...
-## Orientation:
-- ...
-## Decision:
-- ...
-## The ONLY Action: 
-```yaml
-command: <ToolName>
-input:
-  <... using the `input_format` for the Tool ...>
-```
-[WORLD]: Action result: 
-```yaml
-...
-```
-Original question: ...
-Observations, Orientation, Decision, The Action?
-[botGPT]: 
-## Observations:
-- ...
-## Orientation:
-- ...
-## Decision:
-- ...
-## The ONLY Action: 
-```yaml
-command: <ToolName>
-input:
-  <... using the `input_format` for the Tool ...>
-```
---------
+# Format of your response
 
-Your response only needs to include the Observations, Orientation, Decision and Action. The rest will be filled in automatically.
+Please use the following format for your response - no need to be verbose:
+====================
+## Observations:
+- ...
+## Orientation:
+- ...
+## Decision:
+- ...
+## The ONLY Action: <Do not give multiple command. Only one per response.>
+```yaml
+command: <ToolName>
+input:
+  <... using the `input_format` for the Tool ...>
+```
+====================
+";
+
+const PROTO_EXCHANGE_1: &str = r"
+## Original question: Sort in ascending order: [2, 3, 1, 4, 5]. 
+";
+
+const PROTO_EXCHANGE_2: &str = r#"
+## Observations:
+- The given list to sort is [2, 3, 1, 4, 5].
+- I need to sort this list in ascending order.
+## Orientation:
+- SandboxedPythonTool can be used to sort the list.
+## Decision:
+- We can use the sorted() function of Python to sort the list.
+## The ONLY Action:
+```yaml
+command: SandboxedPythonTool
+input:
+  code: |
+    lst = [2, 3, 1, 4, 5]
+    sorted_list = sorted(lst)
+    print(f"The sorted list is {sorted_list}")
+```
+"#;
+
+const PROTO_EXCHANGE_3: &str = r"
+# Action result:
+```yaml
+status: 0
+stdout: |
+  The sorted list is [1, 2, 3, 4, 5]
+stderr: ''
+```
+# Your turn
+Original question: Sort [2, 3, 1, 4, 5]
+Observations, Orientation, Decision, The ONLY Action?
+";
+
+const PROTO_EXCHANGE_4: &str = r"
+# Observations:
+- We needed to sort the list in ascending order.
+- We have the result of the Action.
+- We have the sorted list: [1, 2, 3, 4, 5].
+# Orientation:
+- I know the answer to the original question.
+# Decision:
+- Use the ConcludeTool to terminate the task with the sorted list.
+# The ONLY Action:
+```yaml
+command: ConcludeTool
+input:
+  conclusion: |
+    The ascending sorted list is [1, 2, 3, 4, 5].
+```
 ";
 
 fn create_tool_description(tc: &ToolCollection) -> String {
@@ -103,10 +116,10 @@ fn create_tool_description(tc: &ToolCollection) -> String {
     prefix + &tool_desc
 }
 
-fn create_tool_prompt_segment(tc: &ToolCollection, prompt: &str) -> PromptTemplate {
+fn create_tool_warm_up_template(tc: &ToolCollection) -> PromptTemplate {
     let prefix = PREFIX.to_string();
     let tool_prompt = create_tool_description(tc);
-    (prefix + FORMAT + &tool_prompt + "\n---\n" + prompt).into()
+    (prefix + FORMAT + &tool_prompt).into()
 }
 
 fn recurring_prompt(task: &str) -> String {
@@ -124,21 +137,52 @@ pub async fn something_with_rooms(bridge: huelib::bridge::Bridge, task: &str, ma
     tool_collection.add_tool(ConcludeTool::new());
     tool_collection.add_tool(PythonTool::new());
 
-    let prompt = recurring_prompt(task);
-    let template = create_tool_prompt_segment(&tool_collection, &prompt);
+    let warm_up_template = create_tool_warm_up_template(&tool_collection);
+    let warm_up_prompt = warm_up_template.format(&Parameters::new());
 
-    let prompt = template.format(&Parameters::new());
-
-    println!("{}", prompt.blue());
     let exec = Executor::new_default();
+
+    // build the warm up exchange with the user
+    let exchange = [
+        (Role::User, PROTO_EXCHANGE_1),
+        (Role::Assistant, PROTO_EXCHANGE_2),
+        (Role::User, PROTO_EXCHANGE_3),
+        (Role::Assistant, PROTO_EXCHANGE_4),
+    ];
 
     let system_prompt = create_system_prompt();
     let mut chat = ChatPromptTemplate::new(vec![
         (Role::System, system_prompt).into(),
-        (Role::User, &prompt).into(),
+        (Role::User, &warm_up_prompt).into(),
+        (Role::Assistant, "Understood.").into(),
     ]);
 
+    for (role, message) in exchange.into_iter() {
+        chat.add(MessagePromptTemplate::new(
+            role,
+            PromptTemplate::static_string(message.to_string()),
+        ));
+    }
+
     let recurring_prompt = recurring_prompt(task);
+
+    // Now we are ready to start the task
+    chat.add(MessagePromptTemplate::new(
+        Role::User,
+        PromptTemplate::static_string(recurring_prompt.clone()),
+    ));
+
+    // Let's print the chat history so far - yellow for the system, green for the
+    // user, blue for the assistant
+    for message in chat.format(&Parameters::new()).iter() {
+        match message.role {
+            Role::System => println!("{}", message.content.yellow()),
+            Role::User => println!("{}", message.content.green()),
+            Role::Assistant => println!("{}", message.content.blue()),
+        }
+        println!("=============")
+    }
+
     let tool_desc = create_tool_description(&tool_collection);
 
     for _ in 1..max_steps {

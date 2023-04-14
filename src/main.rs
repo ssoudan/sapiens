@@ -41,6 +41,8 @@ async fn main() {
 
     // let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";
-    let task = "How many lights are in each room?";
+    // let task = "How many lights are in each room?";
+    let task = "What are the names of the rooms?";
+    // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
     something_with_rooms(bridge, task, 10).await;
 }

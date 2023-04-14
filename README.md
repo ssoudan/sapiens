@@ -25,6 +25,8 @@ $ cargo run
 ```
 Compiling botrs v0.1.0 (ssoudan/botrs)
 
+### Warm up
+
 [... half a decade of compilation later ...]
 <pre><code>
     Finished dev [unoptimized + debuginfo] target(s) in 4.18s
@@ -32,6 +34,8 @@ Compiling botrs v0.1.0 (ssoudan/botrs)
 </code></pre>
 
 Here start the <strike>show</strike> warm up prompting:
+
+The WORLD:
 
 <pre><code>
 You are botGPT, large language model assisting the WORLD. Use available tools to answer the question as best as you can.
@@ -46,44 +50,23 @@ You will proceed in a OODA loop made of the following steps:
 - Use ConcludeTool with your conclusion (as text) once you have the final answer to the original question.
 - There are no APIs available to you. You have to use the Tools.
 
-# The exchange between you (botGPT) and the WORLD will look like this - Note YAML is only used for the Action:
---------
-[WORLD]: Question: ...
-[botGPT]:
-## Observations:
-- ...
-## Orientation:
-- ...
-## Decision:
-- ...
-## The ONLY Action:
-```yaml
-command: <ToolName>
-input:
-  <... using the `input_format` for the Tool ...>
-```
-[WORLD]: Action result:
-```yaml
-...
-```
-Original question: ...
-Observations, Orientation, Decision, The Action?
-[botGPT]:
-## Observations:
-- ...
-## Orientation:
-- ...
-## Decision:
-- ...
-## The ONLY Action:
-```yaml
-command: <ToolName>
-input:
-  <... using the `input_format` for the Tool ...>
-```
---------
+# Format of your response
 
-Your response only needs to include the Observations, Orientation, Decision and Action. The rest will be filled in automatically.
+Please use the following format for your response - no need to be verbose:
+====================
+## Observations:
+- ...
+## Orientation:
+- ...
+## Decision:
+- ...
+## The ONLY Action: <Do not give multiple command. Only one per response.>
+```yaml
+command: <ToolName>
+input:
+  <... using the `input_format` for the Tool ...>
+```
+====================
 
 # The following are the ONLY Tools you can use for your Actions:
 - name: RoomTool
@@ -102,29 +85,97 @@ Your response only needs to include the Observations, Orientation, Decision and 
   input_format:
     code: 'The Python code to execute. For example: `data = [...]; <...>; output = <...> ; print(output)`. MANDATORY'
 
----
+</code></pre>
+
+botGPT:
+
+<pre><code>
+Understood.
+</code></pre>   
+
+WORLD:
+
+<pre><code>
+## Original question: Sort in ascending order: [2, 3, 1, 4, 5].
+</code></pre>
+
+botGPT:
+
+<pre><code>
+## Observations:
+- The given list to sort is [2, 3, 1, 4, 5].
+- I need to sort this list in ascending order.
+## Orientation:
+- SandboxedPythonTool can be used to sort the list.
+## Decision:
+- We can use the sorted() function of Python to sort the list.
+## The ONLY Action:
+```yaml
+command: SandboxedPythonTool
+input:
+  code: |
+    lst = [2, 3, 1, 4, 5]
+    sorted_list = sorted(lst)
+    print(f"The sorted list is {sorted_list}")
+```
+</code></pre>
+
+WORLD:
+
+<pre><code>
+# Action result:
+```yaml
+status: 0
+stdout: |
+  The sorted list is [1, 2, 3, 4, 5]
+stderr: ''
+```
 # Your turn
-Original question: How many lights are in each room?
+Original question: Sort [2, 3, 1, 4, 5]
 Observations, Orientation, Decision, The ONLY Action?
 </code></pre>
 
-First response from botGPT:
+botGPT:
+
 <pre><code>
-## Observations:
-- We need to determine the number of lights in each room.
-- We have a tool called RoomTool that can fetch the lights of each room.
+# Observations:
+- We needed to sort the list in ascending order.
+- We have the result of the Action.
+- We have the sorted list: [1, 2, 3, 4, 5].
+# Orientation:
+- I know the answer to the original question.
+# Decision:
+- Use the ConcludeTool to terminate the task with the sorted list.
+# The ONLY Action:
+```yaml
+command: ConcludeTool
+input:
+  conclusion: |
+    The ascending sorted list is [1, 2, 3, 4, 5].
+```
+</code></pre>
 
-## Orientation:
-- The first step is to fetch the list of rooms.
-- We will then use the RoomTool to fetch the lights of each room.
-- Finally, we will count the number of lights for each room.
+This was the warm up.
 
-## Decision:
-- We will use the RoomTool to fetch the list of rooms.
-- We will then iterate over each room and use RoomTool to fetch the list of lights for that room.
-- Finally, we will count the number of lights for each room and output the result.
+### Now the real thing
 
-## The ONLY Action:
+WORLD:
+<pre><code>
+# Your turn
+Original question: What are the names of the rooms?
+Observations, Orientation, Decision, The ONLY Action?
+</code></pre>
+
+botGPT: 
+
+<pre><code>
+# Observations:
+- We need to know the names of the rooms.
+# Orientation:
+- We can use RoomTool to fetch the names of rooms.
+# Decision:
+- Use RoomTool to get the names of rooms available.
+# The ONLY Action:
 ```yaml
 command: RoomTool
 input:
@@ -132,7 +183,7 @@ input:
 ```
 </code></pre>
 
-Message to botGPT:
+WORLD:
 
 <pre><code>
 # Action result:
@@ -144,24 +195,15 @@ rooms:
   - '5'
   - '6'
   - '21'
-- name: Kitchen
-  lights:
-  - '31'
-  - '30'
-  - '22'
-  - '23'
 - name: Room
   lights:
+  - '32'
   - '3'
   - '1'
   - '9'
   - '10'
   - '11'
   - '19'
-- name: Hallway
-  lights:
-  - '33'
-  - '28'
 - name: Office
   lights:
   - '13'
@@ -175,139 +217,44 @@ rooms:
   - '17'
   - '18'
   - '20'
+- name: Kitchen
+  lights:
+  - '31'
+  - '30'
+  - '22'
+  - '23'
+- name: Hallway
+  lights:
+  - '33'
+  - '28'
 ```
 # Your turn
-Original question: How many lights are in each room?
+Original question: What are the names of the rooms?
 Observations, Orientation, Decision, The ONLY Action?
 </code></pre>
 
-Second response from botGPT:
+botGPT:
 
 <pre><code>
-## Observations:
-- We have the list of rooms with the corresponding list of lights in each room.
-
-## Orientation:
-- We need to count the number of lights in each room from the list fetched by the RoomTool.
-
-## Decision:
-- We will iterate over each room fetched by the RoomTool.
-- For each room, we will count the number of lights in the room.
-- We will add the count to a dictionary with the room's name as the key.
-
-## The ONLY Action:
-```yaml
-command: SandboxedPythonTool
-input:
-  code: |
-    data = [{"name": "Living", "lights": [4, 5, 6, 21]},
-            {"name": "Kitchen", "lights": [31, 30, 22, 23]},
-            {"name": "Room", "lights": [3, 1, 9, 10, 11, 19]},
-            {"name": "Hallway", "lights": [33, 28]},
-            {"name": "Office", "lights": [13, 27, 2, 16, 26, 25, 24, 15, 17, 18, 20]}]
-
-    light_count = {}
-    for room in data:
-        light_count[room["name"]] = len(room["lights"])
-
-    print(light_count)
-```
-</code></pre>
-
-Message to botGPT:
-
-<pre><code>
-# Action result:
-```yaml
-status: 0
-stdout: |
-  {'Living': 4, 'Kitchen': 4, 'Room': 6, 'Hallway': 2, 'Office': 11}
-stderr: ''
-```
-# Your turn
-Original question: How many lights are in each room?
-Observations, Orientation, Decision, The ONLY Action?
-</code></pre>
-
-New message from botGPT:
-
-<pre><code>
-## Observations:
-- We have a Python code that iterates over each room fetched by the RoomTool and counts the number of lights in the room.
-- We have the list of rooms with the corresponding counts for the number of lights in each room.
-
-## Orientation:
-- We need to output the number of lights for each room.
-
-## Decision:
-- We will format the output string with the number of lights for each room.
-
-## The ONLY Action:
-```yaml
-command: SandboxedPythonTool
-input:
-  code: |
-    data = [{"name": "Living", "lights": [4, 5, 6, 21]},
-            {"name": "Kitchen", "lights": [31, 30, 22, 23]},
-            {"name": "Room", "lights": [3, 1, 9, 10, 11, 19]},
-            {"name": "Hallway", "lights": [33, 28]},
-            {"name": "Office", "lights": [13, 27, 2, 16, 26, 25, 24, 15, 17, 18, 20]}]
-
-    light_count = {}
-    for room in data:
-        light_count[room["name"]] = len(room["lights"])
-
-    output_str = ""
-    for room_name, count in light_count.items():
-        output_str += f"{room_name}: {count}\n"
-
-    print(output_str)
-```
-</code></pre>
-
-Message to botGPT:
-<pre><code>
-# Action result:
-```yaml
-status: 0
-stdout: |+
-  Living: 4
-  Kitchen: 4
-  Room: 6
-  Hallway: 2
-  Office: 11
-
-stderr: ''
-```
-# Your turn
-Original question: How many lights are in each room?
-Observations, Orientation, Decision, The ONLY Action?
-</code></pre>
-
-New message from botGPT:
-
-<pre><code>
-## Observations:
-- We have the number of lights for each room output as a formatted string.
-
-## Orientation:
-- The original question has been answered.
-
-## Decision:
-- We will use ConcludeTool to terminate the task with the final answer to the original question.
-
-## The ONLY Action:
+# Observations:
+- The RoomTool returned a list of rooms along with their light fixtures.
+- The room names are: Living, Room, Office, Kitchen and Hallway.
+# Orientation:
+- I have the answer to the original question.
+# Decision:
+- Use ConcludeTool to terminate the current task with the room names.
+# The ONLY Action:
 ```yaml
 command: ConcludeTool
 input:
-  conclusion: "There are 4 lights in the Living room, 4 lights in the Kitchen, 6 lights in the Room, 2 lights in the Hallway, and 11 lights in the Office."
+  conclusion: |
+    The names of the rooms are Living, Room, Office, Kitchen and Hallway.
 ```
 </code></pre>
 
-The 'ConcludeTool' action has been called and the chain terminated:
-
+Finally, ConcludeTool is used to terminate the task with the answer:
 <pre><code>
-And the conclusion is: There are 4 lights in the Living room, 4 lights in the Kitchen, 6 lights in the Room, 2 lights in the Hallway, and 11 lights in the Office.
+And the conclusion is: The names of the rooms are Living, Room, Office, Kitchen and Hallway.
 </code></pre>
 
 Not bad. Not all the sessions are like this one.
