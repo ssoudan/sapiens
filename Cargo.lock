@@ -819,7 +819,7 @@ dependencies = [
 [[package]]
 name = "llm-chain"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=main#2d25e62f6c25869d705a1fc96aad2bb9f6ce7be5"
+source = "git+https://github.com/ssoudan/llm-chain?branch=fix#b7ede2d5857bafe8c44e1f74535480d1a8464f04"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -836,7 +836,7 @@ dependencies = [
 [[package]]
 name = "llm-chain-openai"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=main#2d25e62f6c25869d705a1fc96aad2bb9f6ce7be5"
+source = "git+https://github.com/ssoudan/llm-chain?branch=fix#b7ede2d5857bafe8c44e1f74535480d1a8464f04"
 dependencies = [
  "async-openai",
  "async-trait",
