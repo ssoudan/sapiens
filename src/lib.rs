@@ -5,13 +5,14 @@ pub mod tools;
 
 use std::rc::Rc;
 
+use async_openai::types::{ChatCompletionRequestMessage, Role};
 use colored::Colorize;
 use llm_chain::tools::ToolCollection;
 use llm_chain::traits::StepExt;
 use llm_chain::{Parameters, PromptTemplate};
-use llm_chain_openai::chatgpt::{
-    ChatPromptTemplate, Executor, MessagePromptTemplate, Model, Role, Step,
-};
+use llm_chain_openai::chatgpt::{ChatPromptTemplate, Executor, MessagePromptTemplate, Model, Step};
+use tiktoken_rs::async_openai::num_tokens_from_messages;
+use tiktoken_rs::model::get_context_size;
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
@@ -119,17 +120,126 @@ fn create_tool_description(tc: &ToolCollection) -> String {
     prefix + &tool_desc
 }
 
-fn create_tool_warm_up_template(tc: &ToolCollection) -> PromptTemplate {
+fn create_tool_warm_up(tc: &ToolCollection) -> String {
     let prefix = PREFIX.to_string();
     let tool_prompt = create_tool_description(tc);
-    (prefix + FORMAT + &tool_prompt).into()
+    prefix + FORMAT + &tool_prompt
 }
 
-fn recurring_prompt(task: &str) -> String {
+fn build_task_prompt(task: &str) -> String {
     format!(
         "# Your turn\nOriginal question: {}\nObservations, Orientation, Decision, The ONLY Action?",
         task
     )
+}
+
+/// Maintain a chat history that can be truncated (from the head) to ensure
+/// we have enough tokens to complete the task
+struct ChatHistory {
+    /// The model
+    model: String,
+    /// The maximum number of tokens we can have in the history for the model
+    max_token: usize,
+    /// The minimum number of tokens we need to complete the task
+    min_token_for_completion: usize,
+    /// The 'prompt' (aka messages we want to stay at the top of the history)
+    prompt: Vec<ChatCompletionRequestMessage>,
+    /// Num token for the prompt
+    prompt_num_tokens: usize,
+    /// The other messages
+    chitchat: Vec<ChatCompletionRequestMessage>,
+}
+
+impl ChatHistory {
+    fn new(model: String, min_token_for_completion: usize) -> Self {
+        let max_token = get_context_size(&model);
+        Self {
+            max_token,
+            model,
+            min_token_for_completion,
+            prompt: vec![],
+            prompt_num_tokens: 0,
+            chitchat: vec![],
+        }
+    }
+
+    fn add_prompts(&mut self, prompts: &[(Role, String)]) {
+        for (role, content) in prompts {
+            let msg = ChatCompletionRequestMessage {
+                role: role.clone(),
+                content: content.clone(),
+                name: None,
+            };
+            self.prompt.push(msg);
+        }
+
+        // update the prompt_num_tokens
+        self.prompt_num_tokens = num_tokens_from_messages(&self.model, &self.prompt).unwrap();
+    }
+
+    /// add a message to the chitchat history, and prune the history if needed
+    /// returns the number of messages in the chitchat history
+    fn add_chitchat(&mut self, role: Role, content: String) -> Result<usize, String> {
+        let msg = ChatCompletionRequestMessage {
+            role,
+            content,
+            name: None,
+        };
+        self.chitchat.push(msg);
+
+        // prune the history if needed
+        self.purge()
+    }
+
+    /// uses [tiktoken_rs::num_tokens_from_messages] prune
+    /// the chitchat history starting from the head until we have enough
+    /// tokens to complete the task
+    fn purge(&mut self) -> Result<usize, String> {
+        let token_budget = self.max_token.saturating_sub(self.prompt_num_tokens);
+
+        if token_budget == 0 {
+            // we can't even fit the prompt
+            self.chitchat = vec![];
+            return Err(format!(
+                "The prompt is too long for the model: {}",
+                self.model
+            ));
+        }
+
+        // loop until we have enough available tokens to complete the task
+        while self.chitchat.len() > 1 {
+            let num_tokens = num_tokens_from_messages(&self.model, &self.chitchat).unwrap();
+            if num_tokens <= token_budget - self.min_token_for_completion {
+                return Ok(self.chitchat.len());
+            }
+            self.chitchat.remove(0);
+        }
+
+        Ok(self.chitchat.len())
+    }
+
+    /// iterate over the prompt and chitchat messages
+    fn iter(&self) -> impl Iterator<Item = &ChatCompletionRequestMessage> {
+        self.prompt.iter().chain(self.chitchat.iter())
+    }
+}
+
+impl From<&ChatHistory> for ChatPromptTemplate {
+    fn from(val: &ChatHistory) -> Self {
+        let messages = val
+            .prompt
+            .iter()
+            .chain(val.chitchat.iter())
+            .map(|m| {
+                MessagePromptTemplate::new(
+                    m.role.clone(),
+                    PromptTemplate::static_string(m.content.clone()),
+                )
+            })
+            .collect();
+
+        ChatPromptTemplate::new(messages)
+    }
 }
 
 /// Run a task with a set of tools
@@ -145,44 +255,36 @@ pub async fn something_with_rooms(
     tool_collection.add_tool(PythonTool::new());
     tool_collection.add_tool(StatusTool::new(bridge));
 
-    let warm_up_template = create_tool_warm_up_template(&tool_collection);
-    let warm_up_prompt = warm_up_template.format(&Parameters::new());
+    let warm_up_prompt = create_tool_warm_up(&tool_collection);
+    let system_prompt = create_system_prompt();
 
     let exec = Executor::new_default();
 
-    // build the warm up exchange with the user
-    let exchange = [
-        (Role::User, PROTO_EXCHANGE_1),
-        (Role::Assistant, PROTO_EXCHANGE_2),
-        (Role::User, PROTO_EXCHANGE_3),
-        (Role::Assistant, PROTO_EXCHANGE_4),
+    // build the warm-up exchange with the user
+    let prompt = [
+        (Role::System, system_prompt),
+        (Role::User, warm_up_prompt),
+        (Role::Assistant, "Understood.".to_string()),
+        (Role::User, PROTO_EXCHANGE_1.to_string()),
+        (Role::Assistant, PROTO_EXCHANGE_2.to_string()),
+        (Role::User, PROTO_EXCHANGE_3.to_string()),
+        (Role::Assistant, PROTO_EXCHANGE_4.to_string()),
     ];
 
-    let system_prompt = create_system_prompt();
-    let mut chat = ChatPromptTemplate::new(vec![
-        (Role::System, system_prompt).into(),
-        (Role::User, &warm_up_prompt).into(),
-        (Role::Assistant, "Understood.").into(),
-    ]);
+    let mut chat_history = ChatHistory::new(Model::ChatGPT3_5Turbo.to_string(), 256);
 
-    for (role, message) in exchange.into_iter() {
-        chat.add(MessagePromptTemplate::new(
-            role,
-            PromptTemplate::static_string(message.to_string()),
-        ));
-    }
-
-    let recurring_prompt = recurring_prompt(task);
+    chat_history.add_prompts(&prompt);
 
     // Now we are ready to start the task
-    chat.add(MessagePromptTemplate::new(
-        Role::User,
-        PromptTemplate::static_string(recurring_prompt.clone()),
-    ));
+    let task_prompt = build_task_prompt(task);
+
+    chat_history
+        .add_chitchat(Role::User, task_prompt.to_string())
+        .expect("The task prompt is too long for the model");
 
     // Let's print the chat history so far - yellow for the system, green for the
     // user, blue for the assistant
-    for message in chat.format(&Parameters::new()).iter() {
+    for message in chat_history.iter() {
         match message.role {
             Role::System => println!("{}", message.content.yellow()),
             Role::User => println!("{}", message.content.green()),
@@ -191,50 +293,46 @@ pub async fn something_with_rooms(
         println!("=============")
     }
 
+    // Build a tool description to inject it into the chat on error
     let tool_desc = create_tool_description(&tool_collection);
 
     for _ in 1..max_steps {
-        let chain = Step::new(Model::ChatGPT3_5Turbo, chat.clone()).to_chain();
+        let chain = Step::new(Model::ChatGPT3_5Turbo, &chat_history).to_chain();
         let res = chain.run(Parameters::new(), &exec).await.unwrap();
         // dbg!(&res);
 
         let message_text = res.choices.first().unwrap().message.content.clone();
 
         println!("{}", message_text.green());
-        println!("=============");
 
-        chat.add(MessagePromptTemplate::new(
-            Role::Assistant,
-            PromptTemplate::static_string(message_text.clone()),
-        ));
+        let l = chat_history
+            .add_chitchat(Role::Assistant, message_text.clone())
+            .expect("The assistant response is too long for the model");
+        println!("============= {} messages in the chat history", l);
 
         let resp = tool_collection.process_chat_input(&message_text);
-        match resp {
+        let l = match resp {
             Ok(x) => {
-                let content = format!("# Action result: \n```yaml\n{}```\n{}", x, recurring_prompt);
+                let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
 
                 println!("{}", content.blue());
 
-                let msg = MessagePromptTemplate::new(
-                    Role::User,
-                    PromptTemplate::static_string(content.clone()),
-                );
-
-                chat.add(msg);
+                chat_history
+                    .add_chitchat(Role::User, content.clone())
+                    .expect("The user response is too long for the model")
             }
             Err(e) => {
                 let content = format!(
                     "# Failed with:\n{}\n{}\nWhat was incorrect in previous response?\n{}",
-                    e, tool_desc, recurring_prompt
+                    e, tool_desc, task_prompt
                 );
                 println!("{}", content.red());
 
-                chat.add(MessagePromptTemplate::new(
-                    Role::User,
-                    PromptTemplate::static_string(content.clone()),
-                ));
+                chat_history
+                    .add_chitchat(Role::User, content.clone())
+                    .expect("The user response is too long for the model")
             }
-        }
-        println!("=============");
+        };
+        println!("============= {} messages in the chat history", l);
     }
 }

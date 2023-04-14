@@ -89,12 +89,6 @@ impl PythonTool {
 }
 
 impl Tool for PythonTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
-    }
-
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
             "SandboxedPythonTool",
@@ -103,5 +97,11 @@ impl Tool for PythonTool {
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
+    }
+
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        let input = serde_yaml::from_value(input)?;
+        let output = self.invoke_typed(&input)?;
+        Ok(serde_yaml::to_value(output)?)
     }
 }
