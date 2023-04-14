@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use huelib::resource::group::CreatableKind;
 use huelib::resource::group::Kind::Creatable;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
@@ -7,12 +9,12 @@ use crate::tools::hue::Room;
 
 /// A tool that get the lights of a Room
 pub struct RoomTool {
-    bridge: huelib::bridge::Bridge,
+    bridge: Rc<huelib::bridge::Bridge>,
 }
 
 impl RoomTool {
     /// Create a new RoomTool
-    pub fn new(bridge: huelib::bridge::Bridge) -> Self {
+    pub fn new(bridge: Rc<huelib::bridge::Bridge>) -> Self {
         RoomTool { bridge }
     }
 }
@@ -28,7 +30,7 @@ impl Default for RoomTool {
 
         let bridge = huelib::bridge::Bridge::new(bridge_ip, username);
 
-        Self::new(bridge)
+        Self::new(Rc::new(bridge))
     }
 }
 
@@ -48,7 +50,7 @@ impl Describe for RoomToolInput {
     fn describe() -> Format {
         vec![(
             "room_filter",
-            "The list of Room names (<string>) to get the lights for, e.g. `room_filter: [\"Bedroom\"]`. Use `[]` to get all Rooms.",
+            "The list of Room names (<string>) to get the lights for, e.g. `room_filter: [\"Bedroom\"]`. If unsure, use `[]` to get all Rooms.",
         )
             .into()]
         .into()

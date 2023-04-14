@@ -1,5 +1,6 @@
 //! Main for botrs
 use std::net::IpAddr;
+use std::rc::Rc;
 use std::str::FromStr;
 
 use botrs::something_with_rooms;
@@ -42,7 +43,9 @@ async fn main() {
     // let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";
     // let task = "How many lights are in each room?";
-    let task = "What are the names of the rooms?";
+    // let task = "What are the names of the rooms?";
     // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
-    something_with_rooms(bridge, task, 10).await;
+    // let task = "What is the status of the lights in the Office?";
+    let task = "What is the status of the lights where I most likely work?";
+    something_with_rooms(Rc::from(bridge), task, 10).await;
 }

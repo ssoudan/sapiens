@@ -3,6 +3,8 @@
 /// Tools
 pub mod tools;
 
+use std::rc::Rc;
+
 use colored::Colorize;
 use llm_chain::tools::ToolCollection;
 use llm_chain::traits::StepExt;
@@ -13,6 +15,7 @@ use llm_chain_openai::chatgpt::{
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
+use crate::tools::hue::status::StatusTool;
 use crate::tools::python::PythonTool;
 
 fn create_system_prompt() -> String {
@@ -130,12 +133,17 @@ fn recurring_prompt(task: &str) -> String {
 }
 
 /// Run a task with a set of tools
-pub async fn something_with_rooms(bridge: huelib::bridge::Bridge, task: &str, max_steps: usize) {
+pub async fn something_with_rooms(
+    bridge: Rc<huelib::bridge::Bridge>,
+    task: &str,
+    max_steps: usize,
+) {
     let mut tool_collection = ToolCollection::new();
 
-    tool_collection.add_tool(RoomTool::new(bridge));
+    tool_collection.add_tool(RoomTool::new(bridge.clone()));
     tool_collection.add_tool(ConcludeTool::new());
     tool_collection.add_tool(PythonTool::new());
+    tool_collection.add_tool(StatusTool::new(bridge));
 
     let warm_up_template = create_tool_warm_up_template(&tool_collection);
     let warm_up_prompt = warm_up_template.format(&Parameters::new());

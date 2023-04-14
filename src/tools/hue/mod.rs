@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-/// Tools to get information about rooms and lights.
+/// Tools to get information about rooms and their lights.
 pub mod room;
+/// Tools to get information about the lights
+pub mod status;
 
 /// State of a light.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -23,8 +25,9 @@ pub struct State {
     pub saturation: Option<u8>,
     /// X and y coordinates of a color in CIE color space. Both values must be
     /// between 0 and 1.
-    pub color_space_coordinates: Option<(f32, f32)>,
+    // pub color_space_coordinates: Option<(f32, f32)>,
     /// Mired color temperature of the light.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color_temperature: Option<u16>,
     // /// Alert effect of the light.
     // pub alert: Option<Alert>,
@@ -32,8 +35,8 @@ pub struct State {
     // pub effect: Option<Effect>,
     // /// Color mode of the light.
     // pub color_mode: Option<ColorMode>,
-    /// Whether the light can be reached by the bridge.
-    pub reachable: bool,
+    // Whether the light can be reached by the bridge.
+    // pub reachable: bool,
 }
 
 impl From<huelib::resource::light::State> for State {
@@ -43,9 +46,7 @@ impl From<huelib::resource::light::State> for State {
             brightness: value.brightness,
             hue: value.hue,
             saturation: value.saturation,
-            color_space_coordinates: value.color_space_coordinates,
             color_temperature: value.color_temperature,
-            reachable: value.reachable,
         }
     }
 }
@@ -54,13 +55,12 @@ impl From<huelib::resource::light::State> for State {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Light {
     /// Identifier of the light.
-    #[serde(skip)]
     pub id: String,
     /// Name of the light.
     pub name: String,
     /// Type of the light.
-    #[serde(rename = "type")]
-    pub kind: String,
+    // #[serde(rename = "type")]
+    // pub kind: String,
     /// Current state of the light.
     pub state: State,
 }
@@ -70,7 +70,6 @@ impl From<huelib::resource::light::Light> for Light {
         Self {
             id: value.id,
             name: value.name,
-            kind: value.kind,
             state: value.state.into(),
         }
     }
