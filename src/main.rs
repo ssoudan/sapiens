@@ -46,7 +46,7 @@ async fn main() {
     // let task = "What are the names of the rooms?";
     // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
     // let task = "What is the status of the lights in the Office?";
-    let task = "What is the status of the lights where I most likely work?";
+    let task = "What is the status of the lights where someone is most likely work?";
     // let task = "What are the colors of a rainbow?";
     something_with_rooms(Rc::from(bridge), task, 10).await;
 }

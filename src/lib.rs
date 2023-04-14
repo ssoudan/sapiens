@@ -3,16 +3,17 @@
 /// Tools
 pub mod tools;
 
+pub(crate) mod context;
+
 use std::rc::Rc;
 
-use async_openai::types::{ChatCompletionRequestMessage, Role};
+use async_openai::types::Role;
 use colored::Colorize;
+use context::ChatHistory;
 use llm_chain::tools::ToolCollection;
 use llm_chain::traits::StepExt;
-use llm_chain::{Parameters, PromptTemplate};
-use llm_chain_openai::chatgpt::{ChatPromptTemplate, Executor, MessagePromptTemplate, Model, Step};
-use tiktoken_rs::async_openai::num_tokens_from_messages;
-use tiktoken_rs::model::get_context_size;
+use llm_chain::Parameters;
+use llm_chain_openai::chatgpt::{Executor, Model, Step};
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
@@ -31,8 +32,8 @@ You will proceed in a OODA loop made of the following steps:
 - Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use ConcludeTool when you have the final answer to the original question.
 
 # Notes: 
-- Template expansion is not supported in Action. If you need to pass information from on action to another, you have to pass them manually.
 - Use ConcludeTool with your conclusion (as text) once you have the final answer to the original question.
+- Template expansion is not supported in Action. If you need to pass information from on action to another, you have to pass them manually.
 - There are no APIs available to you. You have to use the Tools.
 ";
 
@@ -92,23 +93,25 @@ stdout: |
 stderr: ''
 ```
 # Your turn
-Original question: Sort [2, 3, 1, 4, 5]
+Original question: Sort the following list: [2, 3, 1, 4, 5]
 Observations, Orientation, Decision, The ONLY Action?
 ";
 
 const PROTO_EXCHANGE_4: &str = r"
-# Observations:
+## Observations:
 - We needed to sort the list in ascending order.
 - We have the result of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
-# Orientation:
+## Orientation:
 - I know the answer to the original question.
-# Decision:
+## Decision:
 - Use the ConcludeTool to terminate the task with the sorted list.
-# The ONLY Action:
+## The ONLY Action:
 ```yaml
 command: ConcludeTool
 input:
+  original_question: |
+    Sort in ascending order: [2, 3, 1, 4, 5]
   conclusion: |
     The ascending sorted list is [1, 2, 3, 4, 5].
 ```
@@ -131,115 +134,6 @@ fn build_task_prompt(task: &str) -> String {
         "# Your turn\nOriginal question: {}\nObservations, Orientation, Decision, The ONLY Action?",
         task
     )
-}
-
-/// Maintain a chat history that can be truncated (from the head) to ensure
-/// we have enough tokens to complete the task
-struct ChatHistory {
-    /// The model
-    model: String,
-    /// The maximum number of tokens we can have in the history for the model
-    max_token: usize,
-    /// The minimum number of tokens we need to complete the task
-    min_token_for_completion: usize,
-    /// The 'prompt' (aka messages we want to stay at the top of the history)
-    prompt: Vec<ChatCompletionRequestMessage>,
-    /// Num token for the prompt
-    prompt_num_tokens: usize,
-    /// The other messages
-    chitchat: Vec<ChatCompletionRequestMessage>,
-}
-
-impl ChatHistory {
-    fn new(model: String, min_token_for_completion: usize) -> Self {
-        let max_token = get_context_size(&model);
-        Self {
-            max_token,
-            model,
-            min_token_for_completion,
-            prompt: vec![],
-            prompt_num_tokens: 0,
-            chitchat: vec![],
-        }
-    }
-
-    fn add_prompts(&mut self, prompts: &[(Role, String)]) {
-        for (role, content) in prompts {
-            let msg = ChatCompletionRequestMessage {
-                role: role.clone(),
-                content: content.clone(),
-                name: None,
-            };
-            self.prompt.push(msg);
-        }
-
-        // update the prompt_num_tokens
-        self.prompt_num_tokens = num_tokens_from_messages(&self.model, &self.prompt).unwrap();
-    }
-
-    /// add a message to the chitchat history, and prune the history if needed
-    /// returns the number of messages in the chitchat history
-    fn add_chitchat(&mut self, role: Role, content: String) -> Result<usize, String> {
-        let msg = ChatCompletionRequestMessage {
-            role,
-            content,
-            name: None,
-        };
-        self.chitchat.push(msg);
-
-        // prune the history if needed
-        self.purge()
-    }
-
-    /// uses [tiktoken_rs::num_tokens_from_messages] prune
-    /// the chitchat history starting from the head until we have enough
-    /// tokens to complete the task
-    fn purge(&mut self) -> Result<usize, String> {
-        let token_budget = self.max_token.saturating_sub(self.prompt_num_tokens);
-
-        if token_budget == 0 {
-            // we can't even fit the prompt
-            self.chitchat = vec![];
-            return Err(format!(
-                "The prompt is too long for the model: {}",
-                self.model
-            ));
-        }
-
-        // loop until we have enough available tokens to complete the task
-        while self.chitchat.len() > 1 {
-            let num_tokens = num_tokens_from_messages(&self.model, &self.chitchat).unwrap();
-            if num_tokens <= token_budget - self.min_token_for_completion {
-                return Ok(self.chitchat.len());
-            }
-            self.chitchat.remove(0);
-        }
-
-        Ok(self.chitchat.len())
-    }
-
-    /// iterate over the prompt and chitchat messages
-    fn iter(&self) -> impl Iterator<Item = &ChatCompletionRequestMessage> {
-        self.prompt.iter().chain(self.chitchat.iter())
-    }
-}
-
-impl From<&ChatHistory> for ChatPromptTemplate {
-    fn from(val: &ChatHistory) -> Self {
-        let messages = val
-            .prompt
-            .iter()
-            .chain(val.chitchat.iter())
-            .map(|m| {
-                MessagePromptTemplate::new(
-                    m.role.clone(),
-                    PromptTemplate::static_string(m.content.clone()),
-                )
-            })
-            .collect();
-
-        ChatPromptTemplate::new(messages)
-    }
 }
 
 /// Run a task with a set of tools
@@ -308,7 +202,10 @@ pub async fn something_with_rooms(
         let l = chat_history
             .add_chitchat(Role::Assistant, message_text.clone())
             .expect("The assistant response is too long for the model");
-        println!("============= {} messages in the chat history", l);
+        println!(
+            "============= {:>3} messages in the chat history =============",
+            l
+        );
 
         let resp = tool_collection.process_chat_input(&message_text);
         let l = match resp {
@@ -333,6 +230,9 @@ pub async fn something_with_rooms(
                     .expect("The user response is too long for the model")
             }
         };
-        println!("============= {} messages in the chat history", l);
+        println!(
+            "============= {:>3} messages in the chat history =============",
+            l
+        );
     }
 }

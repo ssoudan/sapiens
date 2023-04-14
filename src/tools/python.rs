@@ -62,6 +62,18 @@ impl PythonTool {
             ));
         }
 
+        // // Add tool bindings at the beginning of the code
+        // let code = format!(
+        //     r#"def RoomTool(room_filter=[]):
+        //            return "nice try"
+        //        {}"#,
+        //     code
+        // );
+
+        // TODO(ssoudan) use pyo3
+
+        // TODO(ssoudan) expose tools there
+
         // send input to stdin if present
         let mut command = Command::new("python3");
         command
@@ -93,7 +105,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPythonTool",
             "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            "Use this to transform data. This is not a tool to retrieve information. Except `print()`, no interactions with the world. No input. No `import`. No library. No API access. Just plain Python. import|open|exec|eval|__import__ are forbidden.",
+            "Use this to transform data. This is not a Tool to retrieve information. Except `print()`, no interactions with the world. No input. No `import`. No library. No API access. It has no access to other Tools. Just plain Python. import|open|exec|eval|__import__ are forbidden.",
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
