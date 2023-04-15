@@ -48,5 +48,5 @@ async fn main() {
     // let task = "What is the status of the lights in the Office?";
     let task = "What is the status of the lights where someone is most likely work?";
     // let task = "What are the colors of a rainbow?";
-    something_with_rooms(Rc::from(bridge), task, 10).await;
+    something_with_rooms(Rc::from(bridge), task, 10, "gpt-3.5-turbo".to_string()).await;
 }

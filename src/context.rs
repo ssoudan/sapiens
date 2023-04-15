@@ -1,7 +1,5 @@
 //! Maintain the context for the bot.
 use async_openai::types::{ChatCompletionRequestMessage, Role};
-use llm_chain::PromptTemplate;
-use llm_chain_openai::chatgpt::{ChatPromptTemplate, MessagePromptTemplate};
 use tiktoken_rs::async_openai::num_tokens_from_messages;
 use tiktoken_rs::model::get_context_size;
 
@@ -107,20 +105,8 @@ impl ChatHistory {
     }
 }
 
-impl From<&ChatHistory> for ChatPromptTemplate {
+impl From<&ChatHistory> for Vec<ChatCompletionRequestMessage> {
     fn from(val: &ChatHistory) -> Self {
-        let messages = val
-            .prompt
-            .iter()
-            .chain(val.chitchat.iter())
-            .map(|m| {
-                MessagePromptTemplate::new(
-                    m.role.clone(),
-                    PromptTemplate::static_string(m.content.clone()),
-                )
-            })
-            .collect();
-
-        ChatPromptTemplate::new(messages)
+        val.iter().cloned().collect()
     }
 }

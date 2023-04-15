@@ -138,7 +138,6 @@ dependencies = [
  "dotenvy",
  "huelib",
  "llm-chain",
- "llm-chain-openai",
  "regex",
  "serde",
  "serde_yaml",
@@ -819,7 +818,7 @@ dependencies = [
 [[package]]
 name = "llm-chain"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=fix#b7ede2d5857bafe8c44e1f74535480d1a8464f04"
+source = "git+https://github.com/ssoudan/llm-chain?branch=fix#e4bbee734f36fc99ffe59b8fc98ee3825c28bc9e"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -831,20 +830,6 @@ dependencies = [
  "serde_yaml",
  "thiserror",
  "uuid",
-]
-
-[[package]]
-name = "llm-chain-openai"
-version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=fix#b7ede2d5857bafe8c44e1f74535480d1a8464f04"
-dependencies = [
- "async-openai",
- "async-trait",
- "futures",
- "llm-chain",
- "serde",
- "thiserror",
- "tiktoken-rs",
 ]
 
 [[package]]

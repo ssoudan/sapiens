@@ -7,13 +7,10 @@ pub(crate) mod context;
 
 use std::rc::Rc;
 
-use async_openai::types::Role;
+use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use colored::Colorize;
 use context::ChatHistory;
 use llm_chain::tools::ToolCollection;
-use llm_chain::traits::StepExt;
-use llm_chain::Parameters;
-use llm_chain_openai::chatgpt::{Executor, Model, Step};
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
@@ -141,6 +138,7 @@ pub async fn something_with_rooms(
     bridge: Rc<huelib::bridge::Bridge>,
     task: &str,
     max_steps: usize,
+    model: String,
 ) {
     let mut tool_collection = ToolCollection::new();
 
@@ -151,8 +149,6 @@ pub async fn something_with_rooms(
 
     let warm_up_prompt = create_tool_warm_up(&tool_collection);
     let system_prompt = create_system_prompt();
-
-    let exec = Executor::new_default();
 
     // build the warm-up exchange with the user
     let prompt = [
@@ -165,7 +161,7 @@ pub async fn something_with_rooms(
         (Role::Assistant, PROTO_EXCHANGE_4.to_string()),
     ];
 
-    let mut chat_history = ChatHistory::new(Model::ChatGPT3_5Turbo.to_string(), 256);
+    let mut chat_history = ChatHistory::new(model.clone(), 256);
 
     chat_history.add_prompts(&prompt);
 
@@ -190,9 +186,25 @@ pub async fn something_with_rooms(
     // Build a tool description to inject it into the chat on error
     let tool_desc = create_tool_description(&tool_collection);
 
+    let openai_client = async_openai::Client::new();
+
     for _ in 1..max_steps {
-        let chain = Step::new(Model::ChatGPT3_5Turbo, &chat_history).to_chain();
-        let res = chain.run(Parameters::new(), &exec).await.unwrap();
+        let messages: Vec<ChatCompletionRequestMessage> = (&chat_history).into();
+        let input = CreateChatCompletionRequest {
+            model: model.clone(),
+            messages,
+            temperature: None,
+            top_p: None,
+            n: Some(1),
+            stream: None,
+            stop: None,
+            max_tokens: None,
+            presence_penalty: None,
+            frequency_penalty: None,
+            logit_bias: None,
+            user: None,
+        };
+        let res = openai_client.chat().create(input).await.unwrap();
         // dbg!(&res);
 
         let message_text = res.choices.first().unwrap().message.content.clone();
@@ -220,7 +232,7 @@ pub async fn something_with_rooms(
             }
             Err(e) => {
                 let content = format!(
-                    "# Failed with:\n{}\n{}\nWhat was incorrect in previous response?\n{}",
+                    "# Failed with:\n{:?}\n{}\nWhat was incorrect in previous response?\n{}",
                     e, tool_desc, task_prompt
                 );
                 println!("{}", content.red());
