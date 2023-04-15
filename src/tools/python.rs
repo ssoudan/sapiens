@@ -74,7 +74,8 @@ impl PythonTool {
 
         // TODO(ssoudan) expose tools there
 
-        // send input to stdin if present
+        // NOTE(ssoudan) capturing stdout: https://github.com/PyO3/pyo3/discussions/1918#discussioncomment-1473356
+
         let mut command = Command::new("python3");
         command
             .env_clear()
@@ -115,5 +116,101 @@ impl Tool for PythonTool {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(&input)?;
         Ok(serde_yaml::to_value(output)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pyo3::indoc::indoc;
+
+    use super::*;
+
+    #[test]
+    fn test_python_tool() {
+        let tool = PythonTool::new();
+        let input = PythonToolInput {
+            code: "print('hello')".to_string(),
+        };
+        let output = tool.invoke_typed(&input).unwrap();
+        assert_eq!(output.status, Some(0));
+        assert_eq!(output.stdout, "hello\n");
+        assert_eq!(output.stderr, "");
+    }
+
+    use pyo3::prelude::*;
+    use pyo3::types::PyDict;
+
+    #[pyclass]
+    #[derive(Default)]
+    struct Logging {
+        output: String,
+    }
+
+    #[pymethods]
+    impl Logging {
+        fn write(&mut self, data: &str) {
+            self.output.push_str(data);
+        }
+    }
+
+    #[pyfunction]
+    fn add_one(x: i64) -> i64 {
+        x + 1
+    }
+
+    #[pymodule]
+    fn foo(_py: Python<'_>, foo_module: &PyModule) -> PyResult<()> {
+        foo_module.add_function(wrap_pyfunction!(add_one, foo_module)?)?;
+        Ok(())
+    }
+
+    fn run() -> PyResult<()> {
+        pyo3::append_to_inittab!(foo);
+        Python::with_gil(|py| {
+            let locals = PyDict::new(py);
+
+            // capture stdout
+            let sys = py.import("sys")?;
+            let stdout = Logging::default();
+            let py_stdout_cell = PyCell::new(py, stdout).unwrap();
+            let stderr = Logging::default();
+            let py_stderr_cell = PyCell::new(py, stderr).unwrap();
+
+            let py_stdout = py_stdout_cell.borrow_mut();
+            let py_stderr = py_stderr_cell.borrow_mut();
+            sys.setattr("stdout", py_stdout.into_py(py))?;
+            sys.setattr("stderr", py_stderr.into_py(py))?;
+
+            let res = Python::run(
+                py,
+                indoc! {
+                r#"import foo;
+                   a = 12
+                   b = foo.add_one(a)
+                   print("b=", b)
+                   print("foo=", repr(foo))
+                   print("foo=", dir(foo))                                                                           
+                  "#},
+                None,
+                locals.into(),
+            );
+
+            for (key, value) in locals {
+                println!("{}: {}", key, value);
+            }
+
+            let stdout = py_stdout_cell.borrow();
+            print!("stdout: {}", stdout.output);
+
+            let stderr = py_stderr_cell.borrow();
+            print!("stderr: {}", stderr.output);
+
+            res
+        })
+    }
+
+    #[test]
+    fn test_run_with_pyo3() {
+        run().unwrap();
     }
 }
