@@ -26,6 +26,7 @@ serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
 
 regex = "1.7.3"
+indoc = "2"
 
 colored = "2.0.0"
 

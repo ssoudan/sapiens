@@ -10,7 +10,9 @@ use std::rc::Rc;
 use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use colored::Colorize;
 use context::ChatHistory;
-use llm_chain::tools::ToolCollection;
+use llm_chain::parsing::find_yaml;
+use llm_chain::tools::{ToolCollection, ToolUseError};
+use serde::{Deserialize, Serialize};
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
@@ -219,7 +221,7 @@ pub async fn something_with_rooms(
             l
         );
 
-        let resp = tool_collection.process_chat_input(&message_text);
+        let resp = invoke_tool(&tool_collection, &message_text);
         let l = match resp {
             Ok(x) => {
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
@@ -245,6 +247,94 @@ pub async fn something_with_rooms(
         println!(
             "============= {:>3} messages in the chat history =============",
             l
+        );
+    }
+}
+
+/// Try to find the tool invocation from the chat message and invoke the
+/// corresponding tool.
+///
+/// If multiple tool invocations are found, only the first one is used.
+pub fn invoke_tool(tools: &ToolCollection, data: &str) -> Result<String, ToolUseError> {
+    let tool_invocations: Vec<ToolInvocationInput> = find_yaml::<ToolInvocationInput>(data)?;
+    if tool_invocations.is_empty() {
+        return Err(ToolUseError::ToolInvocationFailed(
+            "No Action found".to_string(),
+        ));
+    }
+
+    // Take the first invocation - the list is reversed
+    let invocation_input = &tool_invocations.last().unwrap();
+    let output = tools.invoke(&invocation_input.command, &invocation_input.input)?;
+    Ok(serde_yaml::to_string(&output).unwrap())
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ToolInvocationInput {
+    command: String,
+    input: serde_yaml::Value,
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+
+    use super::*;
+
+    #[test]
+    fn test_tool_invocation() {
+        let data = indoc! {r#"
+        # Action
+        ```yaml        
+        command: SandboxedPythonTool
+        input:
+            code: |
+                print("Hello world!")          
+        ```
+        "#};
+
+        let mut tool_collection = ToolCollection::new();
+        tool_collection.add_tool(PythonTool::new());
+
+        let output = invoke_tool(&tool_collection, data).unwrap();
+        assert_eq!(output, "status: 0\nstdout: |\n  Hello world!\nstderr: ''\n");
+    }
+
+    #[test]
+    fn test_multiple_tool_invocations() {
+        let data = indoc! {r#"
+        # Action
+        ```yaml        
+        command: SandboxedPythonTool
+        input:
+            code: |
+                print("Hello world 1!")          
+        ```
+        
+        # And another action
+        ```yaml        
+        command: SandboxedPythonTool
+        input:
+            code: |
+                print("Hello world 2!")          
+        ```
+        
+        # And yet another action
+        ```        
+        command: SandboxedPythonTool
+        input:
+            code: |
+                print("Hello world 3!")          
+        ```
+        "#};
+
+        let mut tool_collection = ToolCollection::new();
+        tool_collection.add_tool(PythonTool::new());
+
+        let output = invoke_tool(&tool_collection, data).unwrap();
+        assert_eq!(
+            output,
+            "status: 0\nstdout: |\n  Hello world 1!\nstderr: ''\n"
         );
     }
 }
