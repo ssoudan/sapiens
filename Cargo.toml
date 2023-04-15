@@ -1,36 +1,4 @@
-[package]
-name = "botrs"
-version = "0.1.0"
-edition = "2021"
-authors = ["Sebastien Soudan <sebastien.soudan@gmail.com>"]
-description = "A simple bot to conquer the world"
-repository = "https://github.com/ssoudan/botrs"
-license = "MIT/Apache-2.0"
-publish = false
-readme = "README.md"
-
-keywords = ["bot", "language-model"]
-categories = ["science"]
-
-[dependencies]
-#clap = { version = "4.2.2", features = ["derive"] }
-dotenvy = "0.15.7"
-huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
-llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
-#llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
-#llm-chain = { path = "../llm-chain/llm-chain", default-features = false, features = ["serialization"] }
-#llm-chain-openai = { path = "../llm-chain/llm-chain-openai", default-features = false, features = [] }
-
-tokio = { version = "1.27.0", features = ["full"] }
-serde = { version = "1.0.160", features = ["derive"] }
-serde_yaml = "0.9.21"
-
-regex = "1.7.3"
-indoc = "2"
-
-pyo3 = { version = "0.18.2", features = ["auto-initialize"] }
-
-colored = "2.0.0"
-
-tiktoken-rs = { version = "0.4.0", features = ["async-openai"] }
-async-openai = "0.10.3"
+[workspace]
+members = [
+		"botrs",
+]
