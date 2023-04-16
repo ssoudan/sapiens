@@ -4,13 +4,8 @@ use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to test stuffs
+#[derive(Default)]
 pub struct DummyTool {}
-
-impl Default for DummyTool {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 /// A tool that is called to test stuffs
 #[derive(Debug, Serialize, Deserialize)]
