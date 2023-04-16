@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use convert_case::{Case, Casing};
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
@@ -206,9 +207,19 @@ impl PythonTool {
                     .collect::<Vec<_>>()
                     .join(", ");
 
+                // in snake case
                 tool_class_code.push_str(&format!(
                     "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                    name.to_lowercase(),
+                    name.to_case(Case::Snake),
+                    inputs,
+                    name,
+                    dict
+                ));
+
+                // in Pascal case
+                tool_class_code.push_str(&format!(
+                    "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+                    name.to_case(Case::Pascal),
                     inputs,
                     name,
                     dict
@@ -224,7 +235,7 @@ impl PythonTool {
             // prepend the tool class code to the user code
             code = format!("{}\n{}", tool_class_code, code);
 
-            // print!("{}", code);
+            print!("{}", code);
         }
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
@@ -274,7 +285,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPython",
             "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            r#"Use this to transform data. To use other Tools from here: `output = tools.toolname(input)`. import|open|exec|eval|__import__ are forbidden."#,
+            r#"Use this to transform data. To use other Tools from here: `output = tools.tool_name(input)`. `tool_name` in snake case. import|open|exec|eval|__import__ are forbidden."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )

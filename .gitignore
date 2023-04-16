@@ -1,4 +1,4 @@
 /target
-BUILD.sh
 .env
 .idea
+recipe.json

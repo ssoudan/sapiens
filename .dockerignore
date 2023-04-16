@@ -1,0 +1,6 @@
+target/
+.env
+Dockerfile
+.github/
+RUN.sh
+BUILD.sh
