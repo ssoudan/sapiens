@@ -48,7 +48,7 @@ impl Describe for StatusToolInput {
     fn describe() -> Format {
         vec![(
             "light_filter",
-            "The list of Lights IDs (<string>) to get the status for, e.g. `light_filter: [\"1\", \"2\"]`. Use `[]` to get all Lights.",
+            "The list of Lights IDs (<string>) to get the status for, e.g.: [\"1\", \"2\"]. To get all the lights: []",
         )
             .into()]
         .into()
@@ -57,7 +57,7 @@ impl Describe for StatusToolInput {
 
 impl Describe for StatusToolOutput {
     fn describe() -> Format {
-        vec![("lights", "A list of Lights with their status.").into()].into()
+        vec![("lights", r#"A list of Lights with their status. E.g.: [{"id": "1", "name": "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation": 55, "color_temperature": 2500}]"#).into()].into()
     }
 }
 

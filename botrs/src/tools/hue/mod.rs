@@ -27,7 +27,6 @@ pub struct State {
     /// between 0 and 1.
     // pub color_space_coordinates: Option<(f32, f32)>,
     /// Mired color temperature of the light.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub color_temperature: Option<u16>,
     // /// Alert effect of the light.
     // pub alert: Option<Alert>,
@@ -62,6 +61,7 @@ pub struct Light {
     // #[serde(rename = "type")]
     // pub kind: String,
     /// Current state of the light.
+    #[serde(flatten)]
     pub state: State,
 }
 

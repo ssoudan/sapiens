@@ -11,13 +11,14 @@ use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequ
 use colored::Colorize;
 use context::ChatHistory;
 use llm_chain::parsing::find_yaml;
-use llm_chain::tools::{ToolCollection, ToolUseError};
+use llm_chain::tools::{ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
 use crate::tools::conclude::ConcludeTool;
 use crate::tools::hue::room::RoomTool;
 use crate::tools::hue::status::StatusTool;
 use crate::tools::python::PythonTool;
+use crate::tools::{invoke_from_toolbox, Toolbox};
 
 fn create_system_prompt() -> String {
     "You are an automated agent named botGPT interacting with the WORLD".to_string()
@@ -116,15 +117,22 @@ input:
 ```
 ";
 
-fn create_tool_description(tc: &ToolCollection) -> String {
+fn create_tool_description(tb: &Toolbox) -> String {
     let prefix = TOOL_PREFIX.to_string();
-    let tool_desc = tc.describe();
+
+    let tool_desc = tb.describe();
+
+    let tool_desc: Vec<ToolDescription> = tool_desc.into_values().collect();
+
+    // yaml serialize the tool description
+    let tool_desc = serde_yaml::to_string(&tool_desc).unwrap();
+
     prefix + &tool_desc
 }
 
-fn create_tool_warm_up(tc: &ToolCollection) -> String {
+fn create_tool_warm_up(tb: &Toolbox) -> String {
     let prefix = PREFIX.to_string();
-    let tool_prompt = create_tool_description(tc);
+    let tool_prompt = create_tool_description(tb);
     prefix + FORMAT + &tool_prompt
 }
 
@@ -142,14 +150,14 @@ pub async fn something_with_rooms(
     max_steps: usize,
     model: String,
 ) {
-    let mut tool_collection = ToolCollection::new();
+    let mut toolbox = Toolbox::default();
 
-    tool_collection.add_tool(RoomTool::new(bridge.clone()));
-    tool_collection.add_tool(ConcludeTool::new());
-    tool_collection.add_tool(PythonTool::new());
-    tool_collection.add_tool(StatusTool::new(bridge));
+    toolbox.add_tool(RoomTool::new(bridge.clone()));
+    toolbox.add_tool(ConcludeTool::new());
+    toolbox.add_advanced_tool(PythonTool::new());
+    toolbox.add_tool(StatusTool::new(bridge));
 
-    let warm_up_prompt = create_tool_warm_up(&tool_collection);
+    let warm_up_prompt = create_tool_warm_up(&toolbox);
     let system_prompt = create_system_prompt();
 
     // build the warm-up exchange with the user
@@ -186,7 +194,9 @@ pub async fn something_with_rooms(
     }
 
     // Build a tool description to inject it into the chat on error
-    let tool_desc = create_tool_description(&tool_collection);
+    let tool_desc = create_tool_description(&toolbox);
+
+    let toolbox = Rc::new(toolbox);
 
     let openai_client = async_openai::Client::new();
 
@@ -221,7 +231,7 @@ pub async fn something_with_rooms(
             l
         );
 
-        let resp = invoke_tool(&tool_collection, &message_text);
+        let resp = invoke_tool(toolbox.clone(), &message_text);
         let l = match resp {
             Ok(x) => {
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
@@ -255,7 +265,7 @@ pub async fn something_with_rooms(
 /// corresponding tool.
 ///
 /// If multiple tool invocations are found, only the first one is used.
-pub fn invoke_tool(tools: &ToolCollection, data: &str) -> Result<String, ToolUseError> {
+pub fn invoke_tool(tools: Rc<Toolbox>, data: &str) -> Result<String, ToolUseError> {
     let tool_invocations: Vec<ToolInvocationInput> = find_yaml::<ToolInvocationInput>(data)?;
     if tool_invocations.is_empty() {
         return Err(ToolUseError::ToolInvocationFailed(
@@ -265,7 +275,8 @@ pub fn invoke_tool(tools: &ToolCollection, data: &str) -> Result<String, ToolUse
 
     // Take the first invocation - the list is reversed
     let invocation_input = &tool_invocations.last().unwrap();
-    let output = tools.invoke(&invocation_input.command, &invocation_input.input)?;
+    let input = invocation_input.input.clone();
+    let output = invoke_from_toolbox(tools, &invocation_input.command, input)?;
     Ok(serde_yaml::to_string(&output).unwrap())
 }
 
@@ -280,6 +291,7 @@ mod tests {
     use indoc::indoc;
 
     use super::*;
+    use crate::tools::dummy::DummyTool;
 
     #[test]
     fn test_tool_invocation() {
@@ -293,11 +305,40 @@ mod tests {
         ```
         "#};
 
-        let mut tool_collection = ToolCollection::new();
-        tool_collection.add_tool(PythonTool::new());
+        let mut toolbox = Toolbox::default();
+        toolbox.add_advanced_tool(PythonTool::new());
 
-        let output = invoke_tool(&tool_collection, data).unwrap();
+        let toolbox = Rc::new(toolbox);
+
+        let output = invoke_tool(toolbox, data).unwrap();
         assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
+    }
+
+    #[test]
+    fn test_tool_invocation_in_python() {
+        let data = indoc! {r#"
+        # Action
+        ```yaml        
+        command: SandboxedPythonTool
+        input:
+            code: |
+                print("Hello world!")
+                rooms = tools.invoke("DummyTool", {"blah": "blah"})
+                print(rooms)          
+        ```
+        "#};
+
+        let mut toolbox = Toolbox::default();
+        toolbox.add_advanced_tool(PythonTool::new());
+        toolbox.add_tool(DummyTool::default());
+
+        let toolbox = Rc::new(toolbox);
+
+        let output = invoke_tool(toolbox, data).unwrap();
+        assert_eq!(
+            output,
+            "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\nstderr: ''\n"
+        );
     }
 
     #[test]
@@ -328,10 +369,12 @@ mod tests {
         ```
         "#};
 
-        let mut tool_collection = ToolCollection::new();
-        tool_collection.add_tool(PythonTool::new());
+        let mut toolbox = Toolbox::default();
+        toolbox.add_advanced_tool(PythonTool::new());
 
-        let output = invoke_tool(&tool_collection, data).unwrap();
+        let toolbox = Rc::new(toolbox);
+
+        let output = invoke_tool(toolbox, data).unwrap();
         assert_eq!(output, "stdout: |\n  Hello world 1!\nstderr: ''\n");
     }
 }

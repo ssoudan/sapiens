@@ -61,7 +61,7 @@ impl Describe for RoomToolOutput {
     fn describe() -> Format {
         vec![(
             "rooms",
-            "A list of Rooms with a name and a list of lights in that room.",
+            r#"A list of Rooms with a name and a list of lights (their IDs) in that room. E.g.: [{"name": "Smoking room", "lights": ["light_ID1", ...]}, ...]"#,
         )
             .into()]
         .into()

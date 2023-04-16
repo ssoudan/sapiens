@@ -40,9 +40,9 @@ async fn main() {
 
     let bridge = bridge::Bridge::new(bridge_ip, username);
 
-    // let task = "List all the lights in the room with the most lights.";
+    let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";
-    let task = "How many lights are in each room?";
+    // let task = "How many lights are in each room?";
     // let task = "What are the names of the rooms?";
     // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
     // let task = "What is the status of the lights in the Office?";

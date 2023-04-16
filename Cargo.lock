@@ -832,7 +832,7 @@ dependencies = [
 [[package]]
 name = "llm-chain"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=fix#e4bbee734f36fc99ffe59b8fc98ee3825c28bc9e"
+source = "git+https://github.com/ssoudan/llm-chain?branch=fix#7d97512147e3f35bab70280c8c7c49b37f911f71"
 dependencies = [
  "anyhow",
  "async-trait",
