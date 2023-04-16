@@ -1,6 +1,5 @@
-use std::process::Command;
-
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
+use pyo3::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// A tool that executes Python code.
@@ -25,7 +24,6 @@ pub struct PythonToolInput {
 
 #[derive(Serialize, Deserialize)]
 pub struct PythonToolOutput {
-    status: Option<i32>,
     stdout: String,
     stderr: String,
 }
@@ -42,11 +40,23 @@ impl Describe for PythonToolInput {
 impl Describe for PythonToolOutput {
     fn describe() -> Format {
         vec![
-            ("status", "The exit status of the Python code execution.").into(),
             ("stdout", "The stdout of the executed Python code.").into(),
             ("stderr", "The stderr output of the Python code execution.").into(),
         ]
         .into()
+    }
+}
+
+#[pyclass]
+#[derive(Default)]
+struct Logging {
+    output: String,
+}
+
+#[pymethods]
+impl Logging {
+    fn write(&mut self, data: &str) {
+        self.output.push_str(data);
     }
 }
 
@@ -62,42 +72,40 @@ impl PythonTool {
             ));
         }
 
-        // // Add tool bindings at the beginning of the code
-        // let code = format!(
-        //     r#"def RoomTool(room_filter=[]):
-        //            return "nice try"
-        //        {}"#,
-        //     code
-        // );
-
-        // TODO(ssoudan) use pyo3
-
         // TODO(ssoudan) expose tools there
 
-        // NOTE(ssoudan) capturing stdout: https://github.com/PyO3/pyo3/discussions/1918#discussioncomment-1473356
+        let res: PyResult<(String, String)> = Python::with_gil(|py| {
+            // capture stdout and stderr
+            let sys = py.import("sys")?;
 
-        let mut command = Command::new("python3");
-        command
-            .env_clear()
-            .arg("-c")
-            .arg(code)
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped());
+            let stdout = Logging::default();
+            let py_stdout_cell = PyCell::new(py, stdout)?;
+            let py_stdout = py_stdout_cell.borrow_mut();
+            sys.setattr("stdout", py_stdout.into_py(py))?;
 
-        command.stdin(std::process::Stdio::null());
-        let child = command.spawn().map_err(|_e| {
-            ToolUseError::ToolInvocationFailed("failed to execute process".to_string())
+            let stderr = Logging::default();
+            let py_stderr_cell = PyCell::new(py, stderr)?;
+            let py_stderr = py_stderr_cell.borrow_mut();
+            sys.setattr("stderr", py_stderr.into_py(py))?;
+
+            // FUTURE(ssoudan) pass something in
+
+            // run code
+            Python::run(py, code, None, None)?;
+
+            // NOFUTURE(ssoudan) get something out
+
+            let stdout = py_stdout_cell.borrow().output.clone();
+            let stderr = py_stderr_cell.borrow().output.clone();
+
+            Ok((stdout, stderr))
+        });
+
+        let (stdout, stderr) = res.map_err(|e| {
+            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
         })?;
 
-        // read stdout and stderr
-        let output = child
-            .wait_with_output()
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
-        Ok(PythonToolOutput {
-            status: output.status.code(),
-            stdout: String::from_utf8(output.stdout).unwrap(),
-            stderr: String::from_utf8(output.stderr).unwrap(),
-        })
+        Ok(PythonToolOutput { stdout, stderr })
     }
 }
 
@@ -122,6 +130,7 @@ impl Tool for PythonTool {
 #[cfg(test)]
 mod tests {
     use pyo3::indoc::indoc;
+    use pyo3::types::PyDict;
 
     use super::*;
 
@@ -132,25 +141,8 @@ mod tests {
             code: "print('hello')".to_string(),
         };
         let output = tool.invoke_typed(&input).unwrap();
-        assert_eq!(output.status, Some(0));
         assert_eq!(output.stdout, "hello\n");
         assert_eq!(output.stderr, "");
-    }
-
-    use pyo3::prelude::*;
-    use pyo3::types::PyDict;
-
-    #[pyclass]
-    #[derive(Default)]
-    struct Logging {
-        output: String,
-    }
-
-    #[pymethods]
-    impl Logging {
-        fn write(&mut self, data: &str) {
-            self.output.push_str(data);
-        }
     }
 
     #[pyfunction]
@@ -164,7 +156,8 @@ mod tests {
         Ok(())
     }
 
-    fn run() -> PyResult<()> {
+    #[test]
+    fn test_run_with_pyo3() {
         pyo3::append_to_inittab!(foo);
         Python::with_gil(|py| {
             let locals = PyDict::new(py);
@@ -187,30 +180,22 @@ mod tests {
                 r#"import foo;
                    a = 12
                    b = foo.add_one(a)
-                   print("b=", b)
-                   print("foo=", repr(foo))
-                   print("foo=", dir(foo))                                                                           
+                   print("b=", b)                                                                                              
                   "#},
                 None,
                 locals.into(),
             );
 
-            for (key, value) in locals {
-                println!("{}: {}", key, value);
-            }
+            assert_eq!(locals.get_item("a").unwrap().extract::<i64>().unwrap(), 12);
+            assert_eq!(locals.get_item("b").unwrap().extract::<i64>().unwrap(), 13);
 
             let stdout = py_stdout_cell.borrow();
-            print!("stdout: {}", stdout.output);
+            assert_eq!(stdout.output, "b= 13\n");
 
             let stderr = py_stderr_cell.borrow();
-            print!("stderr: {}", stderr.output);
+            assert_eq!(stderr.output, "");
 
             res
-        })
-    }
-
-    #[test]
-    fn test_run_with_pyo3() {
-        run().unwrap();
+        }).unwrap();
     }
 }

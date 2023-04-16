@@ -297,7 +297,7 @@ mod tests {
         tool_collection.add_tool(PythonTool::new());
 
         let output = invoke_tool(&tool_collection, data).unwrap();
-        assert_eq!(output, "status: 0\nstdout: |\n  Hello world!\nstderr: ''\n");
+        assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
     }
 
     #[test]
@@ -332,9 +332,6 @@ mod tests {
         tool_collection.add_tool(PythonTool::new());
 
         let output = invoke_tool(&tool_collection, data).unwrap();
-        assert_eq!(
-            output,
-            "status: 0\nstdout: |\n  Hello world 1!\nstderr: ''\n"
-        );
+        assert_eq!(output, "stdout: |\n  Hello world 1!\nstderr: ''\n");
     }
 }

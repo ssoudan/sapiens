@@ -4,13 +4,13 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use botrs::something_with_rooms;
-use dotenvy::dotenv;
+use dotenvy::dotenv_override;
 use huelib::bridge;
 
 #[tokio::main]
 async fn main() {
     // load environment variables from .env file
-    dotenv().expect(".env file not found");
+    dotenv_override().expect(".env file not found");
 
     let bridge_ip = match std::env::var("HUE_BRIDGE_IP") {
         Ok(ip) => IpAddr::from_str(&ip).expect("Invalid IP address"),
@@ -42,11 +42,12 @@ async fn main() {
 
     // let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";
-    // let task = "How many lights are in each room?";
+    let task = "How many lights are in each room?";
     // let task = "What are the names of the rooms?";
     // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
     // let task = "What is the status of the lights in the Office?";
-    let task = "What is the status of the lights where someone is most likely work?";
+    // let task = "What is the status of the lights where someone is most likely
+    // work?";
     // let task = "What are the colors of a rainbow?";
     something_with_rooms(Rc::from(bridge), task, 10, "gpt-3.5-turbo".to_string()).await;
 }
