@@ -163,10 +163,10 @@ impl PythonTool {
         toolbox: Option<Rc<Toolbox>>,
         input: &PythonToolInput,
     ) -> Result<PythonToolOutput, ToolUseError> {
-        let code = &input.code;
+        let mut code = input.code.clone();
 
         let re = regex::Regex::new(r"import|open|exec|eval|__import__").unwrap();
-        if re.is_match(code) {
+        if re.is_match(&code) {
             return Err(ToolUseError::ToolInvocationFailed(
                 "Python code contains forbidden keywords such as import|open|exec|eval|__import__"
                     .to_string(),
@@ -174,17 +174,63 @@ impl PythonTool {
         }
 
         let tools = toolbox.map(ToolsWrapper::new);
-        // TODO(ssoudan) dynamically add functions to a `tools` module
-        // def tools.room(room_filter=[]):
-        //     return tools_wrapper.invoke("room", {"room_filter": filter})
-        // def tools.conclude(original_question, conclusion):
-        //     return tools_wrapper.invoke("conclude", {"original_question":
-        // original_question, "conclusion": conclusion})
+
+        // dynamically add functions to a `tools` module
+        if let Some(tools) = &tools {
+            let mut tool_class_code = String::new();
+
+            tool_class_code.push_str("class Tools:\n");
+
+            tool_class_code.push_str("    def __init__(self, toolbox):\n");
+            tool_class_code.push_str("        self.toolbox = toolbox\n");
+
+            for (name, description) in tools.toolbox.as_ref().describe() {
+                let inputs_parts = description.input_format.parts;
+                let inputs = inputs_parts
+                    .iter()
+                    .map(|f| f.key.clone())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let inputs = if inputs.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("(self, {})", inputs)
+                };
+
+                let dict = inputs_parts
+                    .iter()
+                    .map(|f| {
+                        let name = &f.key;
+                        format!("\"{}\": {}", name, name)
+                    })
+                    .collect::<Vec<_>>()
+                    .join(", ");
+
+                tool_class_code.push_str(&format!(
+                    "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+                    name.to_lowercase(),
+                    inputs,
+                    name,
+                    dict
+                ));
+            }
+
+            // add list function
+            tool_class_code.push_str("    def list(self):\n");
+            tool_class_code.push_str("        return self.toolbox.list()\n");
+
+            tool_class_code.push_str("tools = Tools(toolbox)\n");
+
+            // prepend the tool class code to the user code
+            code = format!("{}\n{}", tool_class_code, code);
+
+            // print!("{}", code);
+        }
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             let ctx = if let Some(tools) = tools {
                 let tools_cell = PyCell::new(py, tools)?;
-                [("tools", tools_cell)].into_py_dict(py)
+                [("toolbox", tools_cell)].into_py_dict(py)
             } else {
                 PyDict::new(py)
             };
@@ -205,7 +251,7 @@ impl PythonTool {
             // FUTURE(ssoudan) pass something in
 
             // run code
-            Python::run(py, code, None, ctx.into())?;
+            Python::run(py, &code, None, ctx.into())?;
 
             // NOFUTURE(ssoudan) get something out
 
@@ -226,9 +272,9 @@ impl PythonTool {
 impl Tool for PythonTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
-            "SandboxedPythonTool",
+            "SandboxedPython",
             "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            r#"Use this to transform data. To use other Tools from here: `output = tools.invoke("ToolName", input)`. import|open|exec|eval|__import__ are forbidden."#,
+            r#"Use this to transform data. To use other Tools from here: `output = tools.toolname(input)`. import|open|exec|eval|__import__ are forbidden."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
@@ -267,8 +313,12 @@ mod tests {
         let input = PythonToolInput {
             code: indoc! {
             r#"print('hello')
-               t = tools.list()
+               t = toolbox.list()
                print("tools=", t)
+               
+               d = tools.dummy(blah="ahah")
+               print("dummy=", d)
+               
                "#}
             .to_string(),
         };
@@ -279,7 +329,7 @@ mod tests {
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
         assert_eq!(
             output.stdout,
-            "hello\ntools= {'DummyTool': 'A tool to test stuffs.'}\n"
+            "hello\ntools= {'Dummy': 'A tool to test stuffs.'}\ndummy= {'something': 'ahah and something else'}\n"
         );
         assert_eq!(output.stderr, "");
     }

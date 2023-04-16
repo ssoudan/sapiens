@@ -51,7 +51,7 @@ impl DummyTool {
 impl Tool for DummyTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
-            "DummyTool",
+            "Dummy",
             "A tool to test stuffs.",
             "Use this to test stuffs.",
             DummyToolInput::describe(),

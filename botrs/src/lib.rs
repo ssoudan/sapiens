@@ -29,10 +29,10 @@ You will proceed in a OODA loop made of the following steps:
 - Observations: What do you know? What is your source? What don't you know? You might want to note down important information for later like relevant past Action results. 
 - Orientation: Plan the intermediate objectives along the path to answer the original question. Make a list of current objectives. 
 - Decision: Choose what to do first to answer the question. Why? What are the pros and cons of this decision?
-- Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use ConcludeTool when you have the final answer to the original question.
+- Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.
 
 # Notes: 
-- Use ConcludeTool with your conclusion (as text) once you have the final answer to the original question.
+- Use Conclude Tool with your conclusion (as text) once you have the final answer to the original question.
 - Template expansion is not supported in Action. If you need to pass information from on action to another, you have to pass them manually.
 - There are no APIs available to you. You have to use the Tools.
 ";
@@ -70,12 +70,12 @@ const PROTO_EXCHANGE_2: &str = r#"
 - The given list to sort is [2, 3, 1, 4, 5].
 - I need to sort this list in ascending order.
 ## Orientation:
-- SandboxedPythonTool can be used to sort the list.
+- SandboxedPython can be used to sort the list.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:
 ```yaml
-command: SandboxedPythonTool
+command: SandboxedPython
 input:
   code: |
     lst = [2, 3, 1, 4, 5]
@@ -105,10 +105,10 @@ const PROTO_EXCHANGE_4: &str = r"
 ## Orientation:
 - I know the answer to the original question.
 ## Decision:
-- Use the ConcludeTool to terminate the task with the sorted list.
+- Use the Conclude Tool to terminate the task with the sorted list.
 ## The ONLY Action:
 ```yaml
-command: ConcludeTool
+command: Conclude
 input:
   original_question: |
     Sort in ascending order: [2, 3, 1, 4, 5]
@@ -298,7 +298,7 @@ mod tests {
         let data = indoc! {r#"
         # Action
         ```yaml        
-        command: SandboxedPythonTool
+        command: SandboxedPython
         input:
             code: |
                 print("Hello world!")          
@@ -319,11 +319,13 @@ mod tests {
         let data = indoc! {r#"
         # Action
         ```yaml        
-        command: SandboxedPythonTool
+        command: SandboxedPython
         input:
             code: |
                 print("Hello world!")
-                rooms = tools.invoke("DummyTool", {"blah": "blah"})
+                rooms = toolbox.invoke("Dummy", {"blah": "blah"})
+                print(rooms)
+                rooms = tools.dummy(blah="blah")
                 print(rooms)          
         ```
         "#};
@@ -337,7 +339,7 @@ mod tests {
         let output = invoke_tool(toolbox, data).unwrap();
         assert_eq!(
             output,
-            "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\nstderr: ''\n"
+            "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\n  {'something': 'blah and something else'}\nstderr: ''\n"
         );
     }
 
@@ -346,7 +348,7 @@ mod tests {
         let data = indoc! {r#"
         # Action
         ```yaml        
-        command: SandboxedPythonTool
+        command: SandboxedPython
         input:
             code: |
                 print("Hello world 1!")          
@@ -354,7 +356,7 @@ mod tests {
         
         # And another action
         ```yaml        
-        command: SandboxedPythonTool
+        command: SandboxedPython
         input:
             code: |
                 print("Hello world 2!")          
@@ -362,7 +364,7 @@ mod tests {
         
         # And yet another action
         ```        
-        command: SandboxedPythonTool
+        command: SandboxedPython
         input:
             code: |
                 print("Hello world 3!")          

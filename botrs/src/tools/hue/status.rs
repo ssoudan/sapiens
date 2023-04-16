@@ -87,7 +87,7 @@ impl StatusTool {
 impl Tool for StatusTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
-            "LightStatusTool",
+            "LightStatus",
             "A tool to use that the source of truth for the Light statuses.",
             "Use this to fetch the Light statuses",
             StatusToolInput::describe(),

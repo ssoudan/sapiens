@@ -96,7 +96,7 @@ impl RoomTool {
 impl Tool for RoomTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
-            "RoomTool",
+            "Room",
             "A tool to use that the source of truth for the Lights of a Room.",
             "Use this to fetch the Lights of Rooms.",
             RoomToolInput::describe(),
