@@ -26,9 +26,8 @@ serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
 
 regex = "1.7.3"
-indoc = "2"
 
-pyo3 = { version = "0.18.2", features = ["auto-initialize"] }
+pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
 
 colored = "2.0.0"
 
@@ -36,3 +35,6 @@ tiktoken-rs = { version = "0.4.0", features = ["async-openai"] }
 async-openai = "0.10.3"
 
 convert_case = "0.6.0"
+
+[dev-dependencies]
+indoc = "2"

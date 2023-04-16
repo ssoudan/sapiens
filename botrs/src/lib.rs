@@ -14,10 +14,6 @@ use llm_chain::parsing::find_yaml;
 use llm_chain::tools::{ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
-use crate::tools::conclude::ConcludeTool;
-use crate::tools::hue::room::RoomTool;
-use crate::tools::hue::status::StatusTool;
-use crate::tools::python::PythonTool;
 use crate::tools::{invoke_from_toolbox, Toolbox};
 
 fn create_system_prompt() -> String {
@@ -144,19 +140,7 @@ fn build_task_prompt(task: &str) -> String {
 }
 
 /// Run a task with a set of tools
-pub async fn something_with_rooms(
-    bridge: Rc<huelib::bridge::Bridge>,
-    task: &str,
-    max_steps: usize,
-    model: String,
-) {
-    let mut toolbox = Toolbox::default();
-
-    toolbox.add_tool(RoomTool::new(bridge.clone()));
-    toolbox.add_tool(ConcludeTool::new());
-    toolbox.add_advanced_tool(PythonTool::new());
-    toolbox.add_tool(StatusTool::new(bridge));
-
+pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize, model: String) {
     let warm_up_prompt = create_tool_warm_up(&toolbox);
     let system_prompt = create_system_prompt();
 
@@ -292,6 +276,7 @@ mod tests {
 
     use super::*;
     use crate::tools::dummy::DummyTool;
+    use crate::tools::python::PythonTool;
 
     #[test]
     fn test_tool_invocation() {
@@ -306,7 +291,7 @@ mod tests {
         "#};
 
         let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::new());
+        toolbox.add_advanced_tool(PythonTool::default());
 
         let toolbox = Rc::new(toolbox);
 
@@ -331,7 +316,7 @@ mod tests {
         "#};
 
         let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::new());
+        toolbox.add_advanced_tool(PythonTool::default());
         toolbox.add_tool(DummyTool::default());
 
         let toolbox = Rc::new(toolbox);
@@ -372,7 +357,7 @@ mod tests {
         "#};
 
         let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::new());
+        toolbox.add_advanced_tool(PythonTool::default());
 
         let toolbox = Rc::new(toolbox);
 

@@ -11,29 +11,23 @@ use serde_yaml::Value;
 use crate::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
 
 /// A tool that executes Python code.
+#[derive(Default)]
 pub struct PythonTool {}
 
-impl PythonTool {
-    pub fn new() -> Self {
-        PythonTool {}
-    }
-}
-
-impl Default for PythonTool {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
+/// The input of the Python tool
 #[derive(Serialize, Deserialize)]
 pub struct PythonToolInput {
-    code: String,
+    /// The Python code to execute.
+    pub code: String,
 }
 
+/// The output of the Python tool
 #[derive(Serialize, Deserialize)]
 pub struct PythonToolOutput {
-    stdout: String,
-    stderr: String,
+    /// The stdout of the executed Python code.
+    pub stdout: String,
+    /// The stderr output of the Python code execution.
+    pub stderr: String,
 }
 
 impl Describe for PythonToolInput {
@@ -235,7 +229,7 @@ impl PythonTool {
             // prepend the tool class code to the user code
             code = format!("{}\n{}", tool_class_code, code);
 
-            print!("{}", code);
+            // print!("{}", code);
         }
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
@@ -320,7 +314,7 @@ mod tests {
 
     #[test]
     fn test_python_tool() {
-        let tool = PythonTool::new();
+        let tool = PythonTool::default();
         let input = PythonToolInput {
             code: indoc! {
             r#"print('hello')
@@ -334,7 +328,7 @@ mod tests {
             .to_string(),
         };
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(DummyTool::new());
+        toolbox.add_tool(DummyTool::default());
         let toolbox = Rc::new(toolbox);
 
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();

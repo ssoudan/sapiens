@@ -37,12 +37,15 @@ impl Default for RoomTool {
 /// The input of the tool
 #[derive(Serialize, Deserialize)]
 pub struct RoomToolInput {
-    room_filter: Option<Vec<String>>,
+    /// The list of Room names (<string>) to get the lights for.
+    pub room_filter: Option<Vec<String>>,
 }
 
 /// The output of the tool
 #[derive(Serialize, Deserialize)]
 pub struct RoomToolOutput {
+    /// A list of Rooms with a name and a list of lights (their IDs) in that
+    /// room.
     rooms: Vec<Room>,
 }
 

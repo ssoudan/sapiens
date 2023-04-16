@@ -6,26 +6,24 @@ use serde::{Deserialize, Serialize};
 /// A tool that is called to test stuffs
 pub struct DummyTool {}
 
-impl DummyTool {
-    pub fn new() -> Self {
-        DummyTool {}
-    }
-}
-
 impl Default for DummyTool {
     fn default() -> Self {
-        Self::new()
+        Self {}
     }
 }
 
+/// A tool that is called to test stuffs
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DummyToolInput {
-    blah: String,
+    /// Well. MANDATORY.
+    pub blah: String,
 }
 
+/// DummyToolOutput not very significant
 #[derive(Serialize, Deserialize)]
 pub struct DummyToolOutput {
-    something: String,
+    /// No much.
+    pub something: String,
 }
 
 impl Describe for DummyToolInput {

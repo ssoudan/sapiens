@@ -5,26 +5,19 @@ use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to wrap the task.
+#[derive(Default)]
 pub struct ConcludeTool {}
 
-impl ConcludeTool {
-    pub fn new() -> Self {
-        ConcludeTool {}
-    }
-}
-
-impl Default for ConcludeTool {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
+/// A tool that is called to wrap the task.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConcludeToolInput {
-    conclusion: String,
-    original_question: String,
+    /// The final textual answer for this task.
+    pub conclusion: String,
+    /// The original question that was asked to the user.
+    pub original_question: String,
 }
 
+/// ConcludeToolOutput - empty
 #[derive(Serialize, Deserialize)]
 pub struct ConcludeToolOutput {}
 

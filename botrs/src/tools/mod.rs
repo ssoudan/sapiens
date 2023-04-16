@@ -7,10 +7,10 @@ use llm_chain::tools::{Tool, ToolDescription, ToolUseError};
 pub mod hue;
 
 /// Tool to conclude a chain
-pub(crate) mod conclude;
+pub mod conclude;
 
 /// Tool to run some (limited) python
-pub(crate) mod python;
+pub mod python;
 
 #[cfg(test)]
 /// Tool to test stuffs

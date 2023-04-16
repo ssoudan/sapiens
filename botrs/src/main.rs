@@ -4,6 +4,11 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use botrs::something_with_rooms;
+use botrs::tools::conclude::ConcludeTool;
+use botrs::tools::hue::room::RoomTool;
+use botrs::tools::hue::status::StatusTool;
+use botrs::tools::python::PythonTool;
+use botrs::tools::Toolbox;
 use dotenvy::dotenv_override;
 use huelib::bridge;
 
@@ -39,6 +44,14 @@ async fn main() {
     };
 
     let bridge = bridge::Bridge::new(bridge_ip, username);
+    let bridge = Rc::new(bridge);
+
+    let mut toolbox = Toolbox::default();
+
+    toolbox.add_tool(RoomTool::new(bridge.clone()));
+    toolbox.add_tool(ConcludeTool::default());
+    toolbox.add_advanced_tool(PythonTool::default());
+    toolbox.add_tool(StatusTool::new(bridge));
 
     let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";
@@ -49,5 +62,5 @@ async fn main() {
     // let task = "What is the status of the lights where someone is most likely
     // work?";
     // let task = "What are the colors of a rainbow?";
-    something_with_rooms(Rc::from(bridge), task, 10, "gpt-3.5-turbo".to_string()).await;
+    something_with_rooms(toolbox, task, 10, "gpt-3.5-turbo".to_string()).await;
 }
