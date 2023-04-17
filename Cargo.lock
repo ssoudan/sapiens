@@ -1003,7 +1003,7 @@ checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
 [[package]]
 name = "llm-chain"
 version = "0.5.0"
-source = "git+https://github.com/ssoudan/llm-chain?branch=fix#7d97512147e3f35bab70280c8c7c49b37f911f71"
+source = "git+https://github.com/ssoudan/llm-chain?branch=fix#4dfc305d4a2997e74ec9e2ca8752dec3993ebc5e"
 dependencies = [
  "anyhow",
  "async-trait",

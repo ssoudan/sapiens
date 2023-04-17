@@ -1,8 +1,7 @@
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use convert_case::{Case, Casing};
-use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
+use llm_chain::tools::{Describe, Format, FormatPart, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
 use serde::{Deserialize, Serialize};
@@ -198,6 +197,94 @@ fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
     }
 }
 
+/// Format of a field in a tool description
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SimpleFormat {
+    /// Name of the field
+    pub name: String,
+    // pub r#type: String,
+    /// Description of the field
+    pub description: String,
+}
+
+impl From<FormatPart> for SimpleFormat {
+    fn from(part: FormatPart) -> Self {
+        SimpleFormat {
+            name: part.key,
+            // r#type: part.r#type,
+            description: part.purpose,
+        }
+    }
+}
+
+impl ToPyObject for SimpleFormat {
+    fn to_object(&self, py: Python<'_>) -> PyObject {
+        let dict = PyDict::new(py);
+        dict.set_item("name", self.name.to_object(py)).unwrap();
+        // dict.set_item("type", self.r#type.to_object(py))
+        //     .unwrap();
+        dict.set_item("description", self.description.to_object(py))
+            .unwrap();
+        dict.into()
+    }
+}
+
+/// A simplified version of the tool description
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SimpleToolDescription {
+    /// Name of the tool
+    pub name: String,
+    /// Description of the tool
+    pub description: String,
+    /// Context utilization of the tool
+    pub description_context: String,
+    /// Input format of the tool
+    pub input_format: Vec<SimpleFormat>,
+    /// Output format of the tool
+    pub output_format: Vec<SimpleFormat>,
+}
+
+impl From<ToolDescription> for SimpleToolDescription {
+    fn from(desc: ToolDescription) -> Self {
+        let input_format = desc
+            .input_format
+            .parts
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+        let output_format = desc
+            .output_format
+            .parts
+            .into_iter()
+            .map(|x| x.into())
+            .collect();
+
+        SimpleToolDescription {
+            name: desc.name,
+            description: desc.description,
+            description_context: desc.description_context,
+            input_format,
+            output_format,
+        }
+    }
+}
+
+impl ToPyObject for SimpleToolDescription {
+    fn to_object(&self, py: Python<'_>) -> PyObject {
+        let dict = PyDict::new(py);
+        dict.set_item("name", self.name.clone()).unwrap();
+        dict.set_item("description", self.description.clone())
+            .unwrap();
+        dict.set_item("description_context", self.description_context.clone())
+            .unwrap();
+        dict.set_item("input_format", self.input_format.clone())
+            .unwrap();
+        dict.set_item("output_format", self.output_format.clone())
+            .unwrap();
+        dict.into()
+    }
+}
+
 #[pymethods]
 impl ToolsWrapper {
     // list all tools
@@ -205,9 +292,9 @@ impl ToolsWrapper {
     fn list(&self, py: Python<'_>) -> PyResult<PyObject> {
         let tools = self.toolbox.describe();
         let tools = tools
-            .into_iter()
-            .map(|(name, t)| (name, t.description))
-            .collect::<HashMap<_, _>>();
+            .into_values()
+            .map(SimpleToolDescription::from)
+            .collect::<Vec<_>>();
         let tools = tools.to_object(py);
         Ok(tools)
     }
@@ -376,7 +463,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPython",
             &format!("A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available (limited to {}B combined). ", MAX_OUTPUT_SIZE),
-            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()`. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
+            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()` - `tools` is already loaded. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
@@ -441,7 +528,7 @@ mod tests {
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
         assert_eq!(
             output.stdout,
-            "hello\ntools= {'Dummy': 'A tool to test stuffs.'}\ndummy= {'something': 'ahah and something else'}\n"
+            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool to test stuffs.', 'description_context': 'Use this to test stuffs.', 'input_format': [{'name': 'blah', 'description': 'Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': 'No much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
         );
         assert_eq!(output.stderr, "");
     }

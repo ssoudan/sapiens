@@ -15,14 +15,17 @@ use huelib::bridge;
 
 // TODO(ssoudan) split in multiple modules
 // TODO(ssoudan) macro
-// TODO(ssoudan) better errors for python code
 // TODO(ssoudan) tool descriptions: in and out, types, desc, etc.
+// TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
 // TODO(ssoudan) conditional loading of tools
+
+// TODO(ssoudan) use insta.
+
+// TODO(ssoudan) better errors for python code
 // TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate, memory
 // TODO(ssoudan) Crontab
 // TODO(ssoudan) Discord bot
 // TODO(ssoudan) logging
-// TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
 // TODO(ssoudan) long lived conversations
 
 /// A bot that can do things - or at least try to.
