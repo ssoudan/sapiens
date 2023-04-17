@@ -398,7 +398,6 @@ impl AdvancedTool for PythonTool {
 #[cfg(test)]
 mod tests {
     use pyo3::indoc::indoc;
-    use pyo3::types::PyDict;
 
     use super::*;
     use crate::tools::dummy::DummyTool;
@@ -428,59 +427,5 @@ mod tests {
             "hello\ntools= {'Dummy': 'A tool to test stuffs.'}\ndummy= {'something': 'ahah and something else'}\n"
         );
         assert_eq!(output.stderr, "");
-    }
-
-    #[pyfunction]
-    fn add_one(x: i64) -> i64 {
-        x + 1
-    }
-
-    #[pymodule]
-    fn foo(_py: Python<'_>, foo_module: &PyModule) -> PyResult<()> {
-        foo_module.add_function(wrap_pyfunction!(add_one, foo_module)?)?;
-        Ok(())
-    }
-
-    #[test]
-    fn test_run_with_pyo3() {
-        pyo3::append_to_inittab!(foo);
-        Python::with_gil(|py| {
-            let locals = PyDict::new(py);
-
-            // capture stdout
-            let sys = py.import("sys")?;
-            let stdout = Logging::default();
-            let py_stdout_cell = PyCell::new(py, stdout).unwrap();
-            let stderr = Logging::default();
-            let py_stderr_cell = PyCell::new(py, stderr).unwrap();
-
-            let py_stdout = py_stdout_cell.borrow_mut();
-            let py_stderr = py_stderr_cell.borrow_mut();
-            sys.setattr("stdout", py_stdout.into_py(py))?;
-            sys.setattr("stderr", py_stderr.into_py(py))?;
-
-            let res = Python::run(
-                py,
-                indoc! {
-                r#"import foo;
-                   a = 12
-                   b = foo.add_one(a)
-                   print("b=", b)                                                                                                                
-                  "#},
-                None,
-                locals.into(),
-            );
-
-            assert_eq!(locals.get_item("a").unwrap().extract::<i64>().unwrap(), 12);
-            assert_eq!(locals.get_item("b").unwrap().extract::<i64>().unwrap(), 13);
-
-            let stdout = py_stdout_cell.borrow();
-            assert_eq!(stdout.output, "b= 13\n");
-
-            let stderr = py_stderr_cell.borrow();
-            assert_eq!(stderr.output, "");
-
-            res
-        }).unwrap();
     }
 }
