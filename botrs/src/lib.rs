@@ -24,9 +24,9 @@ fn create_system_prompt() -> String {
 
 const PREFIX: &str = r"You are botGPT, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed in a OODA loop made of the following steps:
-- Observations: What do you know? What is your source? What don't you know? You might want to note down important information for later like relevant past Action results. 
-- Orientation: Plan the intermediate objectives along the path to answer the original question. Make a list of current objectives. 
-- Decision: Choose what to do first to answer the question. Why? What are the pros and cons of this decision?
+- Observations: What do you know to be true? What is your source? What don't you know? Note down important information for later. 
+- Orientation: Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.  
+- Decision: Choose what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?
 - Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.
 
 # Notes:
@@ -68,6 +68,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 ## Orientation:
 - SandboxedPython can be used to sort the list.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list
+- I need to provide the conclusion in plain text to the Conclude Tool.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:

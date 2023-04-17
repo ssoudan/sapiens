@@ -48,7 +48,7 @@ impl Describe for ConcludeToolInput {
     fn describe() -> Format {
         vec![(
             "conclusion",
-            "The final textual answer for this task. No string interpolation supported, only plain text. MANDATORY.",
+            "The final textual answer for this task. No string interpolation supported. Plain text ONLY. MANDATORY.",
             )
             .into(),
             (

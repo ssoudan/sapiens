@@ -57,7 +57,7 @@ impl Describe for StatusToolInput {
 
 impl Describe for StatusToolOutput {
     fn describe() -> Format {
-        vec![("lights", r#"A list of Lights with their status. E.g.: [{"id": "1", "name": "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation": 55, "color_temperature": 2500}]"#).into()].into()
+        vec![("lights", r#"A list of Lights with their statuses. E.g.: [{"id": "1", "name": "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation": 55, "color_temperature": 2500}]"#).into()].into()
     }
 }
 

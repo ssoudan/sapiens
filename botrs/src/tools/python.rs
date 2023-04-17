@@ -10,6 +10,8 @@ use serde_yaml::Value;
 
 use crate::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
 
+const MAX_OUTPUT_SIZE: usize = 512;
+
 /// A tool that executes Python code.
 #[derive(Default)]
 pub struct PythonTool {}
@@ -309,6 +311,8 @@ impl PythonTool {
                     name,
                     dict
                 ));
+
+                // FUTURE(ssoudan) set input_format and output_format
             }
 
             // add list function
@@ -371,8 +375,8 @@ impl Tool for PythonTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
             "SandboxedPython",
-            "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4. No PIP."#,
+            &format!("A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available (limited to {}B combined). ", MAX_OUTPUT_SIZE),
+            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()`. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
@@ -381,6 +385,17 @@ impl Tool for PythonTool {
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(None, &input)?;
+
+        // check the size of the output (stdout and stderr)
+        let l = output.stdout.len() + output.stderr.len();
+        if l > MAX_OUTPUT_SIZE {
+            return Err(ToolUseError::ToolInvocationFailed(format!(
+                "Python code produced too much output on stdout and stderr combined ({} bytes) - max is {}",
+                l,
+                MAX_OUTPUT_SIZE
+            )));
+        }
+
         Ok(serde_yaml::to_value(output)?)
     }
 }
