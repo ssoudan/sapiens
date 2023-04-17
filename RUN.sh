@@ -26,6 +26,6 @@ if ! docker image inspect $IMAGE_NAME > /dev/null 2>&1; then
 fi
 
 # Run the application
-docker run -it --rm --name botrs \
+docker run -it --rm --read-only --name botrs \
     --env-file .env \
     $IMAGE_NAME "${ARGS[@]}"

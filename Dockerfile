@@ -40,8 +40,6 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /app/root
-
 COPY --from=builder /app/target/release/botrs_cli /usr/local/bin
 
 USER 1000:0
