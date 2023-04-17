@@ -229,7 +229,7 @@ impl ToolsWrapper {
             Value::default()
         };
 
-        println!("invoking tool {} with input {:?}", tool_name, input);
+        // println!("invoking tool {} with input {:?}", tool_name, input);
 
         let output =
             invoke_simple_from_toolbox(self.toolbox.clone(), tool_name, input).map_err(|e| {
@@ -250,11 +250,13 @@ impl PythonTool {
     ) -> Result<PythonToolOutput, ToolUseError> {
         let mut code = input.code.clone();
 
-        let re = regex::Regex::new(r"open|exec|eval").unwrap();
-        if re.is_match(&code) {
-            return Err(ToolUseError::ToolInvocationFailed(
-                "Python code contains forbidden keywords such as open|exec|eval".to_string(),
-            ));
+        // check for forbidden keywords - with capture
+        let re = regex::Regex::new(r"(exec|pip)").unwrap();
+        if let Some(caps) = re.captures(&code) {
+            return Err(ToolUseError::ToolInvocationFailed(format!(
+                "Python code contains forbidden keywords such as {}",
+                caps.get(0).unwrap().as_str()
+            )));
         }
 
         let tools = toolbox.map(ToolsWrapper::new);
@@ -370,7 +372,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPython",
             "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. The `output` is a object. open|exec|eval are forbidden."#,
+            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4. No PIP."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )

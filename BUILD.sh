@@ -7,6 +7,16 @@ BLUE='\033[0;34m'
 NORMAL='\033[0m'
 GREEN='\033[0;32m'
 
+# test if tools are installed
+if ! command -v cargo > /dev/null 2>&1; then
+    echo "${RED}Cargo is not installed. Please install it first.${NORMAL}"
+    exit 1
+fi
+
+if ! command -v docker > /dev/null 2>&1; then
+    echo "${RED}Docker is not installed. Please install it first.${NORMAL}"
+    exit 1
+fi
 
 echo -e "${BLUE}Testing...${NORMAL}"
 cargo test --all --all-features || (echo -e "$RED [Tests failed] $NORMAL" && exit 1)

@@ -83,8 +83,8 @@ impl Tool for ConcludeTool {
     fn description(&self) -> ToolDescription {
         ToolDescription::new(
             "Conclude",
-            "A tool to terminate a task with a conclusion.",
-            "Use this to terminate a task when it is complete.",
+            "A tool to conclude a task.",
+            "You have to use this to once you have the answer to the task with your conclusion.",
             ConcludeToolInput::describe(),
             ConcludeToolOutput::describe(),
         )

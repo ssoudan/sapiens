@@ -11,6 +11,11 @@ empty your bank account and kill all the remaining polar bears trying to do so.
 More seriously, this code allows chatGPT-generated code to be executed, 
 you might want to consider some sandboxing before running it on your machine.
 
+## Tools
+
+- SandboxedPython: execute Python code in a (not so) sandboxed environment
+- Hue: TBD
+
 ## Usage
 
 `.env` file with: 
@@ -21,7 +26,84 @@ HUE_BRIDGE_IP=...
 ```
 Look at `botrs/src/main.rs` if you don't already have these.
 
+Then: `./BUILD.sh && ./RUN.sh`.
+
 # Example of 'successful' run
+
+## TL;DR
+
+<pre><code>
+❯ ./RUN.sh -t "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
+## Observations:
+- We want to know the weather of San Jose, California, USA.
+- We don't have an API KEY to fetch the data.
+- BeautifulSoup4 is available as a tool.
+## Orientation:
+- We will scrape the weather data from a website using BeautifulSoup4.
+- We will parse the HTML data to extract the required information.
+## Decision:
+- We will use the SandboxedPython tool to extract the temperature and other relevant info of San Jose from the HTML data.
+## The ONLY Action:
+```yaml
+command: SandboxedPython
+input:
+  code: |
+    import requests
+    from bs4 import BeautifulSoup
+
+    url = "https://www.google.com/search?q=weather+san+jose"
+
+    res = requests.get(url)
+
+    # Parsing the HTML output from requests
+    html = res.content
+    soup = BeautifulSoup(html, 'html.parser')
+
+    # Getting the temperature and other info
+    temp = soup.find('div', attrs={'class': 'BNeawe iBp4i AP7Wnd'}).text
+    str = soup.find('div', attrs={'class': 'BNeawe s3v9rd AP7Wnd'}).text
+
+    # Converting temperature into Celsius
+    tempC = (int(temp.split('°')[0]) - 32) * 5/9
+
+    conclusion = f"The temperature in San Jose, California, USA is {tempC:.2f}°C and {str}"
+    print(conclusion)
+```
+
+=============   2 messages in the chat history =============
+# Action result:
+```yaml
+stdout: |
+  The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ...
+stderr: ''
+```
+# Your turn
+Original question: How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available.
+Do you have the answer? Use the Conclude Tool to terminate the task.
+Observations, Orientation, Decision, The ONLY Action?
+=============   3 messages in the chat history =============
+## Observations:
+- The original question is to know the weather in San Jose, California, USA.
+- We don't have an API Key but we the BeautifulSoup4 tool is available for web scraping.
+- We got the temperature and other relevant info from the web page.
+## Orientation:
+- We already have the temperature and other relevant information from the webpage.
+## Decision:
+- We will use the Conclude Tool to terminate the task with the information extracted.
+## The ONLY Action:
+```yaml
+command: Conclude
+input:
+  original_question: "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
+  conclusion: "The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ..."
+```
+
+=============   4 messages in the chat history =============
+The original question was: How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available.
+And the conclusion is: The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ...
+</code></pre>
+
+## Another run
 
 ```
 $ cargo run

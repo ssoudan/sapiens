@@ -8,6 +8,7 @@ pub(crate) mod context;
 use std::rc::Rc;
 
 use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
+use async_openai::Client;
 use colored::Colorize;
 use context::ChatHistory;
 use llm_chain::parsing::find_yaml;
@@ -17,20 +18,19 @@ use serde::{Deserialize, Serialize};
 use crate::tools::{invoke_from_toolbox, Toolbox};
 
 fn create_system_prompt() -> String {
-    "You are an automated agent named botGPT interacting with the WORLD".to_string()
+    "You are an automated agent named botGPT interacting with the WORLD. Listen to the WORLD!"
+        .to_string()
 }
 
-const PREFIX: &str = r"You are botGPT, large language model assisting the WORLD. Use available tools to answer the question as best as you can.
+const PREFIX: &str = r"You are botGPT, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed in a OODA loop made of the following steps:
 - Observations: What do you know? What is your source? What don't you know? You might want to note down important information for later like relevant past Action results. 
 - Orientation: Plan the intermediate objectives along the path to answer the original question. Make a list of current objectives. 
 - Decision: Choose what to do first to answer the question. Why? What are the pros and cons of this decision?
 - Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.
 
-# Notes: 
-- Use Conclude Tool with your conclusion (as text) once you have the final answer to the original question.
-- Template expansion is not supported in Action. If you need to pass information from on action to another, you have to pass them manually.
-- There are no APIs available to you. You have to use the Tools.
+# Notes:
+- No task is completed until the Conclude Tool is used to provide the answer.
 ";
 
 const TOOL_PREFIX: &str = r"
@@ -67,6 +67,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 - I need to sort this list in ascending order.
 ## Orientation:
 - SandboxedPython can be used to sort the list.
+- I need to use the Conclude Tool to terminate the task when I have the sorted list
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:
@@ -90,6 +91,7 @@ stderr: ''
 ```
 # Your turn
 Original question: Sort the following list: [2, 3, 1, 4, 5]
+Do you have the answer? Use the Conclude Tool to terminate the task.
 Observations, Orientation, Decision, The ONLY Action?
 ";
 
@@ -134,13 +136,36 @@ fn create_tool_warm_up(tb: &Toolbox) -> String {
 
 fn build_task_prompt(task: &str) -> String {
     format!(
-        "# Your turn\nOriginal question: {}\nObservations, Orientation, Decision, The ONLY Action?",
+        "# Your turn\nOriginal question: {}\nDo you have the answer? Use the Conclude Tool to terminate the task.\nObservations, Orientation, Decision, The ONLY Action?",
         task
     )
 }
 
+/// Configuration for the bot
+pub struct Config {
+    /// The model to use
+    pub model: String,
+    /// The maximum number of steps
+    pub max_steps: u32,
+    /// Whether to show the warm-up prompt
+    pub show_warmup_prompt: bool,
+    /// The minimum number of tokens that need to be available for completion
+    pub min_token_for_completion: usize,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            model: "gpt-3.5-turbo".to_string(),
+            max_steps: 10,
+            show_warmup_prompt: false,
+            min_token_for_completion: 256,
+        }
+    }
+}
+
 /// Run a task with a set of tools
-pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize, model: String) {
+pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, task: String) {
     let warm_up_prompt = create_tool_warm_up(&toolbox);
     let system_prompt = create_system_prompt();
 
@@ -155,39 +180,36 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
         (Role::Assistant, PROTO_EXCHANGE_4.to_string()),
     ];
 
-    let mut chat_history = ChatHistory::new(model.clone(), 256);
+    let mut chat_history = ChatHistory::new(config.model.clone(), config.min_token_for_completion);
 
     chat_history.add_prompts(&prompt);
 
     // Now we are ready to start the task
-    let task_prompt = build_task_prompt(task);
+    let task_prompt = build_task_prompt(task.as_ref());
 
     chat_history
         .add_chitchat(Role::User, task_prompt.to_string())
         .expect("The task prompt is too long for the model");
 
-    // Let's print the chat history so far - yellow for the system, green for the
-    // user, blue for the assistant
-    for message in chat_history.iter() {
-        match message.role {
-            Role::System => println!("{}", message.content.yellow()),
-            Role::User => println!("{}", message.content.green()),
-            Role::Assistant => println!("{}", message.content.blue()),
+    if config.show_warmup_prompt {
+        // Let's print the chat history so far - yellow for the system, green for the
+        // user, blue for the assistant
+        for message in chat_history.iter() {
+            match message.role {
+                Role::System => println!("{}", message.content.yellow()),
+                Role::User => println!("{}", message.content.green()),
+                Role::Assistant => println!("{}", message.content.blue()),
+            }
+            println!("=============")
         }
-        println!("=============")
     }
-
-    // Build a tool description to inject it into the chat on error
-    // let tool_desc = create_tool_description(&toolbox);
 
     let toolbox = Rc::new(toolbox);
 
-    let openai_client = async_openai::Client::new();
-
-    for _ in 1..max_steps {
+    for _ in 1..config.max_steps {
         let messages: Vec<ChatCompletionRequestMessage> = (&chat_history).into();
         let input = CreateChatCompletionRequest {
-            model: model.clone(),
+            model: config.model.clone(),
             messages,
             temperature: None,
             top_p: None,
@@ -229,7 +251,7 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
                         println!("And the conclusion is: {} ", message.conclusion.blue());
                     }
 
-                    break;
+                    return;
                 }
 
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
@@ -242,7 +264,7 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
             }
             Err(e) => {
                 let content = format!(
-                    "# Failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+                    "# Action failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
                     e, task_prompt
                 );
                 println!("{}", content.red());
@@ -258,7 +280,7 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
                         println!("And the conclusion is: {} ", message.conclusion.blue());
                     }
 
-                    break;
+                    return;
                 }
 
                 chat_history
@@ -271,6 +293,8 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
             l
         );
     }
+
+    println!("Max steps reached");
 }
 
 /// Try to find the tool invocation from the chat message and invoke the

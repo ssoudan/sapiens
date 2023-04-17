@@ -31,8 +31,15 @@ WORKDIR app
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libpython3.11 \
+    python3-sympy \
+    python3-numpy \
+    python3-requests \
+    python3-urllib3 \
+    python3-bs4 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /app/root
 
 COPY --from=builder /app/target/release/botrs /usr/local/bin
 
