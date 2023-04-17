@@ -8,6 +8,9 @@ Fun with chatGPT API, [llm-chain](https://github.com/sobelio/llm-chain) and
 This will probably try to take over the world and if it doesn't succeed, 
 empty your bank account and kill all the remaining polar bears trying to do so.
 
+More seriously, this code allows chatGPT-generated code to be executed, 
+you might want to consider some sandboxing before running it on your machine.
+
 ## Usage
 
 `.env` file with: 
@@ -16,7 +19,7 @@ OPENAI_API_KEY=...
 HUE_USERNAME=...
 HUE_BRIDGE_IP=...
 ```
-Look at `src/main.rs` if you don't already have these.
+Look at `botrs/src/main.rs` if you don't already have these.
 
 # Example of 'successful' run
 

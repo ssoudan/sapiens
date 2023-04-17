@@ -35,4 +35,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/target/release/botrs /usr/local/bin
+
+USER 1000:0
+
 ENTRYPOINT ["/usr/local/bin/botrs"]
