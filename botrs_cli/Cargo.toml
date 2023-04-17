@@ -1,0 +1,26 @@
+[package]
+name = "botrs_cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "The cli interface of a simple bot to conquer the world"
+repository.workspace = true
+license.workspace = true
+publish.workspace = true
+readme = "../README.md"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+botrs = { path = "../botrs" }
+botrs_tools = { path = "../botrs_tools" }
+
+tokio = { version = "1.27.0", features = ["full"] }
+
+clap = { version = "4.2.2", features = ["derive"] }
+
+dotenvy = "0.15.7"
+
+huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
+
+async-openai = "0.10.3"

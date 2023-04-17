@@ -1,4 +1,4 @@
-//! Main for botrs
+//! Main for botrs_cli
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -13,7 +13,6 @@ use clap::Parser;
 use dotenvy::dotenv_override;
 use huelib::bridge;
 
-// TODO(ssoudan) split in multiple modules
 // TODO(ssoudan) macro
 // TODO(ssoudan) tool descriptions: in and out, types, desc, etc.
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?

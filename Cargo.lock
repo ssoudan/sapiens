@@ -183,10 +183,8 @@ name = "botrs"
 version = "0.1.0"
 dependencies = [
  "async-openai",
- "clap",
  "colored",
  "convert_case",
- "dotenvy",
  "huelib",
  "indoc 2.0.1",
  "llm-chain",
@@ -197,6 +195,40 @@ dependencies = [
  "thiserror",
  "tiktoken-rs",
  "tokio",
+]
+
+[[package]]
+name = "botrs_cli"
+version = "0.1.0"
+dependencies = [
+ "async-openai",
+ "botrs",
+ "botrs_tools",
+ "clap",
+ "dotenvy",
+ "huelib",
+ "tokio",
+]
+
+[[package]]
+name = "botrs_derive"
+version = "0.1.0"
+
+[[package]]
+name = "botrs_tools"
+version = "0.1.0"
+dependencies = [
+ "async-openai",
+ "botrs",
+ "colored",
+ "convert_case",
+ "llm-chain",
+ "pyo3",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "thiserror",
+ "tiktoken-rs",
 ]
 
 [[package]]

@@ -1,9 +1,9 @@
 [package]
-name = "botrs"
+name = "botrs_tools"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
-description = "Core - a simple bot to conquer the world"
+description = "The tools - a simple bot to conquer the world"
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -12,13 +12,10 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
-llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
-#llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
-#llm-chain = { path = "../llm-chain/llm-chain", default-features = false, features = ["serialization"] }
-#llm-chain-openai = { path = "../llm-chain/llm-chain-openai", default-features = false, features = [] }
+botrs = { path = "../botrs" }
 
-tokio = { version = "1.27.0" }
+llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
+
 serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
 
@@ -34,6 +31,3 @@ async-openai = "0.10.3"
 convert_case = "0.6.0"
 
 thiserror = "1.0.40"
-
-[dev-dependencies]
-indoc = "2"
