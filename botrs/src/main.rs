@@ -49,9 +49,9 @@ async fn main() {
     let mut toolbox = Toolbox::default();
 
     toolbox.add_tool(RoomTool::new(bridge.clone()));
-    toolbox.add_tool(ConcludeTool::default());
-    toolbox.add_advanced_tool(PythonTool::default());
     toolbox.add_tool(StatusTool::new(bridge));
+    toolbox.add_terminal_tool(ConcludeTool::default());
+    toolbox.add_advanced_tool(PythonTool::default());
 
     let task = "List all the lights in the room with the most lights.";
     // let task = "List all the lights in the room with the least lights.";

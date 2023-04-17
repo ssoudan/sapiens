@@ -4,7 +4,7 @@ use std::rc::Rc;
 use convert_case::{Case, Casing};
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
-use pyo3::types::{IntoPyDict, PyDict};
+use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
@@ -32,10 +32,7 @@ pub struct PythonToolOutput {
 
 impl Describe for PythonToolInput {
     fn describe() -> Format {
-        vec![
-            ("code", "The Python code to execute. For example: `data = [...]; <...>; output = <...> ; print(output)`. MANDATORY").into(),
-        ]
-        .into()
+        vec![("code", "The Python code to execute. MANDATORY").into()].into()
     }
 }
 
@@ -73,20 +70,105 @@ impl ToolsWrapper {
     }
 }
 
-fn pydict_to_value(input: &PyDict) -> Value {
-    // build the string representation of the dict - in Yaml
-    let mut s = String::new();
-    s.push('{');
-    for (k, v) in input.iter() {
-        let k = k.to_string();
-        let v = v.to_string();
-        s.push_str(&format!("{}: {}, ", k, v));
-    }
-    s.push('}');
+#[derive(thiserror::Error, Debug)]
+enum PyConversionError {
+    #[error("Invalid conversion: {error}")]
+    InvalidConversion { error: String },
+    #[error("dict key not serializable: {typename}")]
+    DictKeyNotSerializable { typename: String },
+    #[error("Invalid cast: {typename}")]
+    InvalidCast { typename: String },
+}
 
-    // parse the string representation of the dict
-    let value: Value = serde_yaml::from_str(&s).unwrap();
-    value
+// inspired from https://github.com/mozilla-services/python-canonicaljson-rs/blob/62599b246055a1c8a78e5777acdfe0fd594be3d8/src/lib.rs#L87-L167
+fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionError> {
+    macro_rules! return_cast {
+        ($t:ty, $f:expr) => {
+            if let Ok(val) = obj.downcast::<$t>(py) {
+                return $f(val);
+            }
+        };
+    }
+
+    macro_rules! return_to_value {
+        ($t:ty) => {
+            if let Ok(val) = obj.extract::<$t>(py) {
+                return serde_yaml::to_value(val).map_err(|error| {
+                    PyConversionError::InvalidConversion {
+                        error: format!("{}", error),
+                    }
+                });
+            }
+        };
+    }
+
+    if obj.is_none(py) {
+        return Ok(Value::Null);
+    }
+
+    return_to_value!(String);
+    return_to_value!(bool);
+    return_to_value!(u64);
+    return_to_value!(i64);
+
+    return_cast!(PyDict, |x: &PyDict| {
+        let mut map = serde_yaml::Mapping::new();
+        for (key_obj, value) in x.iter() {
+            let key = if key_obj.is_none() {
+                Ok("null".to_string())
+            } else if let Ok(val) = key_obj.extract::<bool>() {
+                Ok(if val {
+                    "true".to_string()
+                } else {
+                    "false".to_string()
+                })
+            } else if let Ok(val) = key_obj.str() {
+                Ok(val.to_string())
+            } else {
+                Err(PyConversionError::DictKeyNotSerializable {
+                    typename: key_obj
+                        .to_object(py)
+                        .as_ref(py)
+                        .get_type()
+                        .name()
+                        .map(|x| x.to_string())
+                        .unwrap_or_else(|_| "unknown".to_string()),
+                })
+            };
+            map.insert(Value::String(key?), to_yaml(py, &value.to_object(py))?);
+        }
+        Ok(Value::Mapping(map))
+    });
+
+    return_cast!(PyList, |x: &PyList| {
+        let v = x
+            .iter()
+            .map(|x| to_yaml(py, &x.to_object(py)))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Value::Sequence(v))
+    });
+
+    return_cast!(PyTuple, |x: &PyTuple| {
+        let v = x
+            .iter()
+            .map(|x| to_yaml(py, &x.to_object(py)))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Value::Sequence(v))
+    });
+
+    return_cast!(PyFloat, |x: &PyFloat| {
+        Ok(Value::Number(serde_yaml::Number::from(x.value())))
+    });
+
+    // At this point we can't cast it, set up the error object
+    Err(PyConversionError::InvalidCast {
+        typename: obj
+            .as_ref(py)
+            .get_type()
+            .name()
+            .map(|x| x.to_string())
+            .unwrap_or_else(|_| "unknown".to_string()),
+    })
 }
 
 fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
@@ -137,7 +219,15 @@ impl ToolsWrapper {
         input: Option<&PyDict>,
     ) -> PyResult<PyObject> {
         // convert PyDict to a serde_yaml::Value
-        let input = input.map(pydict_to_value).unwrap_or_default();
+        let input = if let Some(input) = input {
+            let input: PyObject = input.into();
+
+            to_yaml(py, &input).map_err(|e| {
+                pyo3::exceptions::PyException::new_err(format!("Invalid input: {}", e))
+            })?
+        } else {
+            Value::default()
+        };
 
         println!("invoking tool {} with input {:?}", tool_name, input);
 
@@ -160,11 +250,10 @@ impl PythonTool {
     ) -> Result<PythonToolOutput, ToolUseError> {
         let mut code = input.code.clone();
 
-        let re = regex::Regex::new(r"import|open|exec|eval|__import__").unwrap();
+        let re = regex::Regex::new(r"open|exec|eval").unwrap();
         if re.is_match(&code) {
             return Err(ToolUseError::ToolInvocationFailed(
-                "Python code contains forbidden keywords such as import|open|exec|eval|__import__"
-                    .to_string(),
+                "Python code contains forbidden keywords such as open|exec|eval".to_string(),
             ));
         }
 
@@ -228,12 +317,14 @@ impl PythonTool {
 
             // prepend the tool class code to the user code
             code = format!("{}\n{}", tool_class_code, code);
-
-            // print!("{}", code);
         }
 
+        // print!("{}", code);
+
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
-            let ctx = if let Some(tools) = tools {
+            // println!("Python version: {}", py.version());
+
+            let globals = if let Some(tools) = tools {
                 let tools_cell = PyCell::new(py, tools)?;
                 [("toolbox", tools_cell)].into_py_dict(py)
             } else {
@@ -256,7 +347,7 @@ impl PythonTool {
             // FUTURE(ssoudan) pass something in
 
             // run code
-            Python::run(py, &code, None, ctx.into())?;
+            Python::run(py, &code, globals.into(), None)?;
 
             // NOFUTURE(ssoudan) get something out
 
@@ -279,7 +370,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPython",
             "A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. ",
-            r#"Use this to transform data. To use other Tools from here: `output = tools.tool_name(input)`. `tool_name` in snake case. import|open|exec|eval|__import__ are forbidden."#,
+            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. The `output` is a object. open|exec|eval are forbidden."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )

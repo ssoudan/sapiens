@@ -1,12 +1,26 @@
+use std::cell::RefCell;
 use std::fmt::Debug;
 
-use colored::Colorize;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
+use crate::tools::{TerminalTool, TerminationMessage};
+
 /// A tool that is called to wrap the task.
 #[derive(Default)]
-pub struct ConcludeTool {}
+pub struct ConcludeTool {
+    done: RefCell<Option<ConcludeToolInput>>,
+}
+
+impl TerminalTool for ConcludeTool {
+    fn is_done(&self) -> bool {
+        self.done.borrow().is_some()
+    }
+
+    fn take_done(&self) -> Option<TerminationMessage> {
+        self.done.borrow_mut().take().map(|input| input.into())
+    }
+}
 
 /// A tool that is called to wrap the task.
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,6 +29,15 @@ pub struct ConcludeToolInput {
     pub conclusion: String,
     /// The original question that was asked to the user.
     pub original_question: String,
+}
+
+impl From<ConcludeToolInput> for TerminationMessage {
+    fn from(input: ConcludeToolInput) -> Self {
+        Self {
+            conclusion: input.conclusion,
+            original_question: input.original_question,
+        }
+    }
 }
 
 /// ConcludeToolOutput - empty
@@ -43,15 +66,16 @@ impl Describe for ConcludeToolOutput {
 }
 
 impl ConcludeTool {
-    fn invoke_typed(&self, input: &ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
-        println!(
-            "The original question was: {} ",
-            input.original_question.green()
-        );
-        println!("And the conclusion is: {} ", input.conclusion.blue());
+    fn invoke_typed(&self, input: ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
+        if self.done.borrow().is_some() {
+            return Err(ToolUseError::ToolInvocationFailed(
+                "This task is already done.".to_string(),
+            ));
+        }
 
-        // TODO(ssoudan) lame
-        std::process::exit(0);
+        *self.done.borrow_mut() = Some(input);
+
+        Ok(ConcludeToolOutput {})
     }
 }
 
@@ -68,7 +92,7 @@ impl Tool for ConcludeTool {
 
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
+        let output = self.invoke_typed(input)?;
         Ok(serde_yaml::to_value(output)?)
     }
 }

@@ -38,11 +38,11 @@ impl Default for RoomTool {
 #[derive(Serialize, Deserialize)]
 pub struct RoomToolInput {
     /// The list of Room names (<string>) to get the lights for.
-    pub room_filter: Option<Vec<String>>,
+    pub room_filter: Vec<String>,
 }
 
 /// The output of the tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct RoomToolOutput {
     /// A list of Rooms with a name and a list of lights (their IDs) in that
     /// room.
@@ -71,6 +71,110 @@ impl Describe for RoomToolOutput {
     }
 }
 
+/// A fake RoomTool
+pub mod fake {
+    use llm_chain::tools::{Describe, Tool, ToolDescription, ToolUseError};
+
+    use crate::tools::hue::room::{RoomToolInput, RoomToolOutput};
+    use crate::tools::hue::Room;
+
+    /// a fake RoomTool
+    #[derive(Default)]
+    pub struct FakeRoomTool {}
+
+    impl FakeRoomTool {
+        fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
+            let rooms = vec![
+                Room {
+                    name: "Bedroom".to_string(),
+                    lights: vec!["1".to_string(), "2".to_string()],
+                },
+                Room {
+                    name: "Living room".to_string(),
+                    lights: vec!["3".to_string()],
+                },
+            ];
+
+            let room_filter = &input.room_filter;
+
+            let rooms = rooms
+                .into_iter()
+                .filter(|room| room_filter.is_empty() || room_filter.contains(&room.name))
+                .collect();
+
+            Ok(RoomToolOutput { rooms })
+        }
+    }
+
+    impl Tool for FakeRoomTool {
+        fn description(&self) -> ToolDescription {
+            ToolDescription::new(
+                "Room",
+                "A fake tool to get the lights of a Room.",
+                "Use this to get the lights of a Room.",
+                RoomToolInput::describe(),
+                RoomToolOutput::describe(),
+            )
+        }
+
+        fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+            let input = serde_yaml::from_value(input)?;
+            let output = self.invoke_typed(&input)?;
+            Ok(serde_yaml::to_value(output)?)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+
+        use llm_chain::tools::Tool;
+
+        use super::*;
+
+        #[test]
+        fn test_fake_room_tool() {
+            let tool = FakeRoomTool::default();
+            let input = RoomToolInput {
+                room_filter: vec!["Bedroom".to_string()],
+            };
+            let input = serde_yaml::to_value(input).unwrap();
+            let output = tool.invoke(input).unwrap();
+            let output: RoomToolOutput = serde_yaml::from_value(output).unwrap();
+            let expected = RoomToolOutput {
+                rooms: vec![Room {
+                    name: "Bedroom".to_string(),
+                    lights: vec!["1".to_string(), "2".to_string()],
+                }],
+            };
+            assert_eq!(output, expected);
+        }
+
+        #[test]
+        fn test_fake_room_tool_empty_filter() {
+            let tool = FakeRoomTool::default();
+            let input = RoomToolInput {
+                room_filter: vec![],
+            };
+            let input = serde_yaml::to_value(input).unwrap();
+            let output = tool.invoke(input).unwrap();
+            let output: RoomToolOutput = serde_yaml::from_value(output).unwrap();
+            let expected = RoomToolOutput {
+                rooms: vec![
+                    Room {
+                        name: "Bedroom".to_string(),
+                        lights: vec!["1".to_string(), "2".to_string()],
+                    },
+                    Room {
+                        name: "Living room".to_string(),
+                        lights: vec!["3".to_string()],
+                    },
+                ],
+            };
+            assert_eq!(output, expected);
+        }
+    }
+}
+
 impl RoomTool {
     fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
         let room_filter = &input.room_filter;
@@ -80,14 +184,13 @@ impl RoomTool {
             .map(|groups| {
                 let mut rooms: Vec<Room> = Vec::new();
                 for group in groups {
-                    if group.kind == Creatable(CreatableKind::Room) {
-                        if let Some(room_filter) = room_filter {
-                            if room_filter.is_empty() || room_filter.contains(&group.name) {
-                                rooms.push(group.into());
-                            }
-                        } else {
-                            rooms.push(group.into());
-                        }
+                    if group.kind == Creatable(CreatableKind::Room)
+                        && (room_filter.is_empty() || room_filter.contains(&group.name))
+                    {
+                        rooms.push(Room {
+                            name: group.name,
+                            lights: group.lights,
+                        });
                     }
                 }
                 Ok(RoomToolOutput { rooms })

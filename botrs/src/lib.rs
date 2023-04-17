@@ -178,7 +178,7 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
     }
 
     // Build a tool description to inject it into the chat on error
-    let tool_desc = create_tool_description(&toolbox);
+    // let tool_desc = create_tool_description(&toolbox);
 
     let toolbox = Rc::new(toolbox);
 
@@ -218,6 +218,20 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
         let resp = invoke_tool(toolbox.clone(), &message_text);
         let l = match resp {
             Ok(x) => {
+                // check if the task is done
+                let termination_messages = toolbox.termination_messages();
+                if !termination_messages.is_empty() {
+                    for message in termination_messages {
+                        println!(
+                            "The original question was: {} ",
+                            message.original_question.green()
+                        );
+                        println!("And the conclusion is: {} ", message.conclusion.blue());
+                    }
+
+                    break;
+                }
+
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
 
                 println!("{}", content.green());
@@ -228,10 +242,24 @@ pub async fn something_with_rooms(toolbox: Toolbox, task: &str, max_steps: usize
             }
             Err(e) => {
                 let content = format!(
-                    "# Failed with:\n{:?}\n{}\nWhat was incorrect in previous response?\n{}",
-                    e, tool_desc, task_prompt
+                    "# Failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+                    e, task_prompt
                 );
                 println!("{}", content.red());
+
+                // check if the task is done
+                let termination_messages = toolbox.termination_messages();
+                if !termination_messages.is_empty() {
+                    for message in termination_messages {
+                        println!(
+                            "The original question was: {} ",
+                            message.original_question.green()
+                        );
+                        println!("And the conclusion is: {} ", message.conclusion.blue());
+                    }
+
+                    break;
+                }
 
                 chat_history
                     .add_chitchat(Role::User, content.clone())
