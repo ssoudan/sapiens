@@ -14,6 +14,8 @@ categories.workspace = true
 [dependencies]
 botrs = { path = "../botrs" }
 
+huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
+
 llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
 
 serde = { version = "1.0.160", features = ["derive"] }
@@ -31,3 +33,6 @@ async-openai = "0.10.3"
 convert_case = "0.6.0"
 
 thiserror = "1.0.40"
+
+[dev-dependencies]
+indoc = "2"

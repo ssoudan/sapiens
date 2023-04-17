@@ -3,12 +3,12 @@ use std::net::IpAddr;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use botrs::tools::conclude::ConcludeTool;
-use botrs::tools::hue::room::RoomTool;
-use botrs::tools::hue::status::StatusTool;
-use botrs::tools::python::PythonTool;
 use botrs::tools::Toolbox;
 use botrs::{something, Config};
+use botrs_tools::conclude::ConcludeTool;
+use botrs_tools::hue::room::RoomTool;
+use botrs_tools::hue::status::StatusTool;
+use botrs_tools::python::PythonTool;
 use clap::Parser;
 use dotenvy::dotenv_override;
 use huelib::bridge;

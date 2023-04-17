@@ -1,13 +1,12 @@
 use std::rc::Rc;
 
+use botrs::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
 use convert_case::{Case, Casing};
 use llm_chain::tools::{Describe, Format, FormatPart, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-
-use crate::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
 
 const MAX_OUTPUT_SIZE: usize = 512;
 
@@ -504,7 +503,7 @@ mod tests {
     use pyo3::indoc::indoc;
 
     use super::*;
-    use crate::tools::dummy::DummyTool;
+    use crate::dummy::DummyTool;
 
     #[test]
     fn test_python_tool() {

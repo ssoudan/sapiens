@@ -1,10 +1,9 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
+use botrs::tools::{TerminalTool, TerminationMessage};
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
-
-use crate::tools::{TerminalTool, TerminationMessage};
 
 /// A tool that is called to wrap the task.
 #[derive(Default)]

@@ -1,9 +1,8 @@
 //! Botrs library
-
-/// Tools
-pub mod tools;
-
 pub(crate) mod context;
+
+/// Toolbox for botrs
+pub mod tools;
 
 use std::rc::Rc;
 
@@ -321,100 +320,4 @@ pub fn invoke_tool(tools: Rc<Toolbox>, data: &str) -> Result<String, ToolUseErro
 struct ToolInvocationInput {
     command: String,
     input: serde_yaml::Value,
-}
-
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
-
-    use super::*;
-    use crate::tools::dummy::DummyTool;
-    use crate::tools::python::PythonTool;
-
-    #[test]
-    fn test_tool_invocation() {
-        let data = indoc! {r#"
-        # Action
-        ```yaml        
-        command: SandboxedPython
-        input:
-            code: |
-                print("Hello world!")          
-        ```
-        "#};
-
-        let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::default());
-
-        let toolbox = Rc::new(toolbox);
-
-        let output = invoke_tool(toolbox, data).unwrap();
-        assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
-    }
-
-    #[test]
-    fn test_tool_invocation_in_python() {
-        let data = indoc! {r#"
-        # Action
-        ```yaml        
-        command: SandboxedPython
-        input:
-            code: |
-                print("Hello world!")
-                rooms = toolbox.invoke("Dummy", {"blah": "blah"})
-                print(rooms)
-                rooms = tools.dummy(blah="blah")
-                print(rooms)          
-        ```
-        "#};
-
-        let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::default());
-        toolbox.add_tool(DummyTool::default());
-
-        let toolbox = Rc::new(toolbox);
-
-        let output = invoke_tool(toolbox, data).unwrap();
-        assert_eq!(
-            output,
-            "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\n  {'something': 'blah and something else'}\nstderr: ''\n"
-        );
-    }
-
-    #[test]
-    fn test_multiple_tool_invocations() {
-        let data = indoc! {r#"
-        # Action
-        ```yaml        
-        command: SandboxedPython
-        input:
-            code: |
-                print("Hello world 1!")          
-        ```
-        
-        # And another action
-        ```yaml        
-        command: SandboxedPython
-        input:
-            code: |
-                print("Hello world 2!")          
-        ```
-        
-        # And yet another action
-        ```        
-        command: SandboxedPython
-        input:
-            code: |
-                print("Hello world 3!")          
-        ```
-        "#};
-
-        let mut toolbox = Toolbox::default();
-        toolbox.add_advanced_tool(PythonTool::default());
-
-        let toolbox = Rc::new(toolbox);
-
-        let output = invoke_tool(toolbox, data).unwrap();
-        assert_eq!(output, "stdout: |\n  Hello world 1!\nstderr: ''\n");
-    }
 }

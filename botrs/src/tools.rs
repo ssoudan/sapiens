@@ -3,19 +3,6 @@ use std::rc::Rc;
 
 use llm_chain::tools::{Tool, ToolDescription, ToolUseError};
 
-/// Hue tools
-pub mod hue;
-
-/// Tool to conclude a chain
-pub mod conclude;
-
-/// Tool to run some (limited) python
-pub mod python;
-
-#[cfg(test)]
-/// Tool to test stuffs
-pub(crate) mod dummy;
-
 /// A termination message
 pub struct TerminationMessage {
     /// The final textual answer for this task.

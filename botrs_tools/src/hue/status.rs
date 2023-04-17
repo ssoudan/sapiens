@@ -3,7 +3,7 @@ use std::rc::Rc;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
-use crate::tools::hue::Light;
+use crate::hue::Light;
 
 /// A tool that get the light statuses
 pub struct StatusTool {
@@ -65,8 +65,8 @@ impl Describe for StatusToolOutput {
 pub mod fake {
     use llm_chain::tools::{Describe, Tool, ToolDescription, ToolUseError};
 
-    use crate::tools::hue::status::{StatusToolInput, StatusToolOutput};
-    use crate::tools::hue::{Light, State};
+    use crate::hue::status::{StatusToolInput, StatusToolOutput};
+    use crate::hue::{Light, State};
 
     /// A fake StatusTool
     pub struct FakeStatusTool {}

@@ -12,7 +12,6 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
 llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
 #llm-chain-openai = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
 #llm-chain = { path = "../llm-chain/llm-chain", default-features = false, features = ["serialization"] }
@@ -24,14 +23,10 @@ serde_yaml = "0.9.21"
 
 regex = "1.7.3"
 
-pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
-
 colored = "2.0.0"
 
 tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
 async-openai = "0.10.3"
-
-convert_case = "0.6.0"
 
 thiserror = "1.0.40"
 

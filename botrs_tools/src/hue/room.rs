@@ -5,7 +5,7 @@ use huelib::resource::group::Kind::Creatable;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
-use crate::tools::hue::Room;
+use crate::hue::Room;
 
 /// A tool that get the lights of a Room
 pub struct RoomTool {
@@ -75,8 +75,8 @@ impl Describe for RoomToolOutput {
 pub mod fake {
     use llm_chain::tools::{Describe, Tool, ToolDescription, ToolUseError};
 
-    use crate::tools::hue::room::{RoomToolInput, RoomToolOutput};
-    use crate::tools::hue::Room;
+    use crate::hue::room::{RoomToolInput, RoomToolOutput};
+    use crate::hue::Room;
 
     /// a fake RoomTool
     #[derive(Default)]

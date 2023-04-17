@@ -1,9 +1,10 @@
 use std::rc::Rc;
 
 use botrs::invoke_tool;
-use botrs::tools::hue::room::fake::FakeRoomTool;
-use botrs::tools::hue::status::fake::FakeStatusTool;
-use botrs::tools::{python, Toolbox};
+use botrs::tools::Toolbox;
+use botrs_tools::hue::room::fake::FakeRoomTool;
+use botrs_tools::hue::status::fake::FakeStatusTool;
+use botrs_tools::python;
 use indoc::indoc;
 
 #[test]
