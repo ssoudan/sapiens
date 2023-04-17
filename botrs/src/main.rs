@@ -18,12 +18,12 @@ use huelib::bridge;
 // TODO(ssoudan) better errors for python code
 // TODO(ssoudan) tool descriptions: in and out, types, desc, etc.
 // TODO(ssoudan) conditional loading of tools
-// TODO(ssoudan) More tools: search, wiki, wx, arxiv, etc.
+// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate, memory
 // TODO(ssoudan) Crontab
 // TODO(ssoudan) Discord bot
 // TODO(ssoudan) logging
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
-// TODO(ssoudan) tool to negotiate with the user
+// TODO(ssoudan) long lived conversations
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
