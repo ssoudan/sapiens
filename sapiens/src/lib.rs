@@ -10,11 +10,9 @@ use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequ
 use async_openai::Client;
 use colored::Colorize;
 use context::ChatHistory;
-use llm_chain::parsing::find_yaml;
-use llm_chain::tools::{ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
-use crate::tools::{invoke_from_toolbox, Toolbox};
+use crate::tools::{find_yaml, invoke_from_toolbox, ToolDescription, ToolUseError, Toolbox};
 
 fn create_system_prompt() -> String {
     "You are an automated agent named Sapiens interacting with the WORLD. Listen to the WORLD!"

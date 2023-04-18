@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+pub use llm_chain::parsing::find_yaml;
 pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription, ToolUseError};
 
 /// Something meant to become a Tool - description
