@@ -1,11 +1,14 @@
 use std::fmt::Debug;
 
-use botrs_derive::Describe;
-use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
+use botrs::tools::{
+    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
+};
+use botrs_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to test stuffs
-#[derive(Default)]
+#[derive(Default, ProtoToolDescribe)]
+#[tool(name = "Dummy", input = "DummyToolInput", output = "DummyToolOutput")]
 pub struct DummyTool {}
 
 /// A tool that is called to test stuffs
@@ -30,17 +33,7 @@ impl DummyTool {
     }
 }
 
-impl Tool for DummyTool {
-    fn description(&self) -> ToolDescription {
-        ToolDescription::new(
-            "Dummy",
-            "A tool to test stuffs.",
-            "Use this to test stuffs.",
-            DummyToolInput::describe(),
-            DummyToolOutput::describe(),
-        )
-    }
-
+impl ProtoToolInvoke for DummyTool {
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(&input)?;

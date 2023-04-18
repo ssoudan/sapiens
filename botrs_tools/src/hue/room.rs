@@ -1,14 +1,18 @@
 use std::rc::Rc;
 
-use botrs_derive::Describe;
+use botrs::tools::{
+    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
+};
+use botrs_derive::{Describe, ProtoToolDescribe};
 use huelib::resource::group::CreatableKind;
 use huelib::resource::group::Kind::Creatable;
-use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Room;
 
-/// A tool that get the lights of a Room
+/// A tool to use that the source of truth for the Lights of a Room.
+#[derive(ProtoToolDescribe)]
+#[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
 pub struct RoomTool {
     bridge: Rc<huelib::bridge::Bridge>,
 }
@@ -52,9 +56,41 @@ pub struct RoomToolOutput {
     pub rooms: Vec<Room>,
 }
 
+impl RoomTool {
+    fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
+        let room_filter = &input.room_filter;
+
+        self.bridge
+            .get_all_groups()
+            .map(|groups| {
+                let mut rooms: Vec<Room> = Vec::new();
+                for group in groups {
+                    if group.kind == Creatable(CreatableKind::Room)
+                        && (room_filter.is_empty() || room_filter.contains(&group.name))
+                    {
+                        rooms.push(Room {
+                            name: group.name,
+                            lights: group.lights,
+                        });
+                    }
+                }
+                Ok(RoomToolOutput { rooms })
+            })
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+    }
+}
+
+impl ProtoToolInvoke for RoomTool {
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        let input = serde_yaml::from_value(input)?;
+        let output = self.invoke_typed(&input)?;
+        Ok(serde_yaml::to_value(output)?)
+    }
+}
+
 /// A fake RoomTool
 pub mod fake {
-    use llm_chain::tools::{Describe, Tool, ToolDescription, ToolUseError};
+    use botrs::tools::{Describe, Tool, ToolDescription, ToolUseError};
 
     use crate::hue::room::{RoomToolInput, RoomToolOutput};
     use crate::hue::Room;
@@ -108,7 +144,7 @@ pub mod fake {
     #[cfg(test)]
     mod tests {
 
-        use llm_chain::tools::Tool;
+        use botrs::tools::Tool;
 
         use super::*;
 
@@ -153,47 +189,5 @@ pub mod fake {
             };
             assert_eq!(output, expected);
         }
-    }
-}
-
-impl RoomTool {
-    fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
-        let room_filter = &input.room_filter;
-
-        self.bridge
-            .get_all_groups()
-            .map(|groups| {
-                let mut rooms: Vec<Room> = Vec::new();
-                for group in groups {
-                    if group.kind == Creatable(CreatableKind::Room)
-                        && (room_filter.is_empty() || room_filter.contains(&group.name))
-                    {
-                        rooms.push(Room {
-                            name: group.name,
-                            lights: group.lights,
-                        });
-                    }
-                }
-                Ok(RoomToolOutput { rooms })
-            })
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
-    }
-}
-
-impl Tool for RoomTool {
-    fn description(&self) -> ToolDescription {
-        ToolDescription::new(
-            "Room",
-            "A tool to use that the source of truth for the Lights of a Room.",
-            "Use this to fetch the Lights of Rooms.",
-            RoomToolInput::describe(),
-            RoomToolOutput::describe(),
-        )
-    }
-
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
     }
 }

@@ -1,9 +1,11 @@
 use std::rc::Rc;
 
-use botrs::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
-use botrs_derive::Describe;
+use botrs::tools::{
+    invoke_simple_from_toolbox, AdvancedTool, Describe, Format, FormatPart, ProtoToolDescribe,
+    ProtoToolInvoke, ToolDescription, ToolUseError, Toolbox,
+};
+use botrs_derive::{Describe, ProtoToolDescribe};
 use convert_case::{Case, Casing};
-use llm_chain::tools::{Describe, Format, FormatPart, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
 use serde::{Deserialize, Serialize};
@@ -11,8 +13,24 @@ use serde_yaml::Value;
 
 const MAX_OUTPUT_SIZE: usize = 512;
 
-/// A tool that runs Python code.
-#[derive(Default)]
+/// A tool that runs sandboxed Python code. Use this to transform data.
+/// - Only stdout and stderr are captured and made available (limited to 512B
+/// total).
+/// - To use other Tools from here: `input = {...}; output =
+/// tools.tool_name(**input); print(output["field_xxx"])`. The `output` is an
+/// object.
+/// - List available tools with `tools.list()`. `tools` is already
+/// imported.
+/// - `open`|`exec` are forbidden.
+/// - Limited libraries available: urllib3, requests, sympy, numpy,
+/// BeautifulSoup4, feedparser.
+/// - No PIP.
+#[derive(Default, ProtoToolDescribe)]
+#[tool(
+    name = "SandboxedPython",
+    input = "PythonToolInput",
+    output = "PythonToolOutput"
+)]
 pub struct PythonTool {}
 
 /// The input of the Python tool
@@ -442,17 +460,24 @@ impl PythonTool {
     }
 }
 
-impl Tool for PythonTool {
-    fn description(&self) -> ToolDescription {
-        ToolDescription::new(
-            "SandboxedPython",
-            &format!("A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available (limited to {}B combined). ", MAX_OUTPUT_SIZE),
-            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()` - `tools` is already loaded. The `output` is an object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
-            PythonToolInput::describe(),
-            PythonToolOutput::describe(),
-        )
-    }
+// impl ProtoToolDescribe for PythonTool {
+//     fn description(&self) -> ToolDescription {
+//         ToolDescription::new(
+//             "SandboxedPython",
+//             &format!("A tool that executes sandboxed Python code. Only stdout
+// and stderr are captured and made available (limited to {}B total). ",
+// MAX_OUTPUT_SIZE),             r#"Use this to transform data. To use other
+// Tools from here: `input = {...}; output = tools.tool_name(**input);
+// print(output["field_xxx"])`. List available tools with `tools.list()` -
+// `tools` is already imported. The `output` is an object. open|exec are
+// forbidden. Limited libraries available: urllib3, requests, sympy, numpy,
+// BeautifulSoup4, feedparser. No PIP."#,
+// PythonToolInput::describe(),             PythonToolOutput::describe(),
+//         )
+//     }
+// }
 
+impl ProtoToolInvoke for PythonTool {
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(None, &input)?;
@@ -512,7 +537,7 @@ mod tests {
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
         assert_eq!(
             output.stdout,
-            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool to test stuffs.', 'description_context': 'Use this to test stuffs.', 'input_format': [{'name': 'blah', 'description': '<str> Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': '<str> Not much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
+            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool that is called to test stuffs', 'description_context': 'Use this when it is the best tool for the job.', 'input_format': [{'name': 'blah', 'description': '<str> Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': '<str> Not much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
         );
         assert_eq!(output.stderr, "");
     }

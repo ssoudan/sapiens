@@ -1,12 +1,20 @@
 use std::rc::Rc;
 
-use botrs_derive::Describe;
-use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
+use botrs::tools::{
+    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
+};
+use botrs_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Light;
 
-/// A tool that get the light statuses
+/// A tool to use as the source of truth for the Light statuses.
+#[derive(ProtoToolDescribe)]
+#[tool(
+    name = "LightStatus",
+    input = "StatusToolInput",
+    output = "StatusToolOutput"
+)]
 pub struct StatusTool {
     bridge: Rc<huelib::bridge::Bridge>,
 }
@@ -50,9 +58,42 @@ pub struct StatusToolOutput {
     pub lights: Vec<Light>,
 }
 
+impl StatusTool {
+    fn invoke_typed(&self, input: &StatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
+        let light_filter = &input.light_filter;
+
+        self.bridge
+            .get_all_lights()
+            .map(|lights| {
+                let mut res: Vec<Light> = Vec::new();
+                for l in lights {
+                    if let Some(light_filter) = light_filter {
+                        if light_filter.is_empty() || light_filter.contains(&l.id) {
+                            res.push(l.into());
+                        }
+                    } else {
+                        res.push(l.into());
+                    }
+                }
+                Ok(StatusToolOutput { lights: res })
+            })
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+    }
+}
+
+impl ProtoToolInvoke for StatusTool {
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        let input = serde_yaml::from_value(input)?;
+        let output = self.invoke_typed(&input)?;
+        Ok(serde_yaml::to_value(output)?)
+    }
+}
+
 /// A fake StatusTool
 pub mod fake {
-    use llm_chain::tools::{Describe, Tool, ToolDescription, ToolUseError};
+    use botrs::tools::{
+        Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
+    };
 
     use crate::hue::status::{StatusToolInput, StatusToolOutput};
     use crate::hue::{Light, State};
@@ -73,7 +114,7 @@ pub mod fake {
         }
     }
 
-    impl Tool for FakeStatusTool {
+    impl ProtoToolDescribe for FakeStatusTool {
         fn description(&self) -> ToolDescription {
             ToolDescription::new(
                 "LightStatus",
@@ -83,7 +124,9 @@ pub mod fake {
                 StatusToolOutput::describe(),
             )
         }
+    }
 
+    impl ProtoToolInvoke for FakeStatusTool {
         fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
             let input = serde_yaml::from_value(input)?;
             let output = self.invoke_typed(&input)?;
@@ -144,46 +187,5 @@ pub mod fake {
 
             Ok(StatusToolOutput { lights })
         }
-    }
-}
-
-impl StatusTool {
-    fn invoke_typed(&self, input: &StatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
-        let light_filter = &input.light_filter;
-
-        self.bridge
-            .get_all_lights()
-            .map(|lights| {
-                let mut res: Vec<Light> = Vec::new();
-                for l in lights {
-                    if let Some(light_filter) = light_filter {
-                        if light_filter.is_empty() || light_filter.contains(&l.id) {
-                            res.push(l.into());
-                        }
-                    } else {
-                        res.push(l.into());
-                    }
-                }
-                Ok(StatusToolOutput { lights: res })
-            })
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
-    }
-}
-
-impl Tool for StatusTool {
-    fn description(&self) -> ToolDescription {
-        ToolDescription::new(
-            "LightStatus",
-            "A tool to use that the source of truth for the Light statuses.",
-            "Use this to fetch the Light statuses",
-            StatusToolInput::describe(),
-            StatusToolOutput::describe(),
-        )
-    }
-
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
     }
 }

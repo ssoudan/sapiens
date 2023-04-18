@@ -1,15 +1,13 @@
-use darling::FromDeriveInput;
+use darling::{FromDeriveInput, FromField};
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
-
-use crate::DocumentedStructField;
 
 /// A derive macro for the `Describe` trait.
 #[derive(Debug, FromDeriveInput)]
 #[darling(supports(struct_named))]
-struct DeriveReceiver {
+pub struct DeriveReceiver {
     ident: syn::Ident,
-    data: darling::ast::Data<(), DocumentedStructField>,
+    data: darling::ast::Data<(), StructField>,
 
     generics: syn::Generics,
 }
@@ -29,7 +27,7 @@ impl ToTokens for DeriveReceiver {
         let doc_tuples = fields
             .into_iter()
             .map(|field| {
-                let DocumentedStructField {
+                let StructField {
                     ref ident,
                     ref ty,
                     // ref vis,

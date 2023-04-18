@@ -229,7 +229,6 @@ dependencies = [
  "convert_case",
  "huelib",
  "indoc 2.0.1",
- "llm-chain",
  "pyo3",
  "regex",
  "serde",

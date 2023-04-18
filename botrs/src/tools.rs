@@ -1,7 +1,41 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use llm_chain::tools::{Tool, ToolDescription, ToolUseError};
+pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription, ToolUseError};
+
+/// Something meant to become a Tool - description
+pub trait ProtoToolDescribe {
+    /// the description of the tool
+    fn description(&self) -> ToolDescription;
+}
+
+/// Something meant to become a Tool - invocation
+pub trait ProtoToolInvoke {
+    /// Invoke the tool
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
+}
+
+/// A Tool
+pub trait Tool {
+    /// the description of the tool
+    fn description(&self) -> ToolDescription;
+
+    /// Invoke the tool
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
+}
+
+impl<T> Tool for T
+where
+    T: ProtoToolDescribe + ProtoToolInvoke,
+{
+    fn description(&self) -> ToolDescription {
+        self.description()
+    }
+
+    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        self.invoke(input)
+    }
+}
 
 /// A termination message
 pub struct TerminationMessage {
@@ -37,10 +71,10 @@ pub trait AdvancedTool: Tool {
 /// Toolbox
 #[derive(Default)]
 pub struct Toolbox {
-    /// The terminal tools
+    /// The terminal tools - the one that can terminate a chain of exchanges
     terminal_tools: HashMap<String, Box<dyn TerminalTool>>,
 
-    /// The tools
+    /// The tools - the other tools
     tools: HashMap<String, Box<dyn Tool>>,
 
     /// The advanced tools - the one that can invoke another tool (not an

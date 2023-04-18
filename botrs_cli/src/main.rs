@@ -14,7 +14,6 @@ use dotenvy::dotenv_override;
 use huelib::bridge;
 
 // Simplify adding tools:
-// TODO(ssoudan) proc_macro_derive around Tool, and ToolDescription
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
 //
 // Usability:

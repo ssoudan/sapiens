@@ -1,13 +1,22 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
-use botrs::tools::{TerminalTool, TerminationMessage};
-use botrs_derive::Describe;
-use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
+use botrs::tools::{
+    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
+    ToolDescription, ToolUseError,
+};
+use botrs_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
-/// A tool that is called to wrap the task.
-#[derive(Default)]
+/// A tool to conclude a task.
+/// You have to use this to once you have the answer to the task with your
+/// conclusion.
+#[derive(Default, ProtoToolDescribe)]
+#[tool(
+    name = "Conclude",
+    input = "ConcludeToolInput",
+    output = "ConcludeToolOutput"
+)]
 pub struct ConcludeTool {
     done: RefCell<Option<ConcludeToolInput>>,
 }
@@ -60,17 +69,7 @@ impl ConcludeTool {
     }
 }
 
-impl Tool for ConcludeTool {
-    fn description(&self) -> ToolDescription {
-        ToolDescription::new(
-            "Conclude",
-            "A tool to conclude a task.",
-            "You have to use this to once you have the answer to the task with your conclusion.",
-            ConcludeToolInput::describe(),
-            ConcludeToolOutput::describe(),
-        )
-    }
-
+impl ProtoToolInvoke for ConcludeTool {
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(input)?;
