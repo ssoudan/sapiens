@@ -1,5 +1,5 @@
 [package]
-name = "botrs_tools"
+name = "sapiens_tools"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-botrs = { path = "../botrs" }
-botrs_derive = { path = "../botrs_derive" }
+sapiens = { path = "../sapiens" }
+sapiens_derive = { path = "../sapiens_derive" }
 
 huelib = { git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
 

@@ -1,4 +1,6 @@
-# Botrs 
+# Sapiens
+
+*Sapiens use tools to interact with the world.*
 
 Fun with chatGPT API, [llm-chain](https://github.com/sobelio/llm-chain) and 
 [huelib (fork)](https://github.com/ssoudan/huelib-rs/).
@@ -14,7 +16,7 @@ you might want to consider some sandboxing before running it on your machine.
 
 ## What is this?
 
-Not quite sure yet. See [botrs_cli/src/main.rs](botrs_cli/src/main.rs) for my to do list.
+Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for my to do list.
 
 
 ## Tools
@@ -30,7 +32,7 @@ OPENAI_API_KEY=...
 HUE_USERNAME=...
 HUE_BRIDGE_IP=...
 ```
-Look at `botrs/src/main.rs` if you don't already have these.
+Look at `sapiens/src/main.rs` if you don't already have these.
 
 Then: `./BUILD.sh && ./RUN.sh`.
 
@@ -134,7 +136,7 @@ And the conclusion is: The temperature in San Jose, California, USA is 12.78°C 
 ```
 $ cargo run
 ```
-Compiling botrs v0.1.0 (ssoudan/botrs)
+Compiling sapiens v0.1.0 (ssoudan/sapiens)
 
 ### Warm up
 

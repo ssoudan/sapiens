@@ -1,5 +1,5 @@
 [package]
-name = "botrs_derive"
+name = "sapiens_derive"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

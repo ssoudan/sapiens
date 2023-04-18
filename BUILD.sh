@@ -45,6 +45,6 @@ cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
 #open target/criterion/reports/index.html
 
 echo -e "${BLUE}Build container...${NORMAL}"
-docker build -t botrs .
+docker build -t sapiens .
 
 echo -e "$GREEN === OK === $NORMAL"

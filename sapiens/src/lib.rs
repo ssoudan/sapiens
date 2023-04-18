@@ -1,7 +1,7 @@
 //! Botrs library
 pub(crate) mod context;
 
-/// Toolbox for botrs
+/// Toolbox for sapiens
 pub mod tools;
 
 use std::rc::Rc;
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use crate::tools::{invoke_from_toolbox, Toolbox};
 
 fn create_system_prompt() -> String {
-    "You are an automated agent named botGPT interacting with the WORLD. Listen to the WORLD!"
+    "You are an automated agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
         .to_string()
 }
 

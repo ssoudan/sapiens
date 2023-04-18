@@ -1,9 +1,9 @@
 use std::rc::Rc;
 
-use botrs::tools::{
+use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
-use botrs_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Light;
@@ -91,7 +91,7 @@ impl ProtoToolInvoke for StatusTool {
 
 /// A fake StatusTool
 pub mod fake {
-    use botrs::tools::{
+    use sapiens::tools::{
         Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
     };
 

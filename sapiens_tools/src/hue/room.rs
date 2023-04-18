@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use botrs::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
-use botrs_derive::{Describe, ProtoToolDescribe};
 use huelib::resource::group::CreatableKind;
 use huelib::resource::group::Kind::Creatable;
+use sapiens::tools::{
+    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
+};
+use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Room;
@@ -90,7 +90,7 @@ impl ProtoToolInvoke for RoomTool {
 
 /// A fake RoomTool
 pub mod fake {
-    use botrs::tools::{Describe, Tool, ToolDescription, ToolUseError};
+    use sapiens::tools::{Describe, Tool, ToolDescription, ToolUseError};
 
     use crate::hue::room::{RoomToolInput, RoomToolOutput};
     use crate::hue::Room;
@@ -144,7 +144,7 @@ pub mod fake {
     #[cfg(test)]
     mod tests {
 
-        use botrs::tools::Tool;
+        use sapiens::tools::Tool;
 
         use super::*;
 

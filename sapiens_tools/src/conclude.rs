@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::fmt::Debug;
 
-use botrs::tools::{
+use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
     ToolDescription, ToolUseError,
 };
-use botrs_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 /// A tool to conclude a task.

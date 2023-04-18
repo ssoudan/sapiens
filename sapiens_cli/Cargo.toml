@@ -1,5 +1,5 @@
 [package]
-name = "botrs_cli"
+name = "sapiens_cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-botrs = { path = "../botrs" }
-botrs_tools = { path = "../botrs_tools" }
+sapiens = { path = "../sapiens" }
+sapiens_tools = { path = "../sapiens_tools" }
 
 tokio = { version = "1.27.0", features = ["full"] }
 

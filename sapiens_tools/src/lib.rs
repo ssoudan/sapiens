@@ -1,4 +1,4 @@
-//! Tools for botrs
+//! Tools for sapiens
 
 /// Hue tools
 pub mod hue;
@@ -17,9 +17,9 @@ pub(crate) mod dummy;
 mod tests {
     use std::rc::Rc;
 
-    use botrs::invoke_tool;
-    use botrs::tools::Toolbox;
     use indoc::indoc;
+    use sapiens::invoke_tool;
+    use sapiens::tools::Toolbox;
 
     use crate::dummy::DummyTool;
     use crate::python::PythonTool;

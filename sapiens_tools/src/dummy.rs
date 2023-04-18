@@ -1,9 +1,9 @@
 use std::fmt::Debug;
 
-use botrs::tools::{
+use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
-use botrs_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to test stuffs

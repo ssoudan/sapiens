@@ -1,6 +1,6 @@
 [workspace]
 members = [
-		"botrs", "botrs_derive", "botrs_tools", "botrs_cli",
+		"sapiens", "sapiens_derive", "sapiens_tools", "sapiens_cli",
 ]
 
 [workspace.package]
@@ -8,9 +8,8 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Sebastien Soudan <sebastien.soudan@gmail.com>"]
 description = "A simple bot to conquer the world"
-repository = "https://github.com/ssoudan/botrs"
+repository = "https://github.com/ssoudan/sapiens"
 license = "MIT/Apache-2.0"
-publish = false
 readme = "README.md"
 
 keywords = ["bot", "language-model"]

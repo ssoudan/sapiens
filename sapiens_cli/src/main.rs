@@ -1,17 +1,17 @@
-//! Main for botrs_cli
+//! Main for sapiens_cli
 use std::net::IpAddr;
 use std::rc::Rc;
 use std::str::FromStr;
 
-use botrs::tools::Toolbox;
-use botrs::{something, Config};
-use botrs_tools::conclude::ConcludeTool;
-use botrs_tools::hue::room::RoomTool;
-use botrs_tools::hue::status::StatusTool;
-use botrs_tools::python::PythonTool;
 use clap::Parser;
 use dotenvy::dotenv_override;
 use huelib::bridge;
+use sapiens::tools::Toolbox;
+use sapiens::{something, Config};
+use sapiens_tools::conclude::ConcludeTool;
+use sapiens_tools::hue::room::RoomTool;
+use sapiens_tools::hue::status::StatusTool;
+use sapiens_tools::python::PythonTool;
 
 // Simplify adding tools:
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
@@ -98,7 +98,7 @@ async fn main() {
 
             // Register a new user.
             let username =
-                bridge::register_user(bridge_ip, "botrs").expect("Failed to register user");
+                bridge::register_user(bridge_ip, "sapiens").expect("Failed to register user");
             println!(
                 "Registered a new user - pass it as env: \nHUE_USERNAME={}",
                 username

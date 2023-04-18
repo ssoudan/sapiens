@@ -1,11 +1,11 @@
 use std::rc::Rc;
 
-use botrs::invoke_tool;
-use botrs::tools::Toolbox;
-use botrs_tools::hue::room::fake::FakeRoomTool;
-use botrs_tools::hue::status::fake::FakeStatusTool;
-use botrs_tools::python;
 use indoc::indoc;
+use sapiens::invoke_tool;
+use sapiens::tools::Toolbox;
+use sapiens_tools::hue::room::fake::FakeRoomTool;
+use sapiens_tools::hue::status::fake::FakeStatusTool;
+use sapiens_tools::python;
 
 #[test]
 fn test_python() {

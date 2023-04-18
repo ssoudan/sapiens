@@ -179,65 +179,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "botrs"
-version = "0.1.0"
-dependencies = [
- "async-openai",
- "colored",
- "indoc 2.0.1",
- "llm-chain",
- "regex",
- "serde",
- "serde_yaml",
- "thiserror",
- "tiktoken-rs",
- "tokio",
-]
-
-[[package]]
-name = "botrs_cli"
-version = "0.1.0"
-dependencies = [
- "async-openai",
- "botrs",
- "botrs_tools",
- "clap",
- "dotenvy",
- "huelib",
- "tokio",
-]
-
-[[package]]
-name = "botrs_derive"
-version = "0.1.0"
-dependencies = [
- "darling 0.14.4",
- "darling_macro 0.14.4",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "botrs_tools"
-version = "0.1.0"
-dependencies = [
- "async-openai",
- "botrs",
- "botrs_derive",
- "colored",
- "convert_case",
- "huelib",
- "indoc 2.0.1",
- "pyo3",
- "regex",
- "serde",
- "serde_yaml",
- "thiserror",
- "tiktoken-rs",
-]
-
-[[package]]
 name = "bstr"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1034,9 +975,9 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d59d8c75012853d2e872fb56bc8a2e53718e2cafe1a4c823143141c6d90c322f"
+checksum = "3f508063cc7bb32987c71511216bd5a32be15bccb6a80b52df8b9d7f01fc3aa2"
 
 [[package]]
 name = "llm-chain"
@@ -1460,9 +1401,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustix"
-version = "0.37.11"
+version = "0.37.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85597d61f83914ddeba6a47b3b8ffe7365107221c2e557ed94426489fefb5f77"
+checksum = "722529a737f5a942fdbac3a46cee213053196737c5eaa3386d52e85b786f2659"
 dependencies = [
  "bitflags",
  "errno",
@@ -1510,6 +1451,65 @@ name = "ryu"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
+
+[[package]]
+name = "sapiens"
+version = "0.1.0"
+dependencies = [
+ "async-openai",
+ "colored",
+ "indoc 2.0.1",
+ "llm-chain",
+ "regex",
+ "serde",
+ "serde_yaml",
+ "thiserror",
+ "tiktoken-rs",
+ "tokio",
+]
+
+[[package]]
+name = "sapiens_cli"
+version = "0.1.0"
+dependencies = [
+ "async-openai",
+ "clap",
+ "dotenvy",
+ "huelib",
+ "sapiens",
+ "sapiens_tools",
+ "tokio",
+]
+
+[[package]]
+name = "sapiens_derive"
+version = "0.1.0"
+dependencies = [
+ "darling 0.14.4",
+ "darling_macro 0.14.4",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "sapiens_tools"
+version = "0.1.0"
+dependencies = [
+ "async-openai",
+ "colored",
+ "convert_case",
+ "huelib",
+ "indoc 2.0.1",
+ "pyo3",
+ "regex",
+ "sapiens",
+ "sapiens_derive",
+ "serde",
+ "serde_yaml",
+ "thiserror",
+ "tiktoken-rs",
+]
 
 [[package]]
 name = "schannel"
