@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-use huelib::resource::group::CreatableKind;
-use huelib::resource::group::Kind::Creatable;
+use huelib2::resource::group::CreatableKind;
+use huelib2::resource::group::Kind::Creatable;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
@@ -14,26 +14,26 @@ use crate::hue::Room;
 #[derive(ProtoToolDescribe)]
 #[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
 pub struct RoomTool {
-    bridge: Rc<huelib::bridge::Bridge>,
+    bridge: Rc<huelib2::bridge::Bridge>,
 }
 
 impl RoomTool {
     /// Create a new RoomTool
-    pub fn new(bridge: Rc<huelib::bridge::Bridge>) -> Self {
+    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
         RoomTool { bridge }
     }
 }
 
 impl Default for RoomTool {
     fn default() -> Self {
-        let bridge_ip = huelib::bridge::discover_nupnp()
+        let bridge_ip = huelib2::bridge::discover_nupnp()
             .expect("Failed to discover bridge")
             .pop()
             .expect("No bridges found");
 
         let username = std::env::var("HUE_USERNAME").expect("HUE_USERNAME not set");
 
-        let bridge = huelib::bridge::Bridge::new(bridge_ip, username);
+        let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
 
         Self::new(Rc::new(bridge))
     }

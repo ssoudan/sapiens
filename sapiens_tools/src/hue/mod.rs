@@ -38,8 +38,8 @@ pub struct State {
     // pub reachable: bool,
 }
 
-impl From<huelib::resource::light::State> for State {
-    fn from(value: huelib::resource::light::State) -> Self {
+impl From<huelib2::resource::light::State> for State {
+    fn from(value: huelib2::resource::light::State) -> Self {
         Self {
             on: value.on,
             brightness: value.brightness,
@@ -65,8 +65,8 @@ pub struct Light {
     pub state: State,
 }
 
-impl From<huelib::resource::light::Light> for Light {
-    fn from(value: huelib::resource::light::Light) -> Self {
+impl From<huelib2::resource::light::Light> for Light {
+    fn from(value: huelib2::resource::light::Light) -> Self {
         Self {
             id: value.id,
             name: value.name,
@@ -84,8 +84,8 @@ pub struct Room {
     pub lights: Vec<String>,
 }
 
-impl From<huelib::resource::group::Group> for Room {
-    fn from(value: huelib::resource::group::Group) -> Self {
+impl From<huelib2::resource::group::Group> for Room {
+    fn from(value: huelib2::resource::group::Group) -> Self {
         Self {
             name: value.name,
             lights: value.lights,

@@ -5,7 +5,7 @@ use std::str::FromStr;
 
 use clap::Parser;
 use dotenvy::dotenv_override;
-use huelib::bridge;
+use huelib2::bridge;
 use sapiens::tools::Toolbox;
 use sapiens::{something, Config};
 use sapiens_tools::conclude::ConcludeTool;

@@ -16,26 +16,26 @@ use crate::hue::Light;
     output = "StatusToolOutput"
 )]
 pub struct StatusTool {
-    bridge: Rc<huelib::bridge::Bridge>,
+    bridge: Rc<huelib2::bridge::Bridge>,
 }
 
 impl StatusTool {
     /// Create a new StatusTool
-    pub fn new(bridge: Rc<huelib::bridge::Bridge>) -> Self {
+    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
         StatusTool { bridge }
     }
 }
 
 impl Default for StatusTool {
     fn default() -> Self {
-        let bridge_ip = huelib::bridge::discover_nupnp()
+        let bridge_ip = huelib2::bridge::discover_nupnp()
             .expect("Failed to discover bridge")
             .pop()
             .expect("No bridges found");
 
         let username = std::env::var("HUE_USERNAME").expect("HUE_USERNAME not set");
 
-        let bridge = huelib::bridge::Bridge::new(bridge_ip, username);
+        let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
 
         Self::new(Rc::new(bridge))
     }
