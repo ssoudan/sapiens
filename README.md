@@ -13,11 +13,9 @@ empty your bank account and kill all the remaining polar bears trying to do so.
 More seriously, this code allows chatGPT-generated code to be executed, 
 you might want to consider some sandboxing before running it on your machine.
 
-
 ## What is this?
 
 Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for my to do list.
-
 
 ## Tools
 

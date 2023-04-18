@@ -11,6 +11,7 @@ description = "A simple bot to conquer the world"
 repository = "https://github.com/ssoudan/sapiens"
 license = "MIT/Apache-2.0"
 readme = "README.md"
+publish = true
 
 keywords = ["bot", "language-model"]
 categories = ["science"]
