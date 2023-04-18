@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "fix", default-features = false, features = ["serialization"] }
+llm-chain = { git = "https://github.com/ssoudan/llm-chain", branch = "more_pub", default-features = false, features = ["tera", "serialization"] }
 
 tokio = { version = "1.27.0" }
 serde = { version = "1.0.160", features = ["derive"] }
