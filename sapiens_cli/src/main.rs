@@ -39,6 +39,8 @@ use sapiens_tools::python::PythonTool;
 // TODO(ssoudan) memory?
 // TODO(ssoudan) vector stores?
 // TODO(ssoudan) prompt optimization
+// TODO(ssoudan) multiple models - critic?
+// TODO(ssoudan) multi-stage evaluation
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
