@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "0.1.0" }
-sapiens_tools = { path = "../sapiens_tools", version = "0.1.0" }
+sapiens = { path = "../sapiens", version = "0.2.0" }
+sapiens_tools = { path = "../sapiens_tools", version = "0.2.0" }
 
 tokio = { version = "1.27.0", features = ["full"] }
 

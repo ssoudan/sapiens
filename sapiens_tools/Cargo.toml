@@ -12,8 +12,8 @@ keywords.workspace = true
 categories.workspace = true
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "0.1.0" }
-sapiens_derive = { path = "../sapiens_derive", version = "0.1.0" }
+sapiens = { path = "../sapiens", version = "0.2.0" }
+sapiens_derive = { path = "../sapiens_derive", version = "0.2.0" }
 
 huelib = { version = "0.13.2", git = "https://github.com/ssoudan/huelib-rs/", branch = "master" }
 
