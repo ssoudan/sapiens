@@ -11,6 +11,12 @@ empty your bank account and kill all the remaining polar bears trying to do so.
 More seriously, this code allows chatGPT-generated code to be executed, 
 you might want to consider some sandboxing before running it on your machine.
 
+
+## What is this?
+
+Not quite sure yet. See [botrs_cli/src/main.rs](botrs_cli/src/main.rs) for my to do list.
+
+
 ## Tools
 
 - SandboxedPython: execute Python code in a (not so) sandboxed environment
@@ -29,6 +35,26 @@ Look at `botrs/src/main.rs` if you don't already have these.
 Then: `./BUILD.sh && ./RUN.sh`.
 
 # Example of 'successful' run
+
+## Appetizer
+
+<pre><code>
+❯ ./RUN.sh -t "What are the last 5 papers published on Arxiv in AI about? list with for each title and the url, please. Use feedparser."
+... (snip) ...
+=============   
+The original question was: What are the last 5 papers published on Arxiv in AI about? list with for each title and the url, please. Use feedparser.
+And the conclusion is: Here are the latest 5 papers published by Arxiv in AI:
+Title: Experts' cognition-driven safe noisy labels learning for precise segmentation of residual tumor in breast cancer. (arXiv:2304.07295v1 [q-bio.QM])
+URL: http://arxiv.org/abs/2304.07295
+Title: MLOps Spanning Whole Machine Learning Life Cycle: A Survey. (arXiv:2304.07296v1 [cs.LG])
+URL: http://arxiv.org/abs/2304.07296
+Title: Language Instructed Reinforcement Learning for Human-AI Coordination. (arXiv:2304.07297v1 [cs.AI])
+URL: http://arxiv.org/abs/2304.07297
+Title: Road Network Representation Learning: A Dual Graph based Approach. (arXiv:2304.07298v1 [cs.LG])
+URL: http://arxiv.org/abs/2304.07298
+Title: Supervised Machine Learning for Breast Cancer Risk Factors Analysis and Survival Prediction. (arXiv:2304.07299v1 [cs.LG])
+URL: http://arxiv.org/abs/2304.07299
+</code></pre>
 
 ## TL;DR
 

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use botrs::tools::{invoke_simple_from_toolbox, AdvancedTool, Toolbox};
+use botrs_derive::Describe;
 use convert_case::{Case, Casing};
 use llm_chain::tools::{Describe, Format, FormatPart, Tool, ToolDescription, ToolUseError};
 use pyo3::prelude::*;
@@ -10,40 +11,24 @@ use serde_yaml::Value;
 
 const MAX_OUTPUT_SIZE: usize = 512;
 
-/// A tool that executes Python code.
+/// A tool that runs Python code.
 #[derive(Default)]
 pub struct PythonTool {}
 
 /// The input of the Python tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct PythonToolInput {
-    /// The Python code to execute.
+    /// The Python code to run. MANDATORY
     pub code: String,
 }
 
 /// The output of the Python tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct PythonToolOutput {
-    /// The stdout of the executed Python code.
+    /// The stdout output of the Python code.
     pub stdout: String,
-    /// The stderr output of the Python code execution.
+    /// The stderr output of the Python code.
     pub stderr: String,
-}
-
-impl Describe for PythonToolInput {
-    fn describe() -> Format {
-        vec![("code", "The Python code to execute. MANDATORY").into()].into()
-    }
-}
-
-impl Describe for PythonToolOutput {
-    fn describe() -> Format {
-        vec![
-            ("stdout", "The stdout of the executed Python code.").into(),
-            ("stderr", "The stderr output of the Python code execution.").into(),
-        ]
-        .into()
-    }
 }
 
 #[pyclass]
@@ -462,7 +447,7 @@ impl Tool for PythonTool {
         ToolDescription::new(
             "SandboxedPython",
             &format!("A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available (limited to {}B combined). ", MAX_OUTPUT_SIZE),
-            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()` - `tools` is already loaded. The `output` is a object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
+            r#"Use this to transform data. To use other Tools from here: `input = {...}; output = tools.tool_name(**input); print(output["field_xxx"])`. List available tools with `tools.list()` - `tools` is already loaded. The `output` is an object. open|exec are forbidden. Limited libraries available: urllib3, requests, sympy, numpy, BeautifulSoup4, feedparser. No PIP."#,
             PythonToolInput::describe(),
             PythonToolOutput::describe(),
         )
@@ -527,7 +512,7 @@ mod tests {
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
         assert_eq!(
             output.stdout,
-            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool to test stuffs.', 'description_context': 'Use this to test stuffs.', 'input_format': [{'name': 'blah', 'description': 'Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': 'No much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
+            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool to test stuffs.', 'description_context': 'Use this to test stuffs.', 'input_format': [{'name': 'blah', 'description': '<str> Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': '<str> Not much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
         );
         assert_eq!(output.stderr, "");
     }

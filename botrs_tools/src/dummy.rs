@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use botrs_derive::Describe;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
@@ -8,29 +9,17 @@ use serde::{Deserialize, Serialize};
 pub struct DummyTool {}
 
 /// A tool that is called to test stuffs
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct DummyToolInput {
     /// Well. MANDATORY.
     pub blah: String,
 }
 
 /// DummyToolOutput not very significant
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct DummyToolOutput {
-    /// No much.
+    /// Not much.
     pub something: String,
-}
-
-impl Describe for DummyToolInput {
-    fn describe() -> Format {
-        vec![("blah", "Well. MANDATORY.").into()].into()
-    }
-}
-
-impl Describe for DummyToolOutput {
-    fn describe() -> Format {
-        vec![("something", "No much.").into()].into()
-    }
 }
 
 impl DummyTool {

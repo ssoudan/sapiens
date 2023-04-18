@@ -13,19 +13,33 @@ use clap::Parser;
 use dotenvy::dotenv_override;
 use huelib::bridge;
 
-// TODO(ssoudan) macro
-// TODO(ssoudan) tool descriptions: in and out, types, desc, etc.
+// Simplify adding tools:
+// TODO(ssoudan) proc_macro_derive around Tool, and ToolDescription
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
-// TODO(ssoudan) conditional loading of tools
-
-// TODO(ssoudan) use insta.
-
+//
+// Usability:
+// TODO(ssoudan) Conditional loading of tools
+// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate
+// TODO(ssoudan) Discord bot with long-lived conversations
+// TODO(ssoudan) allow the bot to share its doubt and ask for help
+// TODO(ssoudan) Crontab-like scheduling: get a summary of the news daily at 8am
 // TODO(ssoudan) better errors for python code
-// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate, memory
-// TODO(ssoudan) Crontab
-// TODO(ssoudan) Discord bot
+//
+// Deployability:
+// TODO(ssoudan) use insta for some of the tests
+// TODO(ssoudan) more tests
 // TODO(ssoudan) logging
-// TODO(ssoudan) long lived conversations
+// TODO(ssoudan) monitoring
+//
+// Adoption:
+// TODO(ssoudan) More documentation and examples
+// TODO(ssoudan) A site?
+//
+// Explore:
+// TODO(ssoudan) other models?
+// TODO(ssoudan) memory?
+// TODO(ssoudan) vector stores?
+// TODO(ssoudan) prompt optimization
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
@@ -114,15 +128,6 @@ async fn main() {
         std::env::remove_var(&k);
     }
 
-    // let task = "List all the lights in the room with the most lights.";
-    // let task = "List all the lights in the room with the least lights.";
-    // let task = "How many lights are in each room?";
-    // let task = "What are the names of the rooms?";
-    // let task = "Sort in ascending order: [2, 3, 1, 4, 5]";
-    // let task = "What is the status of the lights in the Office?";
-    // let task = "What is the status of the lights where someone is most likely
-    // work?";
-    // let task = "What are the colors of a rainbow?";
     let task = args.task.clone();
     something(toolbox, openai_client, args.into(), task).await;
 }

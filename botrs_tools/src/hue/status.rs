@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use botrs_derive::Describe;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
@@ -33,32 +34,20 @@ impl Default for StatusTool {
 }
 
 /// The input of the tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct StatusToolInput {
-    light_filter: Option<Vec<String>>,
+    /// The list of Lights IDs (<string>) to get the status for, e.g.: `["1",
+    /// "2"]`. To get all the lights: `[]`
+    pub light_filter: Option<Vec<String>>,
 }
 
 /// The output of the tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct StatusToolOutput {
-    lights: Vec<Light>,
-}
-
-impl Describe for StatusToolInput {
-    fn describe() -> Format {
-        vec![(
-            "light_filter",
-            "The list of Lights IDs (<string>) to get the status for, e.g.: [\"1\", \"2\"]. To get all the lights: []",
-        )
-            .into()]
-        .into()
-    }
-}
-
-impl Describe for StatusToolOutput {
-    fn describe() -> Format {
-        vec![("lights", r#"A list of Lights with their statuses. E.g.: [{"id": "1", "name": "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation": 55, "color_temperature": 2500}]"#).into()].into()
-    }
+    /// A list of Lights with their statuses. E.g.: `[{"id": "1", "name":
+    /// "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation":
+    /// 55, "color_temperature": 2500}]`
+    pub lights: Vec<Light>,
 }
 
 /// A fake StatusTool

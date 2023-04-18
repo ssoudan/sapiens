@@ -210,6 +210,13 @@ dependencies = [
 [[package]]
 name = "botrs_derive"
 version = "0.1.0"
+dependencies = [
+ "darling 0.14.4",
+ "darling_macro 0.14.4",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
 
 [[package]]
 name = "botrs_tools"
@@ -217,6 +224,7 @@ version = "0.1.0"
 dependencies = [
  "async-openai",
  "botrs",
+ "botrs_derive",
  "colored",
  "convert_case",
  "huelib",

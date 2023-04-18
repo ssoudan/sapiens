@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::fmt::Debug;
 
 use botrs::tools::{TerminalTool, TerminationMessage};
+use botrs_derive::Describe;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
 
@@ -22,11 +23,13 @@ impl TerminalTool for ConcludeTool {
 }
 
 /// A tool that is called to wrap the task.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct ConcludeToolInput {
-    /// The final textual answer for this task.
+    /// The final textual answer for this task. No string interpolation
+    /// supported. Plain text ONLY. MANDATORY.
     pub conclusion: String,
-    /// The original question that was asked to the user.
+    /// The original question that was asked to the user. No string
+    /// interpolation supported, only plain text. MANDATORY.
     pub original_question: String,
 }
 
@@ -40,29 +43,8 @@ impl From<ConcludeToolInput> for TerminationMessage {
 }
 
 /// ConcludeToolOutput - empty
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct ConcludeToolOutput {}
-
-impl Describe for ConcludeToolInput {
-    fn describe() -> Format {
-        vec![(
-            "conclusion",
-            "The final textual answer for this task. No string interpolation supported. Plain text ONLY. MANDATORY.",
-            )
-            .into(),
-            (
-                "original_question",
-                "The original question that was asked to the user. No string interpolation supported, only plain text. MANDATORY.",
-            ).into(),]
-        .into()
-    }
-}
-
-impl Describe for ConcludeToolOutput {
-    fn describe() -> Format {
-        vec![].into()
-    }
-}
 
 impl ConcludeTool {
     fn invoke_typed(&self, input: ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {

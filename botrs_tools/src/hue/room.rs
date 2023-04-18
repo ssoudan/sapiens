@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use botrs_derive::Describe;
 use huelib::resource::group::CreatableKind;
 use huelib::resource::group::Kind::Creatable;
 use llm_chain::tools::{Describe, Format, Tool, ToolDescription, ToolUseError};
@@ -35,40 +36,20 @@ impl Default for RoomTool {
 }
 
 /// The input of the tool
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Describe)]
 pub struct RoomToolInput {
-    /// The list of Room names (<string>) to get the lights for.
+    /// The list of Room names (<string>) to get the lights for, e.g.
+    /// `room_filter: ["Bedroom"]`. If unsure, use `[]` to get all Rooms.
     pub room_filter: Vec<String>,
 }
 
 /// The output of the tool
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Describe)]
 pub struct RoomToolOutput {
     /// A list of Rooms with a name and a list of lights (their IDs) in that
-    /// room.
-    rooms: Vec<Room>,
-}
-
-impl Describe for RoomToolInput {
-    fn describe() -> Format {
-        vec![(
-            "room_filter",
-            "The list of Room names (<string>) to get the lights for, e.g. `room_filter: [\"Bedroom\"]`. If unsure, use `[]` to get all Rooms.",
-        )
-            .into()]
-        .into()
-    }
-}
-
-impl Describe for RoomToolOutput {
-    fn describe() -> Format {
-        vec![(
-            "rooms",
-            r#"A list of Rooms with a name and a list of lights (their IDs) in that room. E.g.: [{"name": "Smoking room", "lights": ["light_ID1", ...]}, ...]"#,
-        )
-            .into()]
-        .into()
-    }
+    /// room. E.g.: `[{"name": "Smoking room", "lights": ["light_ID1", ...]},
+    /// ...]`
+    pub rooms: Vec<Room>,
 }
 
 /// A fake RoomTool
