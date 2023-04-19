@@ -14,7 +14,8 @@ use sapiens_tools::hue::status::{SetStatusTool, StatusTool};
 use sapiens_tools::python::PythonTool;
 
 // Usability:
-// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate
+// NOW(ssoudan) https://github.com/magnusmanske/mediawiki_rust - wikipedia and wikidata
+// TODO(ssoudan) More tools: search, wx, arxiv, negotiate
 // TODO(ssoudan) Conditional loading of tools
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
