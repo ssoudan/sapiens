@@ -17,6 +17,8 @@ use sapiens_tools::python::PythonTool;
 // TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
 //
 // Usability:
+// TODO(ssoudan) Token budget management
+// TODO(ssoudan) Model parameters
 // TODO(ssoudan) Conditional loading of tools
 // TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
