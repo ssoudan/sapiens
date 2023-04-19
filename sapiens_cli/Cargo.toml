@@ -24,7 +24,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.2.1", default-feature
 
 tokio = { version = "1.27.0", features = ["full"] }
 
-clap = { version = "4.2.3", features = ["derive"] }
+clap = { version = "4.2.4", features = ["derive"] }
 
 dotenvy = "0.15.7"
 
