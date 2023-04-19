@@ -99,6 +99,7 @@ fn pythonify(ty: String) -> String {
         .replace("i64", "int")
         .replace("f32", "float")
         .replace("f64", "float")
+        .replace("Value", "Any")
         // .replace("bool", "bool")
         .replace("()", "None")
         .replace("HashMap", "dict")

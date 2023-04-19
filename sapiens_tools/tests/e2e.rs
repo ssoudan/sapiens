@@ -165,28 +165,13 @@ r#"
         // Query parameters
         let params = api.params_into(&[
             ("action", "query"),
-            ("prop", "categories"),
+            ("prop", "extracts|explaintext|exintro"),
             ("titles", "Albert Einstein"),
         ]);
 
-        // Run query; this will automatically continue if more results are available,
-        // and merge all results into one
         let res = api.get_query_api_json_all(&params).unwrap();
 
-        // Parse result
-        let categories: Vec<&str> = res["query"]["pages"]
-            .as_object()
-            .unwrap()
-            .iter()
-            .flat_map(|(_page_id, page)| {
-                page["categories"]
-                    .as_array()
-                    .unwrap()
-                    .iter()
-                    .map(|c| c["title"].as_str().unwrap())
-            })
-            .collect();
-
-        dbg!(&categories);
+        // Print the result
+        println!("{}", serde_json::to_string_pretty(&res).unwrap());
     }
 }

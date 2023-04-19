@@ -7,6 +7,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 use serde_json;
+use serde_yaml::Value;
 
 /// A Tool to query Wikipedia using SPARQL.
 ///
@@ -25,9 +26,16 @@ pub struct WikipediaTool {
 /// [`WikipediaTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct WikipediaToolInput {
-    /// query parameters. E.g. `{ "action": "query", "prop": "categories",
-    /// "titles": "Albert Einstein", "cllimit": "12" }`
-    query: HashMap<String, String>,
+    /// query parameters. E.g.
+    /// `query:
+    ///     - action: query
+    ///     - prop: categories
+    ///     - titles: Albert Einstein
+    ///     - cllimit: 12
+    /// `
+    /// - Values can be either strings or numbers. Or lists of them.
+    /// - The output size is limited. Be specific and use limits where possible.
+    query: HashMap<String, Value>,
     /// maximum number of results to return - if not specified, all results are
     /// returned.
     limit: Option<usize>,
@@ -53,13 +61,76 @@ impl WikipediaTool {
         &self,
         input: &WikipediaToolInput,
     ) -> Result<WikipediaToolOutput, ToolUseError> {
+        let query: HashMap<String, String> = input
+            .query
+            .clone()
+            .into_iter()
+            .map(|(k, v)| match v {
+                Value::Sequence(s) => Ok((
+                    k.clone(),
+                    s.into_iter()
+                        .map(|v| match v {
+                            Value::String(s) => Ok(s),
+                            Value::Number(n) => Ok(n.to_string()),
+                            _ => Err(ToolUseError::ToolInvocationFailed(format!(
+                                "Unsupported value type for parameter: {:?}. Only <str> or <number> and list of them supported.",
+                                k
+                            ))),
+                        })
+                        .collect::<Result<Vec<_>, _>>()?
+                        .join("|"),
+                )),
+                Value::String(s) => Ok((k, s)),
+                Value::Number(n) => Ok((k, n.to_string())),
+                _ => Err(ToolUseError::ToolInvocationFailed(format!(
+                    "Unsupported value type for parameter: {:?}. Only <str> or <number> and list of them supported.",
+                    k
+                ))),
+            })
+            .collect::<Result<_, _>>()?;
+
         let result = self
             .client
-            .get_query_api_json_limit(&input.query, input.limit)
+            .get_query_api_json_limit(&query, input.limit)
             .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
 
         Ok(WikipediaToolOutput {
             result: serde_json::to_string(&result).unwrap(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_wikipedia_tool() {
+        let tool = WikipediaTool::default();
+        let input = WikipediaToolInput {
+            query: vec![
+                ("action".to_string(), Value::String("query".to_string())),
+                (
+                    "prop".to_string(),
+                    Value::Sequence(vec![
+                        Value::String("extracts".to_string()),
+                        Value::String("exintro".to_string()),
+                        Value::String("explaintext".to_string()),
+                    ]),
+                ),
+                (
+                    "titles".to_string(),
+                    Value::String("Albert Einstein".to_string()),
+                ),
+            ]
+            .into_iter()
+            .collect(),
+            limit: None,
+        };
+        let input = serde_yaml::to_string(&input).unwrap();
+        let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
+
+        let output = tool.invoke_typed(&input).unwrap();
+        println!("{}", output.result);
     }
 }
