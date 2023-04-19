@@ -5,18 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.1 (2023-04-19)
 
 - Added ProtoToolInvoke derive macro
 - Hue lights SetStatusTool
 - Updated deps to published crates
 
+### Documentation
+
+ - <csr-id-ba8709fa7f21a6d77739437a9f65409016c6b364/> Changelog
+
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 8 commits contributed to the release.
- - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 9 commits contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -26,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Changelog ([`ba8709f`](https://github.com/ssoudan/sapiens/commit/ba8709fa7f21a6d77739437a9f65409016c6b364))
     - [changelog] ([`a36c535`](https://github.com/ssoudan/sapiens/commit/a36c5354033a5d4d59fa5765b3be85d92c0d5556))
     - [deps] updated ([`e9d7a0e`](https://github.com/ssoudan/sapiens/commit/e9d7a0e59e122aa070b5ecb96e16bf53e73144af))
     - [deps] updated ([`eaf3f18`](https://github.com/ssoudan/sapiens/commit/eaf3f18ac20ca49c1146a84e131e90b82a294d4c))
