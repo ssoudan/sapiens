@@ -251,14 +251,35 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
 
                     return;
                 }
-
                 let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
 
-                println!("{}", content.green());
+                // if the response is too long, we add an error message to the chat history
+                // instead
+                const MAX_RESPONSE_CHAR: usize = 1024;
+                if content.len() > MAX_RESPONSE_CHAR {
+                    let content = format!("The assistant response is too long for the model ({}B). Max allowed is {}B.",
+                        content.len(),
+                        MAX_RESPONSE_CHAR
+                    );
 
-                chat_history
-                    .add_chitchat(Role::User, content.clone())
-                    .expect("The user response is too long for the model")
+                    let content = format!(
+                        "# Action failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+                        content, task_prompt
+                    );
+
+                    println!("{}", content.red());
+
+                    // add an error message to the chat history
+                    chat_history
+                        .add_chitchat(Role::Assistant, content)
+                        .expect("The assistant response is too long for the model")
+                } else {
+                    println!("{}", content.green());
+
+                    chat_history
+                        .add_chitchat(Role::User, content.clone())
+                        .expect("The user response is too long for the model")
+                }
             }
             Err(e) => {
                 let content = format!(
