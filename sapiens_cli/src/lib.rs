@@ -1,19 +1,6 @@
 //! Sapiens CLI library
-#[cfg(feature = "hue")]
-use std::net::IpAddr;
-#[cfg(feature = "hue")]
-use std::rc::Rc;
-#[cfg(feature = "hue")]
-use std::str::FromStr;
-
-#[cfg(feature = "hue")]
-use huelib2::bridge;
 use sapiens::tools::Toolbox;
 use sapiens_tools::conclude::ConcludeTool;
-#[cfg(feature = "hue")]
-use sapiens_tools::hue::room::RoomTool;
-#[cfg(feature = "hue")]
-use sapiens_tools::hue::status::{SetStatusTool, StatusTool};
 use sapiens_tools::python::PythonTool;
 
 /// Assemble the toolbox of tools.
@@ -25,6 +12,12 @@ pub fn assemble_toolbox() -> Toolbox {
 
     #[cfg(feature = "hue")]
     {
+        use std::net::IpAddr;
+        use std::rc::Rc;
+        use std::str::FromStr;
+
+        use huelib2::bridge;
+
         let bridge_ip = match std::env::var("HUE_BRIDGE_IP") {
             Ok(ip) => IpAddr::from_str(&ip).expect("Invalid IP address"),
             Err(_) => {
@@ -57,9 +50,18 @@ pub fn assemble_toolbox() -> Toolbox {
         let bridge = bridge::Bridge::new(bridge_ip, username);
         let bridge = Rc::new(bridge);
 
-        toolbox.add_tool(RoomTool::new(bridge.clone()));
-        toolbox.add_tool(SetStatusTool::new(bridge.clone()));
-        toolbox.add_tool(StatusTool::new(bridge));
+        toolbox.add_tool(sapiens_tools::hue::room::RoomTool::new(bridge.clone()));
+        toolbox.add_tool(sapiens_tools::hue::status::SetStatusTool::new(
+            bridge.clone(),
+        ));
+        toolbox.add_tool(sapiens_tools::hue::status::StatusTool::new(bridge));
+    }
+
+    #[cfg(feature = "wiki")]
+    {
+        use sapiens_tools::wiki::wikidata;
+
+        toolbox.add_tool(wikidata::WikidataTool::default());
     }
 
     toolbox.add_terminal_tool(ConcludeTool::default());

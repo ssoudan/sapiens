@@ -13,6 +13,10 @@ pub mod python;
 /// Tool to test stuffs
 pub mod dummy;
 
+/// Tools related to mediawiki: Wikipedia, Wikidata, etc.
+#[cfg(feature = "wiki")]
+pub mod wiki;
+
 #[cfg(test)]
 mod tests {
     use std::rc::Rc;

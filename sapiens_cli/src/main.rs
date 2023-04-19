@@ -4,11 +4,12 @@ use dotenvy::dotenv_override;
 use sapiens::{something, Config};
 
 // Usability:
-// NOW(ssoudan) https://github.com/magnusmanske/mediawiki_rust - wikipedia and wikidata
+// NOW(ssoudan) Name of the tool that generated the result
+// NOW(ssoudan) https://github.com/magnusmanske/mediawiki_rust - wikipedia
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
-// TODO(ssoudan) Token budget management
+// TODO(ssoudan) Token budget management and completion termination reason
 // TODO(ssoudan) Model parameters
 // TODO(ssoudan) allow the bot to share its doubt and ask for help
 // TODO(ssoudan) Crontab-like scheduling: get a summary of the news daily at 8am
@@ -32,6 +33,7 @@ use sapiens::{something, Config};
 // TODO(ssoudan) prompt optimization
 // TODO(ssoudan) multiple models - critic?
 // TODO(ssoudan) multi-stage evaluation
+// TODO(ssoudan) log the conversation to build a dataset
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
