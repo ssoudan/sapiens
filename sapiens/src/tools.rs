@@ -4,19 +4,20 @@ use std::rc::Rc;
 pub use llm_chain::parsing::find_yaml;
 pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription, ToolUseError};
 
-/// Something meant to become a Tool - description
+/// Something meant to become a [`Tool`] - description
 pub trait ProtoToolDescribe {
     /// the description of the tool
     fn description(&self) -> ToolDescription;
 }
 
-/// Something meant to become a Tool - invocation
+/// Something meant to become a [`Tool`] - invocation
 pub trait ProtoToolInvoke {
     /// Invoke the tool
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
-/// A Tool
+/// A Tool - the most basic kind of tools. See [`AdvancedTool`] and
+/// [`TerminalTool`] for more.
 pub trait Tool {
     /// the description of the tool
     fn description(&self) -> ToolDescription;
@@ -39,6 +40,9 @@ where
 }
 
 /// A termination message
+///
+/// This is the message that is sent to the user when a chain of exchanges
+/// terminates.
 pub struct TerminationMessage {
     /// The final textual answer for this task.
     pub conclusion: String,
@@ -46,7 +50,7 @@ pub struct TerminationMessage {
     pub original_question: String,
 }
 
-/// A tool that wraps a chain of exchanges
+/// A [`Tool`] that wraps a chain of exchanges
 pub trait TerminalTool: Tool {
     /// done flag.
     fn is_done(&self) -> bool {
@@ -59,9 +63,9 @@ pub trait TerminalTool: Tool {
     }
 }
 
-/// A tool that can benefit from a toolbox
+/// A [`Tool`]  that can benefit from a [`Toolbox`]
 pub trait AdvancedTool: Tool {
-    /// Invoke the tool with a toolbox
+    /// Invoke the tool with a [`Toolbox`]
     fn invoke_with_toolbox(
         &self,
         toolbox: Rc<Toolbox>,
@@ -70,6 +74,9 @@ pub trait AdvancedTool: Tool {
 }
 
 /// Toolbox
+///
+/// a [`Toolbox`] is a collection of [`Tool`], [`TerminalTool`] and
+/// [`AdvancedTool`].
 #[derive(Default)]
 pub struct Toolbox {
     /// The terminal tools - the one that can terminate a chain of exchanges
@@ -98,24 +105,30 @@ impl Toolbox {
     }
 
     /// Add a terminal tool
+    ///
+    /// A [`TerminalTool`] can terminate a chain of exchanges.
     pub fn add_terminal_tool(&mut self, tool: impl TerminalTool + 'static) {
         let name = tool.description().name;
         self.terminal_tools.insert(name, Box::new(tool));
     }
 
     /// Add a tool
+    ///
+    /// A [`Tool`] can be invoked by an [`AdvancedTool`].
     pub fn add_tool(&mut self, tool: impl Tool + 'static) {
         let name = tool.description().name;
         self.tools.insert(name, Box::new(tool));
     }
 
     /// Add an advanced tool
+    ///
+    /// An [`AdvancedTool`] is a [`Tool`] that can invoke another tool.
     pub fn add_advanced_tool(&mut self, tool: impl AdvancedTool + 'static) {
         let name = tool.description().name;
         self.advanced_tools.insert(name, Box::new(tool));
     }
 
-    /// Get the descriptions
+    /// Get the descriptions of the tools
     pub fn describe(&self) -> HashMap<String, ToolDescription> {
         let mut descriptions = HashMap::new();
 
@@ -135,7 +148,7 @@ impl Toolbox {
     }
 }
 
-/// Invoke a Tool or AdvancedTool  from a toolbox
+/// Invoke a [`Tool`] or [`AdvancedTool`]  from a [`Toolbox`]
 pub fn invoke_from_toolbox(
     toolbox: Rc<Toolbox>,
     name: &str,
@@ -157,7 +170,7 @@ pub fn invoke_from_toolbox(
     tool.invoke(input)
 }
 
-/// Invoke a Tool from a toolbox
+/// Invoke a Tool from a [`Toolbox`]
 pub fn invoke_simple_from_toolbox(
     toolbox: Rc<Toolbox>,
     name: &str,

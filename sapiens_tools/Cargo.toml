@@ -11,11 +11,16 @@ readme = "../README.md"
 keywords.workspace = true
 categories.workspace = true
 
+[features]
+default = ["hue"]
+# Hue lights
+hue = ["dep:huelib2"]
+
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.2.1" }
 sapiens_derive = { path = "../sapiens_derive", version = "^0.2.1" }
 
-huelib2 = { version = "0.13.3" }
+huelib2 = { version = "0.13.3", optional = true }
 
 serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"

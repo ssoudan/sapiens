@@ -1,22 +1,11 @@
 //! Main for sapiens_cli
-use std::net::IpAddr;
-use std::rc::Rc;
-use std::str::FromStr;
-
 use clap::Parser;
 use dotenvy::dotenv_override;
-use huelib2::bridge;
-use sapiens::tools::Toolbox;
 use sapiens::{something, Config};
-use sapiens_tools::conclude::ConcludeTool;
-use sapiens_tools::hue::room::RoomTool;
-use sapiens_tools::hue::status::{SetStatusTool, StatusTool};
-use sapiens_tools::python::PythonTool;
 
 // Usability:
 // NOW(ssoudan) https://github.com/magnusmanske/mediawiki_rust - wikipedia and wikidata
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate
-// TODO(ssoudan) Conditional loading of tools
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
 // TODO(ssoudan) Token budget management
@@ -82,49 +71,11 @@ async fn main() {
 
     let _ = dotenv_override();
 
-    let bridge_ip = match std::env::var("HUE_BRIDGE_IP") {
-        Ok(ip) => IpAddr::from_str(&ip).expect("Invalid IP address"),
-        Err(_) => {
-            println!("HUE_BRIDGE_IP env not set. Trying to discover bridge.");
-            let bridge_ip = bridge::discover_nupnp().unwrap().pop().unwrap();
-            println!(
-                "Discovered bridge at IP address: HUE_BRIDGE_IP={}",
-                bridge_ip
-            );
-            bridge_ip
-        }
-    };
-
-    let username = match std::env::var("HUE_USERNAME") {
-        Ok(username) => username,
-        Err(_) => {
-            println!("HUE_USERNAME env not set. Trying to register a new user.");
-
-            // Register a new user.
-            let username =
-                bridge::register_user(bridge_ip, "sapiens").expect("Failed to register user");
-            println!(
-                "Registered a new user - pass it as env: \nHUE_USERNAME={}",
-                username
-            );
-            username
-        }
-    };
+    let toolbox = sapiens_cli::assemble_toolbox();
 
     let openai_client = async_openai::Client::new().with_api_key(
         std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
     );
-
-    let bridge = bridge::Bridge::new(bridge_ip, username);
-    let bridge = Rc::new(bridge);
-
-    let mut toolbox = Toolbox::default();
-
-    toolbox.add_tool(RoomTool::new(bridge.clone()));
-    toolbox.add_tool(SetStatusTool::new(bridge.clone()));
-    toolbox.add_tool(StatusTool::new(bridge));
-    toolbox.add_terminal_tool(ConcludeTool::default());
-    toolbox.add_advanced_tool(PythonTool::default());
 
     // Sanitation
     // remove environment variables that could be used to access the host

@@ -24,6 +24,12 @@ cargo test --all --all-features || (echo -e "$RED [Tests failed] $NORMAL" && exi
 echo -e "${BLUE}Building...${NORMAL}"
 cargo build --all --all-features || (echo -e "$RED [Build failed] $NORMAL" && exit 1)
 
+echo -e "${BLUE}Testing...${NORMAL}"
+cargo test --all --no-default-features || (echo -e "$RED [Tests (no default) failed] $NORMAL" && exit 1)
+
+echo -e "${BLUE}Building...${NORMAL}"
+cargo build --all --no-default-features || (echo -e "$RED [Build (no default) failed] $NORMAL" && exit 1)
+
 echo -e "${BLUE}Checking...${NORMAL}"
 cargo check --all --all-features --tests --benches --examples || (echo -e "$RED [Check failed] $NORMAL" && exit 1)
 
