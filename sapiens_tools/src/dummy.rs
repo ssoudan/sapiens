@@ -3,11 +3,11 @@ use std::fmt::Debug;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
-use sapiens_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to test stuffs
-#[derive(Default, ProtoToolDescribe)]
+#[derive(Default, ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(name = "Dummy", input = "DummyToolInput", output = "DummyToolOutput")]
 pub struct DummyTool {}
 
@@ -30,13 +30,5 @@ impl DummyTool {
         Ok(DummyToolOutput {
             something: input.blah.clone() + " and something else",
         })
-    }
-}
-
-impl ProtoToolInvoke for DummyTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
     }
 }

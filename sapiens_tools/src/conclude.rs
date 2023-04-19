@@ -5,13 +5,13 @@ use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
     ToolDescription, ToolUseError,
 };
-use sapiens_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
 /// A tool to conclude a task.
 /// You have to use this to once you have the answer to the task with your
 /// conclusion.
-#[derive(Default, ProtoToolDescribe)]
+#[derive(Default, ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(
     name = "Conclude",
     input = "ConcludeToolInput",
@@ -32,7 +32,7 @@ impl TerminalTool for ConcludeTool {
 }
 
 /// A tool that is called to wrap the task.
-#[derive(Debug, Serialize, Deserialize, Describe)]
+#[derive(Debug, Clone, Serialize, Deserialize, Describe)]
 pub struct ConcludeToolInput {
     /// The final textual answer for this task. No string interpolation
     /// supported. Plain text ONLY. MANDATORY.
@@ -56,23 +56,15 @@ impl From<ConcludeToolInput> for TerminationMessage {
 pub struct ConcludeToolOutput {}
 
 impl ConcludeTool {
-    fn invoke_typed(&self, input: ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
+    fn invoke_typed(&self, input: &ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
         if self.done.borrow().is_some() {
             return Err(ToolUseError::ToolInvocationFailed(
                 "This task is already done.".to_string(),
             ));
         }
 
-        *self.done.borrow_mut() = Some(input);
+        *self.done.borrow_mut() = Some(input.clone());
 
         Ok(ConcludeToolOutput {})
-    }
-}
-
-impl ProtoToolInvoke for ConcludeTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(input)?;
-        Ok(serde_yaml::to_value(output)?)
     }
 }

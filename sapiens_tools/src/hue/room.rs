@@ -5,13 +5,13 @@ use huelib2::resource::group::Kind::Creatable;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
-use sapiens_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Room;
 
 /// A tool to use that the source of truth for the Lights of a Room.
-#[derive(ProtoToolDescribe)]
+#[derive(ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
 pub struct RoomTool {
     bridge: Rc<huelib2::bridge::Bridge>,
@@ -77,14 +77,6 @@ impl RoomTool {
                 Ok(RoomToolOutput { rooms })
             })
             .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
-    }
-}
-
-impl ProtoToolInvoke for RoomTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
     }
 }
 
