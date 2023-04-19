@@ -20,7 +20,9 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 ## Tools
 
 - SandboxedPython: execute Python code in a (not so) sandboxed environment
-- Hue: TBD
+- Hue: control Philips Hue lights: List Rooms, List Lights, Get/Set Light State
+- Wikipedia: Query Wikipedia
+- Wikidata: Query Wikidata
 
 ## Usage
 
