@@ -80,7 +80,7 @@ input:
 "#;
 
 const PROTO_EXCHANGE_3: &str = r"
-# Action result:
+# Action SandboxedPython result:
 ```yaml
 status: 0
 stdout: |
@@ -235,7 +235,7 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
             l
         );
 
-        let resp = invoke_tool(toolbox.clone(), &message_text);
+        let (tool_name, resp) = invoke_tool(toolbox.clone(), &message_text);
         let l = match resp {
             Ok(x) => {
                 // check if the task is done
@@ -251,7 +251,10 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
 
                     return;
                 }
-                let content = format!("# Action result: \n```yaml\n{}```\n{}", x, task_prompt);
+                let content = format!(
+                    "# Action {} result: \n```yaml\n{}```\n{}",
+                    tool_name, x, task_prompt
+                );
 
                 // if the response is too long, we add an error message to the chat history
                 // instead
@@ -263,8 +266,8 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
                     );
 
                     let content = format!(
-                        "# Action failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
-                        content, task_prompt
+                        "# Action {} failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+                        tool_name, content, task_prompt
                     );
 
                     println!("{}", content.red());
@@ -283,8 +286,8 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
             }
             Err(e) => {
                 let content = format!(
-                    "# Action failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
-                    e, task_prompt
+                    "# Action {} failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+                    tool_name, e, task_prompt
                 );
                 println!("{}", content.red());
 
@@ -320,19 +323,34 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
 /// corresponding tool.
 ///
 /// If multiple tool invocations are found, only the first one is used.
-pub fn invoke_tool(tools: Rc<Toolbox>, data: &str) -> Result<String, ToolUseError> {
-    let tool_invocations: Vec<ToolInvocationInput> = find_yaml::<ToolInvocationInput>(data)?;
-    if tool_invocations.is_empty() {
-        return Err(ToolUseError::ToolInvocationFailed(
-            "No Action found".to_string(),
-        ));
-    }
+pub fn invoke_tool(tools: Rc<Toolbox>, data: &str) -> (String, Result<String, ToolUseError>) {
+    let tool_invocations = find_yaml::<ToolInvocationInput>(data);
 
-    // Take the first invocation - the list is reversed
-    let invocation_input = &tool_invocations.last().unwrap();
-    let input = invocation_input.input.clone();
-    let output = invoke_from_toolbox(tools, &invocation_input.command, input)?;
-    Ok(serde_yaml::to_string(&output).unwrap())
+    match tool_invocations {
+        Ok(tool_invocations) => {
+            if tool_invocations.is_empty() {
+                return (
+                    "unknown".to_string(),
+                    Err(ToolUseError::ToolInvocationFailed(
+                        "No Action found".to_string(),
+                    )),
+                );
+            }
+
+            // Take the first invocation - the list is reversed
+            let invocation_input = &tool_invocations.last().unwrap();
+
+            let tool_name = invocation_input.command.clone();
+
+            let input = invocation_input.input.clone();
+
+            match invoke_from_toolbox(tools, &invocation_input.command, input) {
+                Ok(o) => (tool_name, Ok(serde_yaml::to_string(&o).unwrap())),
+                Err(e) => (tool_name, Err(e)),
+            }
+        }
+        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidYaml(e))),
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -510,6 +510,7 @@ impl AdvancedTool for PythonTool {
 
 #[cfg(test)]
 mod tests {
+    use insta::assert_snapshot;
     use pyo3::indoc::indoc;
 
     use super::*;
@@ -535,10 +536,7 @@ mod tests {
         let toolbox = Rc::new(toolbox);
 
         let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
-        assert_eq!(
-            output.stdout,
-            "hello\ntools= [{'name': 'Dummy', 'description': 'A tool that is called to test stuffs', 'description_context': 'Use this when it is the best tool for the job.', 'input_format': [{'name': 'blah', 'description': '<str> Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': '<str> Not much.'}]}]\ndummy= {'something': 'ahah and something else'}\n"
-        );
-        assert_eq!(output.stderr, "");
+        assert_snapshot!(output.stdout);
+        assert_snapshot!(output.stderr);
     }
 }

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use indoc::indoc;
+use insta::assert_snapshot;
 use sapiens::invoke_tool;
 use sapiens::tools::Toolbox;
 use sapiens_tools::dummy::DummyTool;
@@ -24,7 +25,9 @@ fn test_tool_invocation() {
 
     let toolbox = Rc::new(toolbox);
 
-    let output = invoke_tool(toolbox, data).unwrap();
+    let (tool_name, res) = invoke_tool(toolbox, data);
+    assert_eq!(tool_name, "SandboxedPython");
+    let output = res.unwrap();
     assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
 }
 
@@ -50,7 +53,9 @@ fn test_tool_invocation_in_python() {
 
     let toolbox = Rc::new(toolbox);
 
-    let output = invoke_tool(toolbox, data).unwrap();
+    let (tool_name, res) = invoke_tool(toolbox, data);
+    assert_eq!(tool_name, "SandboxedPython");
+    let output = res.unwrap();
     assert_eq!(
             output,
             "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\n  {'something': 'blah and something else'}\nstderr: ''\n"
@@ -90,8 +95,10 @@ fn test_multiple_tool_invocations() {
 
     let toolbox = Rc::new(toolbox);
 
-    let output = invoke_tool(toolbox, data).unwrap();
-    assert_eq!(output, "stdout: |\n  Hello world 1!\nstderr: ''\n");
+    let (tool_name, res) = invoke_tool(toolbox, data);
+    assert_eq!(tool_name, "SandboxedPython");
+    let output = res.unwrap();
+    assert_snapshot!(output);
 }
 
 #[test]
@@ -102,7 +109,7 @@ fn test_python() {
 
     let toolbox = Rc::new(toolbox);
 
-    let input = indoc! {
+    let data = indoc! {
     r#"```yaml
        command: SandboxedPython
        input:
@@ -118,12 +125,11 @@ fn test_python() {
        ```
     "#};
 
-    let res = invoke_tool(toolbox, input).unwrap();
+    let (tool_name, res) = invoke_tool(toolbox, data);
+    assert_eq!(tool_name, "SandboxedPython");
+    let output = res.unwrap();
 
-    assert_eq!(
-        res,
-        "stdout: |\n  And the result is: hello and something else\nstderr: ''\n"
-    );
+    assert_snapshot!(output);
 }
 
 #[cfg(feature = "wiki")]

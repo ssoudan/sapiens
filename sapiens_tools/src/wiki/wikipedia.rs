@@ -27,15 +27,17 @@ pub struct WikipediaTool {
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct WikipediaToolInput {
     /// query parameters. E.g.
-    /// `query:
-    ///     - action: query
-    ///     - prop: categories
-    ///     - titles: Albert Einstein
-    ///     - cllimit: 12
+    /// `parameters:
+    ///   action: query
+    ///   prop:
+    ///     - extracts
+    ///     - exintro
+    ///     - explaintext
+    ///   titles: Albert Einstein
     /// `
     /// - Values can be either strings or numbers. Or lists of them.
     /// - The output size is limited. Be specific and use limits where possible.
-    query: HashMap<String, Value>,
+    parameters: HashMap<String, Value>,
     /// maximum number of results to return - if not specified, all results are
     /// returned.
     limit: Option<usize>,
@@ -62,7 +64,7 @@ impl WikipediaTool {
         input: &WikipediaToolInput,
     ) -> Result<WikipediaToolOutput, ToolUseError> {
         let query: HashMap<String, String> = input
-            .query
+            .parameters
             .clone()
             .into_iter()
             .map(|(k, v)| match v {
@@ -102,35 +104,95 @@ impl WikipediaTool {
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
+    use insta::assert_yaml_snapshot;
+
     use super::*;
 
     #[test]
     fn test_wikipedia_tool() {
-        let tool = WikipediaTool::default();
-        let input = WikipediaToolInput {
-            query: vec![
-                ("action".to_string(), Value::String("query".to_string())),
-                (
-                    "prop".to_string(),
-                    Value::Sequence(vec![
-                        Value::String("extracts".to_string()),
-                        Value::String("exintro".to_string()),
-                        Value::String("explaintext".to_string()),
-                    ]),
-                ),
-                (
-                    "titles".to_string(),
-                    Value::String("Albert Einstein".to_string()),
-                ),
-            ]
-            .into_iter()
-            .collect(),
-            limit: None,
-        };
-        let input = serde_yaml::to_string(&input).unwrap();
-        let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
+        let mut settings = insta::Settings::clone_current();
+        settings.set_sort_maps(true);
+        settings.bind(|| {
+            let tool = WikipediaTool::default();
+            let input = WikipediaToolInput {
+                parameters: vec![
+                    ("action".to_string(), Value::String("query".to_string())),
+                    (
+                        "prop".to_string(),
+                        Value::Sequence(vec![
+                            Value::String("extracts".to_string()),
+                            Value::String("exintro".to_string()),
+                            Value::String("explaintext".to_string()),
+                        ]),
+                    ),
+                    (
+                        "titles".to_string(),
+                        Value::String("Albert Einstein".to_string()),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+                limit: None,
+            };
+            let input = serde_yaml::to_string(&input).unwrap();
+            let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
 
-        let output = tool.invoke_typed(&input).unwrap();
-        println!("{}", output.result);
+            assert_yaml_snapshot!(input);
+
+            let _output = tool.invoke_typed(&input).unwrap();
+        });
+    }
+
+    #[test]
+    fn test_wikipedia_tool_from_yaml() {
+        let tool = WikipediaTool::default();
+
+        let input = indoc! {
+            r#"
+               parameters:
+                 action: query
+                 prop:
+                   - extracts
+                   - exintro
+                   - explaintext
+                 titles: Albert Einstein
+            "#
+        };
+        let input = serde_yaml::from_str::<WikipediaToolInput>(input).unwrap();
+
+        let _output = tool.invoke_typed(&input).unwrap();
+    }
+
+    #[test]
+    fn test_wikipedia_input_format() {
+        let mut settings = insta::Settings::clone_current();
+        settings.set_sort_maps(true);
+        settings.bind(|| {
+            let input = WikipediaToolInput {
+                parameters: vec![
+                    ("action".to_string(), Value::String("query".to_string())),
+                    (
+                        "prop".to_string(),
+                        Value::Sequence(vec![
+                            Value::String("extracts".to_string()),
+                            Value::String("exintro".to_string()),
+                            Value::String("explaintext".to_string()),
+                        ]),
+                    ),
+                    (
+                        "titles".to_string(),
+                        Value::String("Albert Einstein".to_string()),
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+                limit: None,
+            };
+            let input = serde_yaml::to_string(&input).unwrap();
+            let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
+
+            assert_yaml_snapshot!(input);
+        });
     }
 }

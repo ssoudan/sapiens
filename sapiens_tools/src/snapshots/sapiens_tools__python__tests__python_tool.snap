@@ -1,0 +1,8 @@
+---
+source: sapiens_tools/src/python.rs
+expression: output.stdout
+---
+hello
+tools= [{'name': 'Dummy', 'description': 'A tool that is called to test stuffs', 'description_context': 'Use this when it is the best tool for the job.', 'input_format': [{'name': 'blah', 'description': '<str> Well. MANDATORY.'}], 'output_format': [{'name': 'something', 'description': '<str> Not much.'}]}]
+dummy= {'something': 'ahah and something else'}
+
