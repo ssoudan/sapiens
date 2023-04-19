@@ -25,7 +25,8 @@ pub struct WikipediaTool {
 /// [`WikipediaTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct WikipediaToolInput {
-    /// query parameters
+    /// query parameters. E.g. `{ "action": "query", "prop": "categories",
+    /// "titles": "Albert Einstein", "cllimit": "12" }`
     query: HashMap<String, String>,
     /// maximum number of results to return - if not specified, all results are
     /// returned.
