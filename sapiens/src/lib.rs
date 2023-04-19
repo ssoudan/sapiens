@@ -258,9 +258,10 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
 
                 // if the response is too long, we add an error message to the chat history
                 // instead
-                const MAX_RESPONSE_CHAR: usize = 1024;
+                const MAX_RESPONSE_CHAR: usize = 2048;
                 if content.len() > MAX_RESPONSE_CHAR {
-                    let content = format!("The assistant response is too long for the model ({}B). Max allowed is {}B.",
+                    let content = format!(
+                        "The response is too long ({}B). Max allowed is {}B.",
                         content.len(),
                         MAX_RESPONSE_CHAR
                     );
@@ -275,7 +276,7 @@ pub async fn something(toolbox: Toolbox, openai_client: Client, config: Config, 
                     // add an error message to the chat history
                     chat_history
                         .add_chitchat(Role::Assistant, content)
-                        .expect("The assistant response is too long for the model")
+                        .expect("The response is too long for the model")
                 } else {
                     println!("{}", content.green());
 
