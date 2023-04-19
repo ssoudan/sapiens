@@ -20,7 +20,8 @@ const MAX_OUTPUT_SIZE: usize = 512;
 /// tools.tool_name(**input); print(output["field_xxx"])`. The `output` is an
 /// object.
 /// - List available tools with `tools.list()`. `tools` is already
-/// imported.
+/// imported. And returns a list of `{'name':.., 'description':.., 'input':..,
+/// 'output':.., 'description_context':.. }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser.
