@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.2.1 (2023-04-19)
 
+### Documentation
+
+ - <csr-id-2dc34812fa3afc6147fcd3f3b0bc5311b841ab9f/> Changelog
+
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release.
- - 0 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 11 commits contributed to the release.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -22,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Changelog ([`2dc3481`](https://github.com/ssoudan/sapiens/commit/2dc34812fa3afc6147fcd3f3b0bc5311b841ab9f))
+    - Adjusting changelogs prior to release of sapiens_derive v0.2.1, sapiens_tools v0.2.1, sapiens_cli v0.2.1 ([`3ea2039`](https://github.com/ssoudan/sapiens/commit/3ea2039b68192d4de6b9d370db54abcae054e3cc))
     - Release sapiens v0.2.1 ([`6d011b1`](https://github.com/ssoudan/sapiens/commit/6d011b16157847923433b870a6d57d5ad1b73438))
     - [deps] updated ([`e9d7a0e`](https://github.com/ssoudan/sapiens/commit/e9d7a0e59e122aa070b5ecb96e16bf53e73144af))
     - [+] SetStatusTool to control Hue lights. ([`e464518`](https://github.com/ssoudan/sapiens/commit/e4645184d43e99c7d90d7bc5ca91b43e3a034c8f))
