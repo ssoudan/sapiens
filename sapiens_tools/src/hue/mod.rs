@@ -27,6 +27,7 @@ pub struct State {
     /// between 0 and 1.
     // pub color_space_coordinates: Option<(f32, f32)>,
     /// Mired color temperature of the light.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub color_temperature: Option<u16>,
     // /// Alert effect of the light.
     // pub alert: Option<Alert>,
@@ -56,7 +57,8 @@ pub struct Light {
     /// Identifier of the light.
     pub id: String,
     /// Name of the light.
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
     /// Type of the light.
     // #[serde(rename = "type")]
     // pub kind: String,
@@ -69,7 +71,7 @@ impl From<huelib2::resource::light::Light> for Light {
     fn from(value: huelib2::resource::light::Light) -> Self {
         Self {
             id: value.id,
-            name: value.name,
+            name: Option::from(value.name),
             state: value.state.into(),
         }
     }

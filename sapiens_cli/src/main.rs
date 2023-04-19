@@ -10,23 +10,22 @@ use sapiens::tools::Toolbox;
 use sapiens::{something, Config};
 use sapiens_tools::conclude::ConcludeTool;
 use sapiens_tools::hue::room::RoomTool;
-use sapiens_tools::hue::status::StatusTool;
+use sapiens_tools::hue::status::{SetStatusTool, StatusTool};
 use sapiens_tools::python::PythonTool;
 
-// Simplify adding tools:
-// TODO(ssoudan) https://pyo3.rs/v0.17.3/conversions/traits for Input and Output structs?
-//
 // Usability:
+// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate
+// TODO(ssoudan) Conditional loading of tools
+// TODO(ssoudan) Discord bot with long-lived conversations
+// TODO(ssoudan) Settings
 // TODO(ssoudan) Token budget management
 // TODO(ssoudan) Model parameters
-// TODO(ssoudan) Conditional loading of tools
-// TODO(ssoudan) More tools: search, wiki, wx, arxiv, negotiate
-// TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) allow the bot to share its doubt and ask for help
 // TODO(ssoudan) Crontab-like scheduling: get a summary of the news daily at 8am
 // TODO(ssoudan) better errors for python code
 //
 // Deployability:
+// TODO(ssoudan) Limit how long a tool can run
 // TODO(ssoudan) use insta for some of the tests
 // TODO(ssoudan) more tests
 // TODO(ssoudan) logging
@@ -121,6 +120,7 @@ async fn main() {
     let mut toolbox = Toolbox::default();
 
     toolbox.add_tool(RoomTool::new(bridge.clone()));
+    toolbox.add_tool(SetStatusTool::new(bridge.clone()));
     toolbox.add_tool(StatusTool::new(bridge));
     toolbox.add_terminal_tool(ConcludeTool::default());
     toolbox.add_advanced_tool(PythonTool::default());

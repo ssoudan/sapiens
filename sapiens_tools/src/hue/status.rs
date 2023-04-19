@@ -1,15 +1,16 @@
 use std::rc::Rc;
 
+use huelib2::resource::Adjust;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
-use sapiens_derive::{Describe, ProtoToolDescribe};
+use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
 use crate::hue::Light;
 
 /// A tool to use as the source of truth for the Light statuses.
-#[derive(ProtoToolDescribe)]
+#[derive(ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(
     name = "LightStatus",
     input = "StatusToolInput",
@@ -17,13 +18,6 @@ use crate::hue::Light;
 )]
 pub struct StatusTool {
     bridge: Rc<huelib2::bridge::Bridge>,
-}
-
-impl StatusTool {
-    /// Create a new StatusTool
-    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
-        StatusTool { bridge }
-    }
 }
 
 impl Default for StatusTool {
@@ -59,6 +53,11 @@ pub struct StatusToolOutput {
 }
 
 impl StatusTool {
+    /// Create a new StatusTool
+    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
+        StatusTool { bridge }
+    }
+
     fn invoke_typed(&self, input: &StatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
         let light_filter = &input.light_filter;
 
@@ -81,12 +80,107 @@ impl StatusTool {
     }
 }
 
-impl ProtoToolInvoke for StatusTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(&input)?;
-        Ok(serde_yaml::to_value(output)?)
+/// A tool to use as the set the Light statuses.
+#[derive(ProtoToolDescribe, ProtoToolInvoke)]
+#[tool(
+    name = "SetLightStatus",
+    input = "SetStatusToolInput",
+    output = "StatusToolOutput"
+)]
+pub struct SetStatusTool {
+    bridge: Rc<huelib2::bridge::Bridge>,
+}
+
+impl SetStatusTool {
+    /// Create a new StatusTool
+    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
+        SetStatusTool { bridge }
     }
+
+    fn invoke_typed(&self, input: &SetStatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
+        if let Some(lights) = &input.lights {
+            for light in lights {
+                let state = huelib2::resource::light::StateModifier {
+                    on: light.state.on,
+                    brightness: light.state.brightness.map(Adjust::Override),
+                    hue: light.state.hue.map(Adjust::Override),
+                    saturation: light.state.saturation.map(Adjust::Override),
+                    color_space_coordinates: None,
+                    color_temperature: light.state.color_temperature.map(Adjust::Override),
+                    alert: None,
+                    effect: None,
+                    transition_time: None,
+                };
+
+                self.bridge
+                    .set_light_state(&light.id, &state)
+                    .map_err(|e| {
+                        ToolUseError::ToolInvocationFailed(format!(
+                            "Failed to set light state for light {}: {}",
+                            light.id, e
+                        ))
+                    })?;
+            }
+        }
+
+        // collect light IDs
+        let light_ids: Vec<String> = input
+            .lights
+            .as_ref()
+            .map(|lights| lights.iter().map(|l| l.id.clone()).collect())
+            .unwrap_or_default();
+
+        if light_ids.is_empty() {
+            return Err(ToolUseError::ToolInvocationFailed(
+                "No lights to set status for".to_string(),
+            ));
+        }
+
+        // get all lights
+        let lights_status: Vec<Light> = self
+            .bridge
+            .get_all_lights()
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+            .into_iter()
+            .map(|l| l.into())
+            .collect();
+
+        // filter lights
+        let lights = if light_ids.is_empty() {
+            lights_status
+        } else {
+            lights_status
+                .into_iter()
+                .filter(|l| light_ids.contains(&l.id))
+                .collect()
+        };
+
+        Ok(StatusToolOutput { lights })
+    }
+}
+
+impl Default for SetStatusTool {
+    fn default() -> Self {
+        let bridge_ip = huelib2::bridge::discover_nupnp()
+            .expect("Failed to discover bridge")
+            .pop()
+            .expect("No bridges found");
+
+        let username = std::env::var("HUE_USERNAME").expect("HUE_USERNAME not set");
+
+        let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
+
+        Self::new(Rc::new(bridge))
+    }
+}
+
+/// The input of the tool
+#[derive(Serialize, Deserialize, Describe)]
+pub struct SetStatusToolInput {
+    /// The list of Lights statuses to set for, e.g.: `[{"id": "1", "on": True,
+    /// "brightness": 126, "hue": 2456, "saturation":
+    /// 55, "color_temperature": 2500}]`. Omitted fields will not be changed.
+    pub lights: Option<Vec<Light>>,
 }
 
 /// A fake StatusTool
@@ -139,7 +233,7 @@ pub mod fake {
             let lights = vec![
                 Light {
                     id: "1".to_string(),
-                    name: "Bed".to_string(),
+                    name: Some("Bed".to_string()),
                     state: State {
                         on: Option::from(true),
                         brightness: Some(126),
@@ -150,7 +244,7 @@ pub mod fake {
                 },
                 Light {
                     id: "2".to_string(),
-                    name: "Closet".to_string(),
+                    name: Some("Closet".to_string()),
                     state: State {
                         on: Option::from(false),
                         brightness: Some(0),
@@ -161,7 +255,7 @@ pub mod fake {
                 },
                 Light {
                     id: "3".to_string(),
-                    name: "Ceiling".to_string(),
+                    name: Some("Ceiling".to_string()),
                     state: State {
                         on: Option::from(false),
                         brightness: Some(0),
