@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["hue", "wiki"]
+default = ["wiki"]
 # Hue lights
 hue = ["dep:huelib2"]
 # MediaWiki: Wikipedia, Wikidata

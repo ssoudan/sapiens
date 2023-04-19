@@ -2,10 +2,23 @@
 
 set -e
 
+# if .env file exists, load it
+if [ -f .env ]; then
+    set -o allexport
+    source .env
+    set +o allexport
+fi
+
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NORMAL='\033[0m'
 GREEN='\033[0;32m'
+
+# comma separated list of features to use for the container build
+EXTRA_FEATURES="${EXTRA_FEATURES:-}"
+
+echo -e "${YELLOW}EXTRA_FEATURES: ${EXTRA_FEATURES}${NORMAL}\n"
 
 # test if tools are installed
 if ! command -v cargo > /dev/null 2>&1; then
@@ -51,6 +64,6 @@ cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
 #open target/criterion/reports/index.html
 
 echo -e "${BLUE}Build container...${NORMAL}"
-docker build -t sapiens .
+docker build -t sapiens --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [Container build failed] $NORMAL" && exit 1)
 
 echo -e "$GREEN === OK === $NORMAL"

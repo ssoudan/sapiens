@@ -4,7 +4,6 @@ use dotenvy::dotenv_override;
 use sapiens::{something, Config};
 
 // Usability:
-// TODO(ssoudan) Hue not by default
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
