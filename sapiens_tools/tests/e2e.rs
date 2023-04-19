@@ -43,7 +43,7 @@ mod wiki {
     use indoc::indoc;
 
     #[test]
-    fn test_sparql() {
+    fn test_wikidata_sparql() {
         let query = indoc! {
 r#"
             PREFIX wd: <http://www.wikidata.org/entity/>
@@ -68,5 +68,38 @@ r#"
         let api = mediawiki::api_sync::ApiSync::new("https://www.wikidata.org/w/api.php").unwrap(); // Will determine the SPARQL API URL via site info data
         let res = api.sparql_query(query).unwrap();
         println!("{}", serde_json::to_string_pretty(&res).unwrap());
+    }
+
+    #[test]
+    fn test_wikipedia() {
+        let api = mediawiki::api_sync::ApiSync::new("https://en.wikipedia.org/w/api.php").unwrap();
+
+        // Query parameters
+        let params = api.params_into(&[
+            ("action", "query"),
+            ("prop", "categories"),
+            ("titles", "Albert Einstein"),
+            ("cllimit", "20"),
+        ]);
+
+        // Run query; this will automatically continue if more results are available,
+        // and merge all results into one
+        let res = api.get_query_api_json_all(&params).unwrap();
+
+        // Parse result
+        let categories: Vec<&str> = res["query"]["pages"]
+            .as_object()
+            .unwrap()
+            .iter()
+            .flat_map(|(_page_id, page)| {
+                page["categories"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|c| c["title"].as_str().unwrap())
+            })
+            .collect();
+
+        dbg!(&categories);
     }
 }

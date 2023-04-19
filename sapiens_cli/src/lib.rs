@@ -59,9 +59,10 @@ pub fn assemble_toolbox() -> Toolbox {
 
     #[cfg(feature = "wiki")]
     {
-        use sapiens_tools::wiki::wikidata;
+        use sapiens_tools::wiki::{wikidata, wikipedia};
 
         toolbox.add_tool(wikidata::WikidataTool::default());
+        toolbox.add_tool(wikipedia::WikipediaTool::default());
     }
 
     toolbox.add_terminal_tool(ConcludeTool::default());

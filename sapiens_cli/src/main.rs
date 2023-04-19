@@ -4,8 +4,7 @@ use dotenvy::dotenv_override;
 use sapiens::{something, Config};
 
 // Usability:
-// NOW(ssoudan) Name of the tool that generated the result
-// NOW(ssoudan) https://github.com/magnusmanske/mediawiki_rust - wikipedia
+// TODO(ssoudan) Name of the tool that generated the result
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
