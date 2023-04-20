@@ -3,7 +3,7 @@ name = "sapiens_tools"
 version= "0.2.2"
 edition.workspace = true
 authors.workspace = true
-description = "The tools - a simple bot to conquer the world"
+description = "The tools - Sapiens"
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -32,8 +32,6 @@ serde_json = { version = "1.0.96", optional = true }
 regex = "1.7.3"
 
 pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
-
-colored = "2.0.0"
 
 tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
 async-openai = "0.10.3"

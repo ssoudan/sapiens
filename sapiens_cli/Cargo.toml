@@ -3,7 +3,7 @@ name = "sapiens_cli"
 version= "0.2.2"
 edition.workspace = true
 authors.workspace = true
-description = "The cli interface of a simple bot to conquer the world"
+description = "The cli - Sapiens"
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -25,7 +25,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.2.2", default-feature
 tokio = { version = "1.27.0", features = ["full"] }
 
 clap = { version = "4.2.4", features = ["derive"] }
-
+colored = "2.0.0"
 dotenvy = "0.15.7"
 
 huelib2 = { version = "0.13.3", optional = true }

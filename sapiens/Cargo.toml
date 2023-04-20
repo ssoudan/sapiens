@@ -3,7 +3,7 @@ name = "sapiens"
 version= "0.2.2"
 edition.workspace = true
 authors.workspace = true
-description = "Core - a simple bot to conquer the world"
+description = "Core - Sapiens"
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -15,12 +15,12 @@ categories.workspace = true
 llm-chain = { version = "0.6.2", git = "https://github.com/ssoudan/llm-chain", branch = "main", default-features = false, features = [] }
 
 tokio = { version = "1.27.0" }
+tracing = "0.1.37"
+
 serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
 
 regex = "1.7.3"
-
-colored = "2.0.0"
 
 tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
 async-openai = "0.10.3"

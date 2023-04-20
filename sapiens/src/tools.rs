@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::rc::Rc;
 
 pub use llm_chain::parsing::find_yaml;
@@ -88,6 +89,16 @@ pub struct Toolbox {
     /// The advanced tools - the one that can invoke another tool (not an
     /// advanced one)
     advanced_tools: HashMap<String, Box<dyn AdvancedTool>>,
+}
+
+impl Debug for Toolbox {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Toolbox")
+            .field("terminal_tools", &self.terminal_tools.keys())
+            .field("tools", &self.tools.keys())
+            .field("advanced_tools", &self.advanced_tools.keys())
+            .finish()
+    }
 }
 
 impl Toolbox {

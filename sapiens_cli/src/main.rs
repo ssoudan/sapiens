@@ -1,9 +1,14 @@
 //! Main for sapiens_cli
 use clap::Parser;
+use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::{something, Config};
+use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
+use sapiens::{work, Config, Error, Role, TaskProgressUpdateHandler};
 
+// FIXME(ssoudan) - deterministic order of tools in the prompt
+//
 // Usability:
+// NOW(ssoudan) - modularize the main loop
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
@@ -32,6 +37,7 @@ use sapiens::{something, Config};
 // TODO(ssoudan) multiple models - critic?
 // TODO(ssoudan) multi-stage evaluation
 // TODO(ssoudan) log the conversation to build a dataset
+// TODO(ssoudan) categorize the outcomes - count the number of steps
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
@@ -54,14 +60,68 @@ struct Args {
     show_warmup_prompt: bool,
 }
 
-impl From<Args> for Config {
-    fn from(args: Args) -> Self {
+impl From<&Args> for Config {
+    fn from(args: &Args) -> Self {
         Self {
-            model: args.model,
+            model: args.model.clone(),
             max_steps: args.max_steps,
-            show_warmup_prompt: args.show_warmup_prompt,
             ..Default::default()
         }
+    }
+}
+
+struct ColorFormatter;
+
+impl ChatEntryFormatter for ColorFormatter {
+    fn format(&self, entry: &ChatEntry) -> String {
+        let msg = &entry.msg;
+        let role = &entry.role;
+        match role {
+            Role::System => msg.yellow().to_string(),
+            Role::User => msg.green().to_string(),
+            Role::Assistant => msg.blue().to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+struct Handler {
+    /// Whether to show the warm-up prompt
+    pub show_warmup_prompt: bool,
+}
+
+impl TaskProgressUpdateHandler for Handler {
+    fn on_start(&self, chat_history: &ChatHistory) {
+        if self.show_warmup_prompt {
+            let msgs = chat_history.format(ColorFormatter {});
+
+            for msg in msgs {
+                println!("{}", msg);
+                println!("=============");
+            }
+        } else {
+            // Show only the last message
+            let last_msg = chat_history.iter().last().unwrap();
+            let msg = ColorFormatter.format(&last_msg.into());
+            println!("{}", msg);
+            println!("=============");
+        }
+    }
+
+    fn on_tool_update(&self, chat_message: ChatEntry, success: bool) {
+        if success {
+            let msg = ColorFormatter.format(&chat_message);
+            println!("{}", msg);
+        } else {
+            let msg = chat_message.msg.yellow();
+            println!("{}", msg);
+        }
+        println!("=============");
+    }
+
+    fn on_tool_error(&self, error: Error) {
+        println!("{}", error.to_string().red());
+        println!("=============");
     }
 }
 
@@ -82,7 +142,29 @@ async fn main() {
     for (k, _) in std::env::vars() {
         std::env::remove_var(&k);
     }
+    assert!(
+        std::env::vars().next().is_none(),
+        "Environment is not empty"
+    );
 
     let task = args.task.clone();
-    something(toolbox, openai_client, args.into(), task).await;
+    let termination_messages = work(
+        toolbox,
+        openai_client,
+        (&args).into(),
+        task,
+        Handler {
+            show_warmup_prompt: args.show_warmup_prompt,
+        },
+    )
+    .await
+    .unwrap();
+
+    for message in termination_messages {
+        println!(
+            "The original question was: {} ",
+            message.original_question.green()
+        );
+        println!("And the conclusion is: {} ", message.conclusion.blue());
+    }
 }
