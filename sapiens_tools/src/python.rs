@@ -461,23 +461,6 @@ impl PythonTool {
     }
 }
 
-// impl ProtoToolDescribe for PythonTool {
-//     fn description(&self) -> ToolDescription {
-//         ToolDescription::new(
-//             "SandboxedPython",
-//             &format!("A tool that executes sandboxed Python code. Only stdout
-// and stderr are captured and made available (limited to {}B total). ",
-// MAX_OUTPUT_SIZE),             r#"Use this to transform data. To use other
-// Tools from here: `input = {...}; output = tools.tool_name(**input);
-// print(output["field_xxx"])`. List available tools with `tools.list()` -
-// `tools` is already imported. The `output` is an object. open|exec are
-// forbidden. Limited libraries available: urllib3, requests, sympy, numpy,
-// BeautifulSoup4, feedparser. No PIP."#,
-// PythonToolInput::describe(),             PythonToolOutput::describe(),
-//         )
-//     }
-// }
-
 impl ProtoToolInvoke for PythonTool {
     fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
