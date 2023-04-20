@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 0.2.2 (2023-04-20)
 
 Limit response size. Include tool name in response.
+
+### Documentation
+
+ - <csr-id-1844702fb1a2ffd5bb1ce4717e19c6675527738a/> Changelog
 
 ### New Features
 
@@ -23,8 +27,8 @@ Limit response size. Include tool name in response.
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
- - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 5 commits contributed to the release.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -34,6 +38,7 @@ Limit response size. Include tool name in response.
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Changelog ([`1844702`](https://github.com/ssoudan/sapiens/commit/1844702fb1a2ffd5bb1ce4717e19c6675527738a))
     - Increased max response size ([`55a0255`](https://github.com/ssoudan/sapiens/commit/55a0255535ef3ad10e1129de5a10d5ac377f8b30))
     - ToolName with Action result. ([`ed70724`](https://github.com/ssoudan/sapiens/commit/ed70724e4133083e44c590cf2f74d27bdef65982))
     - Error on too long response ([`a1eefed`](https://github.com/ssoudan/sapiens/commit/a1eefedbc23011994f9d7b06d9f5054db489a759))

@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_tools"
-version= "0.2.1"
+version= "0.2.2"
 edition.workspace = true
 authors.workspace = true
 description = "The tools - a simple bot to conquer the world"
@@ -19,8 +19,8 @@ hue = ["dep:huelib2"]
 wiki = ["dep:mediawiki", "dep:serde_json"]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.2.1" }
-sapiens_derive = { path = "../sapiens_derive", version = "^0.2.1" }
+sapiens = { path = "../sapiens", version = "^0.2.2" }
+sapiens_derive = { path = "../sapiens_derive", version = "^0.2.2" }
 
 huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.10", optional = true }
