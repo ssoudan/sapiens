@@ -17,10 +17,10 @@ pub use async_openai::error::OpenAIError;
 pub use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use async_openai::Client;
 use runner::Chain;
-use serde::{Deserialize, Serialize};
 
 use crate::context::{ChatEntry, ChatHistory};
-use crate::tools::{find_yaml, invoke_from_toolbox, TerminationMessage, ToolUseError, Toolbox};
+use crate::runner::TaskChain;
+use crate::tools::TerminationMessage;
 
 /// The error type for the bot
 #[derive(thiserror::Error, Debug)]
@@ -48,7 +48,7 @@ pub struct Config {
     /// The model to use
     pub model: String,
     /// The maximum number of steps
-    pub max_steps: u32,
+    pub max_steps: usize,
     /// The minimum number of tokens that need to be available for completion
     pub min_token_for_completion: usize,
 }
@@ -60,53 +60,6 @@ impl Default for Config {
             max_steps: 10,
             min_token_for_completion: 256,
         }
-    }
-}
-
-/// Try to find the tool invocation from the chat message and invoke the
-/// corresponding tool.
-///
-/// If multiple tool invocations are found, only the first one is used.
-#[tracing::instrument]
-pub fn invoke_tool(toolbox: Rc<Toolbox>, data: &str) -> (String, Result<String, ToolUseError>) {
-    let tool_invocations = find_yaml::<ToolInvocationInput>(data);
-
-    match tool_invocations {
-        Ok(tool_invocations) => {
-            if tool_invocations.is_empty() {
-                return (
-                    "unknown".to_string(),
-                    Err(ToolUseError::ToolInvocationFailed(
-                        "No Action found".to_string(),
-                    )),
-                );
-            }
-
-            // if any tool_invocations have an 'output' field, we return an error
-            for invocation in tool_invocations.iter() {
-                if invocation.output.is_some() {
-                    return (
-                        "unknown".to_string(),
-                        Err(ToolUseError::ToolInvocationFailed(
-                            "The Action cannot have an `output` field. Only `command` and `input` are allowed.".to_string(),
-                        )),
-                    );
-                }
-            }
-
-            // Take the first invocation - the list is reversed
-            let invocation_input = &tool_invocations.last().unwrap();
-
-            let tool_name = invocation_input.command.clone();
-
-            let input = invocation_input.input.clone();
-
-            match invoke_from_toolbox(toolbox, &invocation_input.command, input) {
-                Ok(o) => (tool_name, Ok(serde_yaml::to_string(&o).unwrap())),
-                Err(e) => (tool_name, Err(e)),
-            }
-        }
-        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidYaml(e))),
     }
 }
 
@@ -122,74 +75,156 @@ pub trait TaskProgressUpdateHandler: Debug {
     fn on_tool_error(&self, error: Error);
 }
 
-/// Run a task with a set of tools
-#[tracing::instrument]
-pub async fn work(
-    toolbox: Toolbox,
-    openai_client: Client,
-    config: Config,
-    task: String,
-    handler: impl TaskProgressUpdateHandler,
-) -> Result<Vec<TerminationMessage>, Error> {
-    let toolbox = Rc::new(toolbox);
+/// A step in the task
+pub struct Step {
+    task_chain: TaskChain,
+    handler: Box<dyn TaskProgressUpdateHandler>,
+}
 
-    let chain = Chain::new(toolbox, config.clone(), openai_client);
-
-    // Now we are ready to start the task
-    let mut task_chain = chain.start_task(task).await.unwrap();
-
-    // show the chat history
-    handler.on_start(task_chain.chat_history());
-
-    for _ in 1..config.max_steps {
-        let chat_msg = task_chain.query_model().await?;
+impl Step {
+    /// Run the task for a single step
+    async fn step(mut self) -> Result<StepOrStop, Error> {
+        let chat_msg = self.task_chain.query_model().await?;
 
         // show the message from the assistant
-        handler.on_tool_update(chat_msg.clone(), true);
+        self.handler.on_tool_update(chat_msg.clone(), true);
 
         // pass the message to the tools and get the response
-        let (tool_name, resp) = task_chain.invoke_tool(&chat_msg.msg);
+        let (tool_name, resp) = self.task_chain.invoke_tool(&chat_msg.msg);
         match resp {
             Ok(response) => {
                 // check if the task is done
-                if let Some(termination_messages) = task_chain.is_terminal() {
-                    return Ok(termination_messages);
+                if let Some(termination_messages) = self.task_chain.is_terminal() {
+                    return Ok(StepOrStop::Stop {
+                        stop: Stop {
+                            termination_messages,
+                        },
+                    });
                 }
 
                 // Got a response from the tool but the task is not done yet
-                match task_chain.on_tool_success(tool_name, response) {
+                match self.task_chain.on_tool_success(tool_name, response) {
                     Ok(e) => {
-                        handler.on_tool_update(e, true);
+                        self.handler.on_tool_update(e, true);
                     }
                     Err(e) => {
-                        handler.on_tool_error(e);
+                        self.handler.on_tool_error(e);
                     }
                 }
             }
             Err(e) => {
                 // check if the task is done
-                if let Some(termination_messages) = task_chain.is_terminal() {
-                    return Ok(termination_messages);
+                if let Some(termination_messages) = self.task_chain.is_terminal() {
+                    return Ok(StepOrStop::Stop {
+                        stop: Stop {
+                            termination_messages,
+                        },
+                    });
                 }
 
-                match task_chain.on_tool_failure(tool_name, e) {
+                match self.task_chain.on_tool_failure(tool_name, e) {
                     Ok(e) => {
-                        handler.on_tool_update(e, false);
+                        self.handler.on_tool_update(e, false);
                     }
                     Err(e) => {
-                        handler.on_tool_error(e);
+                        self.handler.on_tool_error(e);
                     }
                 }
             }
         }
-    }
 
-    Err(Error::MaxStepsReached)
+        Ok(StepOrStop::Step { step: self })
+    }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct ToolInvocationInput {
-    command: String,
-    input: serde_yaml::Value,
-    output: Option<serde_yaml::Value>,
+/// The task is done
+pub struct Stop {
+    /// The termination messages
+    pub termination_messages: Vec<TerminationMessage>,
+}
+
+/// A step or the task is done
+pub enum StepOrStop {
+    /// The task is not done yet
+    Step {
+        /// The actual step task
+        step: Step,
+    },
+    /// The task is done
+    Stop {
+        /// the actual stopped task
+        stop: Stop,
+    },
+}
+
+impl StepOrStop {
+    /// Create a new `StepOrStop`.
+    pub fn new(
+        chain: Chain,
+        task: String,
+        handler: Box<dyn TaskProgressUpdateHandler>,
+    ) -> Result<Self, Error> {
+        let task_chain = chain.start_task(task)?;
+        Ok(StepOrStop::Step {
+            step: Step {
+                task_chain,
+                handler,
+            },
+        })
+    }
+
+    /// Run the task for the given number of steps
+    pub async fn run(mut self, max_steps: usize) -> Result<Stop, Error> {
+        for _ in 0..max_steps {
+            match self {
+                StepOrStop::Step { step } => {
+                    self = step.step().await?;
+                }
+                StepOrStop::Stop { stop } => {
+                    return Ok(stop);
+                }
+            }
+        }
+
+        Err(Error::MaxStepsReached)
+    }
+
+    /// Run the task for a single step
+    pub async fn step(self) -> Result<Self, Error> {
+        match self {
+            StepOrStop::Step { step } => step.step().await,
+            StepOrStop::Stop { stop } => Ok(StepOrStop::Stop { stop }),
+        }
+    }
+
+    /// is the task done?
+    pub fn is_done(&self) -> Option<Vec<TerminationMessage>> {
+        match self {
+            StepOrStop::Step { step: _ } => None,
+            StepOrStop::Stop { stop } => Some(stop.termination_messages.clone()),
+        }
+    }
+}
+
+/// Run until the task is done or the maximum number of steps is reached
+///
+/// See ['StepOrStop::new'], [`StepOrStop::step`] and ['StepOrStop::run] for
+/// more flexible ways to run a task
+#[tracing::instrument]
+pub async fn run_to_the_end(
+    toolbox: tools::Toolbox,
+    openai_client: Client,
+    config: Config,
+    task: String,
+    handler: impl TaskProgressUpdateHandler + 'static,
+) -> Result<Vec<TerminationMessage>, Error> {
+    let toolbox = Rc::new(toolbox);
+
+    let chain = Chain::new(toolbox, config.clone(), openai_client);
+
+    let step_or_stop = StepOrStop::new(chain, task, Box::new(handler))?;
+
+    let stop = step_or_stop.run(config.max_steps).await?;
+
+    Ok(stop.termination_messages)
 }

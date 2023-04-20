@@ -4,6 +4,14 @@ use std::rc::Rc;
 
 pub use llm_chain::parsing::find_yaml;
 pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription, ToolUseError};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug)]
+struct ToolInvocationInput {
+    command: String,
+    input: serde_yaml::Value,
+    output: Option<serde_yaml::Value>,
+}
 
 /// Something meant to become a [`Tool`] - description
 pub trait ProtoToolDescribe {
@@ -44,6 +52,7 @@ where
 ///
 /// This is the message that is sent to the user when a chain of exchanges
 /// terminates.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TerminationMessage {
     /// The final textual answer for this task.
     pub conclusion: String,
@@ -196,4 +205,51 @@ pub fn invoke_simple_from_toolbox(
     let tool = toolbox.tools.get(name).ok_or(ToolUseError::ToolNotFound)?;
 
     tool.invoke(input)
+}
+
+/// Try to find the tool invocation from the chat message and invoke the
+/// corresponding tool.
+///
+/// If multiple tool invocations are found, only the first one is used.
+#[tracing::instrument]
+pub fn invoke_tool(toolbox: Rc<Toolbox>, data: &str) -> (String, Result<String, ToolUseError>) {
+    let tool_invocations = find_yaml::<ToolInvocationInput>(data);
+
+    match tool_invocations {
+        Ok(tool_invocations) => {
+            if tool_invocations.is_empty() {
+                return (
+                    "unknown".to_string(),
+                    Err(ToolUseError::ToolInvocationFailed(
+                        "No Action found".to_string(),
+                    )),
+                );
+            }
+
+            // if any tool_invocations have an 'output' field, we return an error
+            for invocation in tool_invocations.iter() {
+                if invocation.output.is_some() {
+                    return (
+                        "unknown".to_string(),
+                        Err(ToolUseError::ToolInvocationFailed(
+                            "The Action cannot have an `output` field. Only `command` and `input` are allowed.".to_string(),
+                        )),
+                    );
+                }
+            }
+
+            // Take the first invocation - the list is reversed
+            let invocation_input = &tool_invocations.last().unwrap();
+
+            let tool_name = invocation_input.command.clone();
+
+            let input = invocation_input.input.clone();
+
+            match invoke_from_toolbox(toolbox, &invocation_input.command, input) {
+                Ok(o) => (tool_name, Ok(serde_yaml::to_string(&o).unwrap())),
+                Err(e) => (tool_name, Err(e)),
+            }
+        }
+        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidYaml(e))),
+    }
 }

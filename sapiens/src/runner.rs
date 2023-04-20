@@ -49,7 +49,7 @@ impl Chain {
     }
 
     /// Start a task
-    pub async fn start_task(mut self, task: String) -> Result<TaskChain, Error> {
+    pub fn start_task(mut self, task: String) -> Result<TaskChain, Error> {
         let task = self.prompt_manager.build_task_prompt(&task);
 
         let entry = ChatEntry {
@@ -130,7 +130,7 @@ impl TaskChain {
     /// See [`crate::invoke_tool`] for more details.
     pub fn invoke_tool(&self, data: &str) -> (String, Result<String, ToolUseError>) {
         let toolbox = self.chain.toolbox.clone();
-        crate::invoke_tool(toolbox, data)
+        crate::tools::invoke_tool(toolbox, data)
     }
 
     /// Generate a new prompt for the assistant based on the response from the

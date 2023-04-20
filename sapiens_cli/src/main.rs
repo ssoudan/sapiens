@@ -3,13 +3,12 @@ use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
-use sapiens::{work, Config, Error, Role, TaskProgressUpdateHandler};
+use sapiens::{run_to_the_end, Config, Error, Role, TaskProgressUpdateHandler};
 
 // FIXME(ssoudan) - deterministic order of tools in the prompt
 //
 // Usability:
-// NOW(ssoudan) - modularize the main loop
-// TODO(ssoudan) More tools: search, wx, arxiv, negotiate
+// TODO(ssoudan) More tools: search, wx, arxiv, negotiate, text summarization
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
 // TODO(ssoudan) Token budget management and completion termination reason
@@ -49,7 +48,7 @@ struct Args {
 
     /// Maximum number of steps to execute
     #[arg(short, long, default_value_t = 10)]
-    max_steps: u32,
+    max_steps: usize,
 
     /// Task to execute
     #[arg(short, long, default_value = "Tell me a joke.")]
@@ -148,7 +147,7 @@ async fn main() {
     );
 
     let task = args.task.clone();
-    let termination_messages = work(
+    let termination_messages = run_to_the_end(
         toolbox,
         openai_client,
         (&args).into(),

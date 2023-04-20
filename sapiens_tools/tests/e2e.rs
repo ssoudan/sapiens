@@ -2,8 +2,7 @@ use std::rc::Rc;
 
 use indoc::indoc;
 use insta::assert_snapshot;
-use sapiens::invoke_tool;
-use sapiens::tools::Toolbox;
+use sapiens::tools::{invoke_tool, Toolbox};
 use sapiens_tools::dummy::DummyTool;
 use sapiens_tools::python;
 use sapiens_tools::python::PythonTool;
