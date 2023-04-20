@@ -6,7 +6,7 @@ WORKDIR app
 
 FROM chef AS planner
 COPY . .
-RUN cargo chef prepare --recipe-path recipe.json --bin sapiens_cli
+RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
 ARG EXTRA_FEATURES=""
@@ -23,7 +23,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json --features="$EXTRA_FEATURES"
 # Build application
 COPY . .
-RUN cargo build --package sapiens_cli --release --bin sapiens_cli --features="$EXTRA_FEATURES"
+RUN cargo build --release --bin sapiens_cli --features="$EXTRA_FEATURES"
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS runtime
