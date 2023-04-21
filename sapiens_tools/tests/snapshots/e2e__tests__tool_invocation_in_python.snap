@@ -1,0 +1,10 @@
+---
+source: sapiens_tools/tests/e2e.rs
+expression: output
+---
+stdout: |
+  Hello world!
+  {'something': 'blah and something else'}
+  {'something': 'blah and something else'}
+stderr: ''
+

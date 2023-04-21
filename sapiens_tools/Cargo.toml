@@ -52,3 +52,8 @@ pyo3-asyncio = { version = "0.18.0", features = ["attributes", "tokio-runtime", 
 
 [package.metadata.cargo-udeps.ignore]
 normal = ["pyo3-asyncio"]
+
+[[test]]
+name = "e2e"
+path = "tests/e2e.rs"
+harness = false

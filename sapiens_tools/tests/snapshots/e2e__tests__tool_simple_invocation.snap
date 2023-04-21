@@ -2,7 +2,5 @@
 source: sapiens_tools/tests/e2e.rs
 expression: output
 ---
-stdout: |
-  Hello world 1!
-stderr: ''
+{}
 

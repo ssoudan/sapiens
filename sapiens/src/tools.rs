@@ -205,12 +205,15 @@ pub async fn invoke_from_toolbox(
     }
 
     // if not, test if the tool is a terminal tool
-    let guard = toolbox.terminal_tools.read().await;
-    if let Some(tool) = guard.get(name) {
-        return tool.invoke(input).await;
+    {
+        let guard = toolbox.terminal_tools.read().await;
+        if let Some(tool) = guard.get(name) {
+            return tool.invoke(input).await;
+        }
     }
 
     // otherwise, use the normal tool
+    let guard = toolbox.tools.read().await;
     let tool = guard
         .get(name)
         .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
@@ -225,13 +228,15 @@ pub async fn invoke_simple_from_toolbox(
     input: serde_yaml::Value,
 ) -> Result<serde_yaml::Value, ToolUseError> {
     // test if the tool is a terminal tool
-    let guard = toolbox.terminal_tools.read().await;
-
-    if let Some(tool) = guard.get(name) {
-        return tool.invoke(input).await;
+    {
+        let guard = toolbox.terminal_tools.read().await;
+        if let Some(tool) = guard.get(name) {
+            return tool.invoke(input).await;
+        }
     }
 
     // the normal tool only
+    let guard = toolbox.tools.read().await;
     let tool = guard
         .get(name)
         .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
