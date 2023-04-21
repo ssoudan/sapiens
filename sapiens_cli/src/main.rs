@@ -107,12 +107,18 @@ impl TaskProgressUpdateHandler for Handler {
         }
     }
 
-    fn on_tool_update(&self, chat_message: ChatEntry, success: bool) {
+    fn on_model_update(&self, model_message: ChatEntry) {
+        let msg = ColorFormatter.format(&model_message);
+        println!("{}", msg);
+        println!("=============");
+    }
+
+    fn on_tool_update(&self, tool_output: ChatEntry, success: bool) {
         if success {
-            let msg = ColorFormatter.format(&chat_message);
+            let msg = ColorFormatter.format(&tool_output);
             println!("{}", msg);
         } else {
-            let msg = chat_message.msg.yellow();
+            let msg = tool_output.msg.yellow();
             println!("{}", msg);
         }
         println!("=============");

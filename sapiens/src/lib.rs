@@ -68,8 +68,11 @@ pub trait TaskProgressUpdateHandler: Debug {
     /// Called when the task starts
     fn on_start(&self, chat_history: &ChatHistory);
 
+    /// Called when the model updates the chat history
+    fn on_model_update(&self, model_message: ChatEntry);
+
     /// Called when the tool updates the chat history
-    fn on_tool_update(&self, chat_message: ChatEntry, success: bool);
+    fn on_tool_update(&self, tool_output: ChatEntry, success: bool);
 
     /// Called when the tool returns an error
     fn on_tool_error(&self, error: Error);
@@ -78,19 +81,21 @@ pub trait TaskProgressUpdateHandler: Debug {
 /// A step in the task
 pub struct Step {
     task_chain: TaskChain,
-    handler: Box<dyn TaskProgressUpdateHandler>,
+    handler: Option<Box<dyn TaskProgressUpdateHandler>>,
 }
 
 impl Step {
     /// Run the task for a single step
     async fn step(mut self) -> Result<StepOrStop, Error> {
-        let chat_msg = self.task_chain.query_model().await?;
+        let model_message = self.task_chain.query_model().await?;
 
         // show the message from the assistant
-        self.handler.on_tool_update(chat_msg.clone(), true);
+        if let Some(handler) = &self.handler {
+            handler.on_model_update(model_message.clone());
+        }
 
         // pass the message to the tools and get the response
-        let (tool_name, resp) = self.task_chain.invoke_tool(&chat_msg.msg);
+        let (tool_name, resp) = self.task_chain.invoke_tool(&model_message.msg);
         match resp {
             Ok(response) => {
                 // check if the task is done
@@ -104,11 +109,15 @@ impl Step {
 
                 // Got a response from the tool but the task is not done yet
                 match self.task_chain.on_tool_success(tool_name, response) {
-                    Ok(e) => {
-                        self.handler.on_tool_update(e, true);
+                    Ok(tool_output) => {
+                        if let Some(handler) = &self.handler {
+                            handler.on_tool_update(tool_output, true);
+                        }
                     }
                     Err(e) => {
-                        self.handler.on_tool_error(e);
+                        if let Some(handler) = &self.handler {
+                            handler.on_tool_error(e);
+                        }
                     }
                 }
             }
@@ -123,11 +132,15 @@ impl Step {
                 }
 
                 match self.task_chain.on_tool_failure(tool_name, e) {
-                    Ok(e) => {
-                        self.handler.on_tool_update(e, false);
+                    Ok(tool_output) => {
+                        if let Some(handler) = &self.handler {
+                            handler.on_tool_update(tool_output, false);
+                        }
                     }
                     Err(e) => {
-                        self.handler.on_tool_error(e);
+                        if let Some(handler) = &self.handler {
+                            handler.on_tool_error(e);
+                        }
                     }
                 }
             }
@@ -158,17 +171,37 @@ pub enum StepOrStop {
 }
 
 impl StepOrStop {
-    /// Create a new `StepOrStop`.
-    pub fn new(
+    /// Create a new [`StepOrStop`] for a `task`.
+    ///
+    /// The `handler` will be called when the task starts and when a step is
+    /// completed - either successfully or not. The `handler` will be called
+    /// with the latest chat history element. It is also called on error.
+    pub fn with_handler(
         chain: Chain,
         task: String,
         handler: Box<dyn TaskProgressUpdateHandler>,
     ) -> Result<Self, Error> {
         let task_chain = chain.start_task(task)?;
+
+        // call the handler
+        handler.on_start(task_chain.chat_history());
+
         Ok(StepOrStop::Step {
             step: Step {
                 task_chain,
-                handler,
+                handler: Some(handler),
+            },
+        })
+    }
+
+    /// Create a new [`StepOrStop`] for a `task`.
+    pub fn new(chain: Chain, task: String) -> Result<Self, Error> {
+        let task_chain = chain.start_task(task)?;
+
+        Ok(StepOrStop::Step {
+            step: Step {
+                task_chain,
+                handler: None,
             },
         })
     }
@@ -222,7 +255,7 @@ pub async fn run_to_the_end(
 
     let chain = Chain::new(toolbox, config.clone(), openai_client);
 
-    let step_or_stop = StepOrStop::new(chain, task, Box::new(handler))?;
+    let step_or_stop = StepOrStop::with_handler(chain, task, Box::new(handler))?;
 
     let stop = step_or_stop.run(config.max_steps).await?;
 
