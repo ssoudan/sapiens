@@ -2,9 +2,26 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::rc::Rc;
 
-pub use llm_chain::parsing::find_yaml;
-pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription, ToolUseError};
+pub use llm_chain::parsing::{find_yaml, ExtractionError};
+pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription};
 use serde::{Deserialize, Serialize};
+
+/// Error while using a tool
+#[derive(Debug, thiserror::Error)]
+pub enum ToolUseError {
+    /// Tool not found
+    #[error("Tool not found: {0}")]
+    ToolNotFound(String),
+    /// Tool invocation failed
+    #[error("Tool invocation failed: {0}")]
+    ToolInvocationFailed(String),
+    /// Invalid YAML
+    #[error("Invalid YAML")]
+    InvalidYaml(#[from] serde_yaml::Error),
+    /// Invalid input
+    #[error("Invalid input: {0}")]
+    InvalidInput(#[from] ExtractionError),
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ToolInvocationInput {
@@ -185,7 +202,10 @@ pub fn invoke_from_toolbox(
     }
 
     // otherwise, use the normal tool
-    let tool = toolbox.tools.get(name).ok_or(ToolUseError::ToolNotFound)?;
+    let tool = toolbox
+        .tools
+        .get(name)
+        .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
 
     tool.invoke(input)
 }
@@ -202,7 +222,10 @@ pub fn invoke_simple_from_toolbox(
     }
 
     // the normal tool only
-    let tool = toolbox.tools.get(name).ok_or(ToolUseError::ToolNotFound)?;
+    let tool = toolbox
+        .tools
+        .get(name)
+        .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
 
     tool.invoke(input)
 }
@@ -250,6 +273,6 @@ pub fn invoke_tool(toolbox: Rc<Toolbox>, data: &str) -> (String, Result<String, 
                 Err(e) => (tool_name, Err(e)),
             }
         }
-        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidYaml(e))),
+        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidInput(e))),
     }
 }

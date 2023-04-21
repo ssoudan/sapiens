@@ -3,7 +3,6 @@ use std::rc::Rc;
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::prompt::Task;
-use crate::tools::ToolUseError::ToolInvocationFailed;
 use crate::tools::{TerminationMessage, ToolUseError, Toolbox};
 use crate::{
     prompt, ChatCompletionRequestMessage, Client, Config, CreateChatCompletionRequest, Error, Role,
@@ -148,7 +147,7 @@ impl TaskChain {
         // instead
         const MAX_RESPONSE_CHAR: usize = 2048;
         if msg.len() > MAX_RESPONSE_CHAR {
-            let e = ToolInvocationFailed(format!(
+            let e = ToolUseError::ToolInvocationFailed(format!(
                 "The response is too long ({}B). Max allowed is {}B.",
                 msg.len(),
                 MAX_RESPONSE_CHAR
