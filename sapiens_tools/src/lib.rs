@@ -16,3 +16,6 @@ pub mod dummy;
 /// Tools related to mediawiki: Wikipedia, Wikidata, etc.
 #[cfg(feature = "wiki")]
 pub mod wiki;
+
+/// Setup tools
+pub mod setup;

@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use huelib2::resource::group::CreatableKind;
 use huelib2::resource::group::Kind::Creatable;
 use sapiens::tools::{
@@ -14,12 +12,12 @@ use crate::hue::Room;
 #[derive(ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
 pub struct RoomTool {
-    bridge: Rc<huelib2::bridge::Bridge>,
+    bridge: huelib2::bridge::Bridge,
 }
 
 impl RoomTool {
     /// Create a new RoomTool
-    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
+    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
         RoomTool { bridge }
     }
 }
@@ -35,7 +33,7 @@ impl Default for RoomTool {
 
         let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
 
-        Self::new(Rc::new(bridge))
+        Self::new(bridge)
     }
 }
 
@@ -57,7 +55,7 @@ pub struct RoomToolOutput {
 }
 
 impl RoomTool {
-    fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
+    async fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
         let room_filter = &input.room_filter;
 
         self.bridge
@@ -92,7 +90,10 @@ pub mod fake {
     pub struct FakeRoomTool {}
 
     impl FakeRoomTool {
-        fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
+        async fn invoke_typed(
+            &self,
+            input: &RoomToolInput,
+        ) -> Result<RoomToolOutput, ToolUseError> {
             let rooms = vec![
                 Room {
                     name: "Bedroom".to_string(),
@@ -115,6 +116,7 @@ pub mod fake {
         }
     }
 
+    #[async_trait::async_trait]
     impl Tool for FakeRoomTool {
         fn description(&self) -> ToolDescription {
             ToolDescription::new(
@@ -126,9 +128,12 @@ pub mod fake {
             )
         }
 
-        fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        async fn invoke(
+            &self,
+            input: serde_yaml::Value,
+        ) -> Result<serde_yaml::Value, ToolUseError> {
             let input = serde_yaml::from_value(input)?;
-            let output = self.invoke_typed(&input)?;
+            let output = self.invoke_typed(&input).await?;
             Ok(serde_yaml::to_value(output)?)
         }
     }
@@ -140,14 +145,14 @@ pub mod fake {
 
         use super::*;
 
-        #[test]
-        fn test_fake_room_tool() {
+        #[tokio::test]
+        async fn test_fake_room_tool() {
             let tool = FakeRoomTool::default();
             let input = RoomToolInput {
                 room_filter: vec!["Bedroom".to_string()],
             };
             let input = serde_yaml::to_value(input).unwrap();
-            let output = tool.invoke(input).unwrap();
+            let output = tool.invoke(input).await.unwrap();
             let output: RoomToolOutput = serde_yaml::from_value(output).unwrap();
             let expected = RoomToolOutput {
                 rooms: vec![Room {
@@ -158,14 +163,14 @@ pub mod fake {
             assert_eq!(output, expected);
         }
 
-        #[test]
-        fn test_fake_room_tool_empty_filter() {
+        #[tokio::test]
+        async fn test_fake_room_tool_empty_filter() {
             let tool = FakeRoomTool::default();
             let input = RoomToolInput {
                 room_filter: vec![],
             };
             let input = serde_yaml::to_value(input).unwrap();
-            let output = tool.invoke(input).unwrap();
+            let output = tool.invoke(input).await.unwrap();
             let output: RoomToolOutput = serde_yaml::from_value(output).unwrap();
             let expected = RoomToolOutput {
                 rooms: vec![

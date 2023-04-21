@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub use llm_chain::parsing::{find_yaml, ExtractionError};
 pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription};
 use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
 /// Error while using a tool
 #[derive(Debug, thiserror::Error)]
@@ -37,22 +38,25 @@ pub trait ProtoToolDescribe {
 }
 
 /// Something meant to become a [`Tool`] - invocation
+#[async_trait::async_trait]
 pub trait ProtoToolInvoke {
     /// Invoke the tool
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
+    async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
 /// A Tool - the most basic kind of tools. See [`AdvancedTool`] and
 /// [`TerminalTool`] for more.
-pub trait Tool {
+#[async_trait::async_trait]
+pub trait Tool: Sync + Send {
     /// the description of the tool
     fn description(&self) -> ToolDescription;
 
     /// Invoke the tool
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
+    async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
-impl<T> Tool for T
+#[async_trait::async_trait]
+impl<T: Sync + Send> Tool for T
 where
     T: ProtoToolDescribe + ProtoToolInvoke,
 {
@@ -60,8 +64,8 @@ where
         self.description()
     }
 
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        self.invoke(input)
+    async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        self.invoke(input).await
     }
 }
 
@@ -78,24 +82,26 @@ pub struct TerminationMessage {
 }
 
 /// A [`Tool`] that wraps a chain of exchanges
-pub trait TerminalTool: Tool {
+#[async_trait::async_trait]
+pub trait TerminalTool: Tool + Sync + Send {
     /// done flag.
-    fn is_done(&self) -> bool {
+    async fn is_done(&self) -> bool {
         false
     }
 
     /// Take the done flag.
-    fn take_done(&self) -> Option<TerminationMessage> {
+    async fn take_done(&self) -> Option<TerminationMessage> {
         None
     }
 }
 
 /// A [`Tool`]  that can benefit from a [`Toolbox`]
+#[async_trait::async_trait]
 pub trait AdvancedTool: Tool {
     /// Invoke the tool with a [`Toolbox`]
-    fn invoke_with_toolbox(
+    async fn invoke_with_toolbox(
         &self,
-        toolbox: Rc<Toolbox>,
+        toolbox: Toolbox,
         input: serde_yaml::Value,
     ) -> Result<serde_yaml::Value, ToolUseError>;
 }
@@ -104,36 +110,32 @@ pub trait AdvancedTool: Tool {
 ///
 /// a [`Toolbox`] is a collection of [`Tool`], [`TerminalTool`] and
 /// [`AdvancedTool`].
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Toolbox {
     /// The terminal tools - the one that can terminate a chain of exchanges
-    terminal_tools: HashMap<String, Box<dyn TerminalTool>>,
+    terminal_tools: Arc<RwLock<HashMap<String, Box<dyn TerminalTool>>>>,
 
     /// The tools - the other tools
-    tools: HashMap<String, Box<dyn Tool>>,
+    tools: Arc<RwLock<HashMap<String, Box<dyn Tool>>>>,
 
     /// The advanced tools - the one that can invoke another tool (not an
     /// advanced one)
-    advanced_tools: HashMap<String, Box<dyn AdvancedTool>>,
+    advanced_tools: Arc<RwLock<HashMap<String, Box<dyn AdvancedTool>>>>,
 }
 
 impl Debug for Toolbox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Toolbox")
-            .field("terminal_tools", &self.terminal_tools.keys())
-            .field("tools", &self.tools.keys())
-            .field("advanced_tools", &self.advanced_tools.keys())
-            .finish()
+        f.debug_struct("Toolbox").finish()
     }
 }
 
 impl Toolbox {
     /// Collect the termination messages
-    pub fn termination_messages(&self) -> Vec<TerminationMessage> {
+    pub async fn termination_messages(&self) -> Vec<TerminationMessage> {
         let mut messages = Vec::new();
 
-        for tool in self.terminal_tools.values() {
-            if let Some(message) = tool.take_done() {
+        for tool in self.terminal_tools.read().await.values() {
+            if let Some(message) = tool.take_done().await {
                 messages.push(message);
             }
         }
@@ -144,40 +146,46 @@ impl Toolbox {
     /// Add a terminal tool
     ///
     /// A [`TerminalTool`] can terminate a chain of exchanges.
-    pub fn add_terminal_tool(&mut self, tool: impl TerminalTool + 'static) {
+    pub async fn add_terminal_tool(&mut self, tool: impl TerminalTool + 'static) {
         let name = tool.description().name;
-        self.terminal_tools.insert(name, Box::new(tool));
+        self.terminal_tools
+            .write()
+            .await
+            .insert(name, Box::new(tool));
     }
 
     /// Add a tool
     ///
     /// A [`Tool`] can be invoked by an [`AdvancedTool`].
-    pub fn add_tool(&mut self, tool: impl Tool + 'static) {
+    pub async fn add_tool(&mut self, tool: impl Tool + 'static) {
         let name = tool.description().name;
-        self.tools.insert(name, Box::new(tool));
+        self.tools.write().await.insert(name, Box::new(tool));
     }
 
     /// Add an advanced tool
     ///
     /// An [`AdvancedTool`] is a [`Tool`] that can invoke another tool.
-    pub fn add_advanced_tool(&mut self, tool: impl AdvancedTool + 'static) {
+    pub async fn add_advanced_tool(&mut self, tool: impl AdvancedTool + 'static) {
         let name = tool.description().name;
-        self.advanced_tools.insert(name, Box::new(tool));
+        self.advanced_tools
+            .write()
+            .await
+            .insert(name, Box::new(tool));
     }
 
     /// Get the descriptions of the tools
-    pub fn describe(&self) -> HashMap<String, ToolDescription> {
+    pub async fn describe(&self) -> HashMap<String, ToolDescription> {
         let mut descriptions = HashMap::new();
 
-        for (name, tool) in self.terminal_tools.iter() {
+        for (name, tool) in self.terminal_tools.read().await.iter() {
             descriptions.insert(name.clone(), tool.description());
         }
 
-        for (name, tool) in self.tools.iter() {
+        for (name, tool) in self.tools.read().await.iter() {
             descriptions.insert(name.clone(), tool.description());
         }
 
-        for (name, tool) in self.advanced_tools.iter() {
+        for (name, tool) in self.advanced_tools.read().await.iter() {
             descriptions.insert(name.clone(), tool.description());
         }
 
@@ -186,48 +194,49 @@ impl Toolbox {
 }
 
 /// Invoke a [`Tool`] or [`AdvancedTool`]  from a [`Toolbox`]
-pub fn invoke_from_toolbox(
-    toolbox: Rc<Toolbox>,
+pub async fn invoke_from_toolbox(
+    toolbox: Toolbox,
     name: &str,
     input: serde_yaml::Value,
 ) -> Result<serde_yaml::Value, ToolUseError> {
     // test if the tool is an advanced tool
-    if let Some(tool) = toolbox.clone().advanced_tools.get(name) {
-        return tool.invoke_with_toolbox(toolbox, input);
+    if let Some(tool) = toolbox.clone().advanced_tools.read().await.get(name) {
+        return tool.invoke_with_toolbox(toolbox, input).await;
     }
 
     // if not, test if the tool is a terminal tool
-    if let Some(tool) = toolbox.terminal_tools.get(name) {
-        return tool.invoke(input);
+    let guard = toolbox.terminal_tools.read().await;
+    if let Some(tool) = guard.get(name) {
+        return tool.invoke(input).await;
     }
 
     // otherwise, use the normal tool
-    let tool = toolbox
-        .tools
+    let tool = guard
         .get(name)
         .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
 
-    tool.invoke(input)
+    tool.invoke(input).await
 }
 
 /// Invoke a Tool from a [`Toolbox`]
-pub fn invoke_simple_from_toolbox(
-    toolbox: Rc<Toolbox>,
+pub async fn invoke_simple_from_toolbox(
+    toolbox: Toolbox,
     name: &str,
     input: serde_yaml::Value,
 ) -> Result<serde_yaml::Value, ToolUseError> {
     // test if the tool is a terminal tool
-    if let Some(tool) = toolbox.terminal_tools.get(name) {
-        return tool.invoke(input);
+    let guard = toolbox.terminal_tools.read().await;
+
+    if let Some(tool) = guard.get(name) {
+        return tool.invoke(input).await;
     }
 
     // the normal tool only
-    let tool = toolbox
-        .tools
+    let tool = guard
         .get(name)
         .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
 
-    tool.invoke(input)
+    tool.invoke(input).await
 }
 
 /// Try to find the tool invocation from the chat message and invoke the
@@ -235,7 +244,7 @@ pub fn invoke_simple_from_toolbox(
 ///
 /// If multiple tool invocations are found, only the first one is used.
 #[tracing::instrument]
-pub fn invoke_tool(toolbox: Rc<Toolbox>, data: &str) -> (String, Result<String, ToolUseError>) {
+pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String, ToolUseError>) {
     let tool_invocations = find_yaml::<ToolInvocationInput>(data);
 
     match tool_invocations {
@@ -268,7 +277,7 @@ pub fn invoke_tool(toolbox: Rc<Toolbox>, data: &str) -> (String, Result<String, 
 
             let input = invocation_input.input.clone();
 
-            match invoke_from_toolbox(toolbox, &invocation_input.command, input) {
+            match invoke_from_toolbox(toolbox, &invocation_input.command, input).await {
                 Ok(o) => (tool_name, Ok(serde_yaml::to_string(&o).unwrap())),
                 Err(e) => (tool_name, Err(e)),
             }

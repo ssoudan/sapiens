@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use huelib2::resource::Adjust;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
@@ -17,7 +15,7 @@ use crate::hue::Light;
     output = "StatusToolOutput"
 )]
 pub struct StatusTool {
-    bridge: Rc<huelib2::bridge::Bridge>,
+    bridge: huelib2::bridge::Bridge,
 }
 
 impl Default for StatusTool {
@@ -31,7 +29,7 @@ impl Default for StatusTool {
 
         let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
 
-        Self::new(Rc::new(bridge))
+        Self::new(bridge)
     }
 }
 
@@ -54,11 +52,14 @@ pub struct StatusToolOutput {
 
 impl StatusTool {
     /// Create a new StatusTool
-    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
+    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
         StatusTool { bridge }
     }
 
-    fn invoke_typed(&self, input: &StatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
+    async fn invoke_typed(
+        &self,
+        input: &StatusToolInput,
+    ) -> Result<StatusToolOutput, ToolUseError> {
         let light_filter = &input.light_filter;
 
         self.bridge
@@ -88,16 +89,19 @@ impl StatusTool {
     output = "StatusToolOutput"
 )]
 pub struct SetStatusTool {
-    bridge: Rc<huelib2::bridge::Bridge>,
+    bridge: huelib2::bridge::Bridge,
 }
 
 impl SetStatusTool {
     /// Create a new StatusTool
-    pub fn new(bridge: Rc<huelib2::bridge::Bridge>) -> Self {
+    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
         SetStatusTool { bridge }
     }
 
-    fn invoke_typed(&self, input: &SetStatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
+    async fn invoke_typed(
+        &self,
+        input: &SetStatusToolInput,
+    ) -> Result<StatusToolOutput, ToolUseError> {
         if let Some(lights) = &input.lights {
             for light in lights {
                 let state = huelib2::resource::light::StateModifier {
@@ -170,7 +174,7 @@ impl Default for SetStatusTool {
 
         let bridge = huelib2::bridge::Bridge::new(bridge_ip, username);
 
-        Self::new(Rc::new(bridge))
+        Self::new(bridge)
     }
 }
 
@@ -220,16 +224,23 @@ pub mod fake {
         }
     }
 
+    #[async_trait::async_trait]
     impl ProtoToolInvoke for FakeStatusTool {
-        fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+        async fn invoke(
+            &self,
+            input: serde_yaml::Value,
+        ) -> Result<serde_yaml::Value, ToolUseError> {
             let input = serde_yaml::from_value(input)?;
-            let output = self.invoke_typed(&input)?;
+            let output = self.invoke_typed(&input).await?;
             Ok(serde_yaml::to_value(output)?)
         }
     }
 
     impl FakeStatusTool {
-        fn invoke_typed(&self, input: &StatusToolInput) -> Result<StatusToolOutput, ToolUseError> {
+        async fn invoke_typed(
+            &self,
+            input: &StatusToolInput,
+        ) -> Result<StatusToolOutput, ToolUseError> {
             let lights = vec![
                 Light {
                     id: "1".to_string(),

@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 
 use sapiens::tools::{
@@ -7,6 +6,7 @@ use sapiens::tools::{
 };
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 /// A tool to conclude a task.
 /// You have to use this to once you have the answer to the task with your
@@ -18,16 +18,23 @@ use serde::{Deserialize, Serialize};
     output = "ConcludeToolOutput"
 )]
 pub struct ConcludeTool {
-    done: RefCell<Option<ConcludeToolInput>>,
+    done: Mutex<Option<ConcludeToolInput>>,
 }
 
+#[async_trait::async_trait]
 impl TerminalTool for ConcludeTool {
-    fn is_done(&self) -> bool {
-        self.done.borrow().is_some()
+    async fn is_done(&self) -> bool {
+        // lock
+        let done = self.done.lock().await;
+        done.is_some()
     }
 
-    fn take_done(&self) -> Option<TerminationMessage> {
-        self.done.borrow_mut().take().map(|input| input.into())
+    async fn take_done(&self) -> Option<TerminationMessage> {
+        // lock
+        {
+            let mut done = self.done.lock().await;
+            done.take().map(|input| input.into())
+        }
     }
 }
 
@@ -56,14 +63,23 @@ impl From<ConcludeToolInput> for TerminationMessage {
 pub struct ConcludeToolOutput {}
 
 impl ConcludeTool {
-    fn invoke_typed(&self, input: &ConcludeToolInput) -> Result<ConcludeToolOutput, ToolUseError> {
-        if self.done.borrow().is_some() {
-            return Err(ToolUseError::ToolInvocationFailed(
-                "This task is already done.".to_string(),
-            ));
-        }
+    async fn invoke_typed(
+        &self,
+        input: &ConcludeToolInput,
+    ) -> Result<ConcludeToolOutput, ToolUseError> {
+        // lock
+        {
+            let mut done = self.done.lock().await;
 
-        *self.done.borrow_mut() = Some(input.clone());
+            if done.is_some() {
+                return Err(ToolUseError::ToolInvocationFailed(
+                    "This task is already done.".to_string(),
+                ));
+            }
+
+            // set done
+            *done = Some(input.clone());
+        }
 
         Ok(ConcludeToolOutput {})
     }

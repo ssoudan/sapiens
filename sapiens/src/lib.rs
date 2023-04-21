@@ -10,15 +10,15 @@ pub mod tools;
 /// Runner for sapiens
 pub mod runner;
 
-use std::fmt::Debug;
-use std::rc::Rc;
+/// OpenAI API client
+pub mod openai;
 
-pub use async_openai::error::OpenAIError;
-pub use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
-use async_openai::Client;
+use std::fmt::Debug;
+
 use runner::Chain;
 
 use crate::context::{ChatEntry, ChatHistory};
+use crate::openai::{Client, OpenAIError};
 use crate::runner::TaskChain;
 use crate::tools::TerminationMessage;
 
@@ -64,18 +64,19 @@ impl Default for Config {
 }
 
 /// Handler for the task progress updates
-pub trait TaskProgressUpdateHandler: Debug {
+pub trait TaskProgressUpdateHandler: Send {
+    // FIXME(ssoudan) async trait
     /// Called when the task starts
-    fn on_start(&self, chat_history: &ChatHistory);
+    fn on_start(&self, _chat_history: &ChatHistory) {}
 
     /// Called when the model updates the chat history
-    fn on_model_update(&self, model_message: ChatEntry);
+    fn on_model_update(&self, _model_message: ChatEntry) {}
 
     /// Called when the tool updates the chat history
-    fn on_tool_update(&self, tool_output: ChatEntry, success: bool);
+    fn on_tool_update(&self, _tool_output: ChatEntry, _success: bool) {}
 
     /// Called when the tool returns an error
-    fn on_tool_error(&self, error: Error);
+    fn on_tool_error(&self, _error: Error) {}
 }
 
 /// A step in the task
@@ -95,11 +96,11 @@ impl Step {
         }
 
         // pass the message to the tools and get the response
-        let (tool_name, resp) = self.task_chain.invoke_tool(&model_message.msg);
+        let (tool_name, resp) = self.task_chain.invoke_tool(&model_message.msg).await;
         match resp {
             Ok(response) => {
                 // check if the task is done
-                if let Some(termination_messages) = self.task_chain.is_terminal() {
+                if let Some(termination_messages) = self.task_chain.is_terminal().await {
                     return Ok(StepOrStop::Stop {
                         stop: Stop {
                             termination_messages,
@@ -123,7 +124,7 @@ impl Step {
             }
             Err(e) => {
                 // check if the task is done
-                if let Some(termination_messages) = self.task_chain.is_terminal() {
+                if let Some(termination_messages) = self.task_chain.is_terminal().await {
                     return Ok(StepOrStop::Stop {
                         stop: Stop {
                             termination_messages,
@@ -249,11 +250,9 @@ pub async fn run_to_the_end(
     openai_client: Client,
     config: Config,
     task: String,
-    handler: impl TaskProgressUpdateHandler + 'static,
+    handler: impl TaskProgressUpdateHandler + 'static + Debug,
 ) -> Result<Vec<TerminationMessage>, Error> {
-    let toolbox = Rc::new(toolbox);
-
-    let chain = Chain::new(toolbox, config.clone(), openai_client);
+    let chain = Chain::new(toolbox, config.clone(), openai_client).await;
 
     let step_or_stop = StepOrStop::with_handler(chain, task, Box::new(handler))?;
 

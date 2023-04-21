@@ -1,14 +1,12 @@
-use std::rc::Rc;
-
 use indoc::indoc;
 use insta::assert_snapshot;
+use pyo3::PyResult;
 use sapiens::tools::{invoke_tool, Toolbox};
 use sapiens_tools::dummy::DummyTool;
-use sapiens_tools::python;
 use sapiens_tools::python::PythonTool;
 
-#[test]
-fn test_tool_invocation() {
+#[pyo3_asyncio::tokio::test]
+async fn test_tool_invocation() -> PyResult<()> {
     let data = indoc! {r#"
         # Action
         ```yaml        
@@ -20,18 +18,18 @@ fn test_tool_invocation() {
         "#};
 
     let mut toolbox = Toolbox::default();
-    toolbox.add_advanced_tool(PythonTool::default());
+    toolbox.add_advanced_tool(PythonTool::default()).await;
 
-    let toolbox = Rc::new(toolbox);
-
-    let (tool_name, res) = invoke_tool(toolbox, data);
+    let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
     assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
+
+    Ok(())
 }
 
-#[test]
-fn test_tool_invocation_in_python() {
+#[pyo3_asyncio::tokio::test]
+async fn test_tool_invocation_in_python() -> PyResult<()> {
     let data = indoc! {r#"
         # Action
         ```yaml        
@@ -47,22 +45,22 @@ fn test_tool_invocation_in_python() {
         "#};
 
     let mut toolbox = Toolbox::default();
-    toolbox.add_advanced_tool(PythonTool::default());
-    toolbox.add_tool(DummyTool::default());
+    toolbox.add_advanced_tool(PythonTool::default()).await;
+    toolbox.add_tool(DummyTool::default()).await;
 
-    let toolbox = Rc::new(toolbox);
-
-    let (tool_name, res) = invoke_tool(toolbox, data);
+    let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
     assert_eq!(
             output,
             "stdout: |\n  Hello world!\n  {'something': 'blah and something else'}\n  {'something': 'blah and something else'}\nstderr: ''\n"
         );
+
+    Ok(())
 }
 
-#[test]
-fn test_multiple_tool_invocations() {
+#[pyo3_asyncio::tokio::test]
+async fn test_multiple_tool_invocations() -> PyResult<()> {
     let data = indoc! {r#"
         # Action
         ```yaml        
@@ -90,23 +88,21 @@ fn test_multiple_tool_invocations() {
         "#};
 
     let mut toolbox = Toolbox::default();
-    toolbox.add_advanced_tool(PythonTool::default());
+    toolbox.add_advanced_tool(PythonTool::default()).await;
 
-    let toolbox = Rc::new(toolbox);
-
-    let (tool_name, res) = invoke_tool(toolbox, data);
+    let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
     assert_snapshot!(output);
+
+    Ok(())
 }
 
-#[test]
-fn test_python() {
+#[pyo3_asyncio::tokio::test]
+async fn test_python() -> PyResult<()> {
     let mut toolbox = Toolbox::default();
-    toolbox.add_tool(DummyTool::default());
-    toolbox.add_advanced_tool(python::PythonTool::default());
-
-    let toolbox = Rc::new(toolbox);
+    toolbox.add_tool(DummyTool::default()).await;
+    toolbox.add_advanced_tool(PythonTool::default()).await;
 
     let data = indoc! {
     r#"```yaml
@@ -124,19 +120,20 @@ fn test_python() {
        ```
     "#};
 
-    let (tool_name, res) = invoke_tool(toolbox, data);
+    let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
 
     assert_snapshot!(output);
+    Ok(())
 }
 
 #[cfg(feature = "wiki")]
 mod wiki {
     use indoc::indoc;
 
-    #[test]
-    fn test_wikidata_sparql() {
+    #[tokio::test]
+    async fn test_wikidata_sparql() {
         let query = indoc! {
 r#"
             PREFIX wd: <http://www.wikidata.org/entity/>
@@ -158,14 +155,18 @@ r#"
         "#
         };
 
-        let api = mediawiki::api_sync::ApiSync::new("https://www.wikidata.org/w/api.php").unwrap(); // Will determine the SPARQL API URL via site info data
-        let res = api.sparql_query(query).unwrap();
+        let api = mediawiki::api::Api::new("https://www.wikidata.org/w/api.php")
+            .await
+            .unwrap(); // Will determine the SPARQL API URL via site info data
+        let res = api.sparql_query(query).await.unwrap();
         println!("{}", serde_json::to_string_pretty(&res).unwrap());
     }
 
-    #[test]
-    fn test_wikipedia() {
-        let api = mediawiki::api_sync::ApiSync::new("https://en.wikipedia.org/w/api.php").unwrap();
+    #[tokio::test]
+    async fn test_wikipedia() {
+        let api = mediawiki::api::Api::new("https://en.wikipedia.org/w/api.php")
+            .await
+            .unwrap();
 
         // Query parameters
         let params = api.params_into(&[
@@ -174,7 +175,7 @@ r#"
             ("titles", "Albert Einstein"),
         ]);
 
-        let res = api.get_query_api_json_all(&params).unwrap();
+        let res = api.get_query_api_json_all(&params).await.unwrap();
 
         // Print the result
         println!("{}", serde_json::to_string_pretty(&res).unwrap());

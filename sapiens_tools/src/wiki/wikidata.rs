@@ -1,4 +1,4 @@
-use mediawiki::api_sync::ApiSync;
+use mediawiki::api::Api;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
@@ -21,7 +21,7 @@ use serde_json;
     output = "WikidataToolOutput"
 )]
 pub struct WikidataTool {
-    client: ApiSync,
+    client: Api,
 }
 
 /// [`WikidataTool`] input
@@ -38,19 +38,23 @@ pub struct WikidataToolOutput {
     result: String,
 }
 
-impl Default for WikidataTool {
-    fn default() -> Self {
-        Self {
-            client: ApiSync::new("https://www.wikidata.org/w/api.php").unwrap(),
-        }
-    }
-}
-
 impl WikidataTool {
-    fn invoke_typed(&self, input: &WikidataToolInput) -> Result<WikidataToolOutput, ToolUseError> {
+    /// Create a new [`WikidataTool`]
+    pub async fn new() -> Self {
+        let client = Api::new("https://www.wikidata.org/w/api.php")
+            .await
+            .unwrap();
+        Self { client }
+    }
+
+    async fn invoke_typed(
+        &self,
+        input: &WikidataToolInput,
+    ) -> Result<WikidataToolOutput, ToolUseError> {
         let result = self
             .client
             .sparql_query(&input.query)
+            .await
             .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
 
         Ok(WikidataToolOutput {

@@ -3,7 +3,8 @@ use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
-use sapiens::{run_to_the_end, Config, Error, Role, TaskProgressUpdateHandler};
+use sapiens::openai::Role;
+use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 
 // FIXME(ssoudan) - deterministic order of tools in the prompt
 //
@@ -130,15 +131,15 @@ impl TaskProgressUpdateHandler for Handler {
     }
 }
 
-#[tokio::main]
-async fn main() {
+#[pyo3_asyncio::tokio::main]
+async fn main() -> Result<(), pyo3::PyErr> {
     let args = Args::parse();
 
     let _ = dotenv_override();
 
-    let toolbox = sapiens_cli::assemble_toolbox();
+    let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-    let openai_client = async_openai::Client::new().with_api_key(
+    let openai_client = sapiens::openai::Client::new().with_api_key(
         std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
     );
 
@@ -172,4 +173,6 @@ async fn main() {
         );
         println!("And the conclusion is: {} ", message.conclusion.blue());
     }
+
+    Ok(())
 }

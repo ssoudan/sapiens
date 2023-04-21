@@ -4,7 +4,7 @@ use std::fmt::{Debug, Formatter};
 use tiktoken_rs::async_openai::num_tokens_from_messages;
 use tiktoken_rs::model::get_context_size;
 
-use crate::{ChatCompletionRequestMessage, Role};
+use crate::openai::{ChatCompletionRequestMessage, Role};
 
 /// A trait for formatting entries for the chat history
 pub trait ChatEntryFormatter {
@@ -49,6 +49,7 @@ impl From<&ChatCompletionRequestMessage> for ChatEntry {
 /// To ensure we have enough tokens to complete the task, we truncate the
 /// chitchat history when new messages are added - with
 /// [ChatHistory::add_chitchat].
+#[derive(Clone)]
 pub struct ChatHistory {
     /// The model
     model: String,

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use mediawiki::api_sync::ApiSync;
+use mediawiki::api::Api;
 use sapiens::tools::{
     Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
@@ -20,7 +20,7 @@ use serde_yaml::Value;
     output = "WikipediaToolOutput"
 )]
 pub struct WikipediaTool {
-    client: ApiSync,
+    client: Api,
 }
 
 /// [`WikipediaTool`] input
@@ -50,16 +50,17 @@ pub struct WikipediaToolOutput {
     result: String,
 }
 
-impl Default for WikipediaTool {
-    fn default() -> Self {
-        Self {
-            client: ApiSync::new("https://en.wikipedia.org/w/api.php").unwrap(),
-        }
-    }
-}
-
 impl WikipediaTool {
-    fn invoke_typed(
+    /// Create a new [`WikipediaTool`]
+    pub async fn new() -> WikipediaTool {
+        let client = Api::new("https://en.wikipedia.org/w/api.php")
+            .await
+            .unwrap();
+
+        WikipediaTool { client }
+    }
+
+    async fn invoke_typed(
         &self,
         input: &WikipediaToolInput,
     ) -> Result<WikipediaToolOutput, ToolUseError> {
@@ -75,7 +76,8 @@ impl WikipediaTool {
                             Value::String(s) => Ok(s),
                             Value::Number(n) => Ok(n.to_string()),
                             _ => Err(ToolUseError::ToolInvocationFailed(format!(
-                                "Unsupported value type for parameter: {:?}. Only <str> or <number> and list of them supported.",
+                                "Unsupported value type for parameter: {:?}. Only <str> or <number>
+        and list of them supported.",
                                 k
                             ))),
                         })
@@ -85,7 +87,8 @@ impl WikipediaTool {
                 Value::String(s) => Ok((k, s)),
                 Value::Number(n) => Ok((k, n.to_string())),
                 _ => Err(ToolUseError::ToolInvocationFailed(format!(
-                    "Unsupported value type for parameter: {:?}. Only <str> or <number> and list of them supported.",
+                    "Unsupported value type for parameter: {:?}. Only <str>
+        or <number> and list of them supported.",
                     k
                 ))),
             })
@@ -94,6 +97,7 @@ impl WikipediaTool {
         let result = self
             .client
             .get_query_api_json_limit(&query, input.limit)
+            .await
             .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
 
         Ok(WikipediaToolOutput {
@@ -109,44 +113,46 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_wikipedia_tool() {
+    #[tokio::test]
+    async fn test_wikipedia_tool() {
         let mut settings = insta::Settings::clone_current();
         settings.set_sort_maps(true);
-        settings.bind(|| {
-            let tool = WikipediaTool::default();
-            let input = WikipediaToolInput {
-                parameters: vec![
-                    ("action".to_string(), Value::String("query".to_string())),
-                    (
-                        "prop".to_string(),
-                        Value::Sequence(vec![
-                            Value::String("extracts".to_string()),
-                            Value::String("exintro".to_string()),
-                            Value::String("explaintext".to_string()),
-                        ]),
-                    ),
-                    (
-                        "titles".to_string(),
-                        Value::String("Albert Einstein".to_string()),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
-                limit: None,
-            };
-            let input = serde_yaml::to_string(&input).unwrap();
-            let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
+        settings
+            .bind_async(async {
+                let tool = WikipediaTool::new().await;
+                let input = WikipediaToolInput {
+                    parameters: vec![
+                        ("action".to_string(), Value::String("query".to_string())),
+                        (
+                            "prop".to_string(),
+                            Value::Sequence(vec![
+                                Value::String("extracts".to_string()),
+                                Value::String("exintro".to_string()),
+                                Value::String("explaintext".to_string()),
+                            ]),
+                        ),
+                        (
+                            "titles".to_string(),
+                            Value::String("Albert Einstein".to_string()),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    limit: None,
+                };
+                let input = serde_yaml::to_string(&input).unwrap();
+                let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
 
-            assert_yaml_snapshot!(input);
+                assert_yaml_snapshot!(input);
 
-            let _output = tool.invoke_typed(&input).unwrap();
-        });
+                let _output = tool.invoke_typed(&input).await.unwrap();
+            })
+            .await;
     }
 
-    #[test]
-    fn test_wikipedia_tool_from_yaml() {
-        let tool = WikipediaTool::default();
+    #[tokio::test]
+    async fn test_wikipedia_tool_from_yaml() {
+        let tool = WikipediaTool::new().await;
 
         let input = indoc! {
             r#"
@@ -161,38 +167,40 @@ mod tests {
         };
         let input = serde_yaml::from_str::<WikipediaToolInput>(input).unwrap();
 
-        let _output = tool.invoke_typed(&input).unwrap();
+        let _output = tool.invoke_typed(&input).await.unwrap();
     }
 
-    #[test]
-    fn test_wikipedia_input_format() {
+    #[tokio::test]
+    async fn test_wikipedia_input_format() {
         let mut settings = insta::Settings::clone_current();
         settings.set_sort_maps(true);
-        settings.bind(|| {
-            let input = WikipediaToolInput {
-                parameters: vec![
-                    ("action".to_string(), Value::String("query".to_string())),
-                    (
-                        "prop".to_string(),
-                        Value::Sequence(vec![
-                            Value::String("extracts".to_string()),
-                            Value::String("exintro".to_string()),
-                            Value::String("explaintext".to_string()),
-                        ]),
-                    ),
-                    (
-                        "titles".to_string(),
-                        Value::String("Albert Einstein".to_string()),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
-                limit: None,
-            };
-            let input = serde_yaml::to_string(&input).unwrap();
-            let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
+        settings
+            .bind_async(async {
+                let input = WikipediaToolInput {
+                    parameters: vec![
+                        ("action".to_string(), Value::String("query".to_string())),
+                        (
+                            "prop".to_string(),
+                            Value::Sequence(vec![
+                                Value::String("extracts".to_string()),
+                                Value::String("exintro".to_string()),
+                                Value::String("explaintext".to_string()),
+                            ]),
+                        ),
+                        (
+                            "titles".to_string(),
+                            Value::String("Albert Einstein".to_string()),
+                        ),
+                    ]
+                    .into_iter()
+                    .collect(),
+                    limit: None,
+                };
+                let input = serde_yaml::to_string(&input).unwrap();
+                let input = serde_yaml::from_str::<WikipediaToolInput>(&input).unwrap();
 
-            assert_yaml_snapshot!(input);
-        });
+                assert_yaml_snapshot!(input);
+            })
+            .await;
     }
 }

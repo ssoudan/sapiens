@@ -1,19 +1,19 @@
 use std::fmt::Debug;
-use std::rc::Rc;
 
 use crate::context::{ChatEntry, ChatHistory};
+use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use crate::prompt::Task;
 use crate::tools::{TerminationMessage, ToolUseError, Toolbox};
-use crate::{
-    prompt, ChatCompletionRequestMessage, Client, Config, CreateChatCompletionRequest, Error, Role,
-};
+use crate::{prompt, Client, Config, Error};
 
 /// A chain - not yet specialized to a task
+#[derive(Clone)]
 pub struct Chain {
-    toolbox: Rc<Toolbox>,
+    toolbox: Toolbox,
     config: Config,
     prompt_manager: prompt::Manager,
     openai_client: Client,
+    /// With the initial prompt
     chat_history: ChatHistory,
 }
 
@@ -30,13 +30,15 @@ impl Debug for Chain {
 
 impl Chain {
     /// Create a new chain
-    pub fn new(toolbox: Rc<Toolbox>, config: Config, openai_client: Client) -> Self {
+    pub async fn new(toolbox: Toolbox, config: Config, openai_client: Client) -> Self {
         let mut chat_history =
             ChatHistory::new(config.model.clone(), config.min_token_for_completion);
 
         // Add the prompts to the chat history
         let prompt_manager = prompt::Manager::new(toolbox.clone());
-        prompt_manager.populate_chat_history(&mut chat_history);
+        prompt_manager
+            .populate_chat_history(&mut chat_history)
+            .await;
 
         Self {
             toolbox,
@@ -48,7 +50,7 @@ impl Chain {
     }
 
     /// Start a task
-    pub fn start_task(mut self, task: String) -> Result<TaskChain, Error> {
+    pub fn start_task(&self, task: String) -> Result<TaskChain, Error> {
         let task = self.prompt_manager.build_task_prompt(&task);
 
         let entry = ChatEntry {
@@ -56,9 +58,12 @@ impl Chain {
             role: Role::User,
         };
 
-        self.chat_history.add_chitchat(entry)?;
+        // clone and update
+        let mut chain = self.clone();
 
-        Ok(TaskChain { chain: self, task })
+        chain.chat_history.add_chitchat(entry)?;
+
+        Ok(TaskChain { chain, task })
     }
 }
 
@@ -127,9 +132,9 @@ impl TaskChain {
     /// corresponding tool.
     ///
     /// See [`crate::invoke_tool`] for more details.
-    pub fn invoke_tool(&self, data: &str) -> (String, Result<String, ToolUseError>) {
+    pub async fn invoke_tool(&self, data: &str) -> (String, Result<String, ToolUseError>) {
         let toolbox = self.chain.toolbox.clone();
-        crate::tools::invoke_tool(toolbox, data)
+        crate::tools::invoke_tool(toolbox, data).await
     }
 
     /// Generate a new prompt for the assistant based on the response from the
@@ -192,8 +197,8 @@ impl TaskChain {
     }
 
     /// Return the termination messages if the chain is terminated or `None`
-    pub fn is_terminal(&self) -> Option<Vec<TerminationMessage>> {
-        let t = self.chain.toolbox.termination_messages();
+    pub async fn is_terminal(&self) -> Option<Vec<TerminationMessage>> {
+        let t = self.chain.toolbox.termination_messages().await;
         if t.is_empty() {
             None
         } else {

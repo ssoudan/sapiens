@@ -26,7 +26,7 @@ pub struct DummyToolOutput {
 }
 
 impl DummyTool {
-    fn invoke_typed(&self, input: &DummyToolInput) -> Result<DummyToolOutput, ToolUseError> {
+    async fn invoke_typed(&self, input: &DummyToolInput) -> Result<DummyToolOutput, ToolUseError> {
         Ok(DummyToolOutput {
             something: input.blah.clone() + " and something else",
         })

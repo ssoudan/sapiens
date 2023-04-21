@@ -1,9 +1,8 @@
 use std::fmt;
-use std::rc::Rc;
 
 use crate::context::ChatHistory;
+use crate::openai::Role;
 use crate::tools::{ToolDescription, ToolUseError, Toolbox};
-use crate::Role;
 
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed in a OODA loop made of the following steps:
@@ -100,21 +99,22 @@ input:
 ";
 
 /// Prompt manager
+#[derive(Clone)]
 pub(crate) struct Manager {
-    toolbox: Rc<Toolbox>,
+    toolbox: Toolbox,
 }
 
 impl Manager {
     /// Create a new prompt manager
-    pub fn new(toolbox: Rc<Toolbox>) -> Self {
+    pub fn new(toolbox: Toolbox) -> Self {
         Self { toolbox }
     }
 
     /// Create the prompt describing the tools
-    fn create_tool_description(&self) -> String {
+    async fn create_tool_description(&self) -> String {
         let prefix = TOOL_PREFIX.to_string();
 
-        let tool_desc = self.toolbox.describe();
+        let tool_desc = self.toolbox.describe().await;
 
         let tool_desc: Vec<ToolDescription> = tool_desc.into_values().collect();
 
@@ -125,9 +125,9 @@ impl Manager {
     }
 
     /// Create the prompt describing the tools and how to use them
-    fn create_tool_warm_up(&self) -> String {
+    async fn create_tool_warm_up(&self) -> String {
         let prefix = PREFIX.to_string();
-        let tool_prompt = self.create_tool_description();
+        let tool_prompt = self.create_tool_description().await;
         prefix + FORMAT + &tool_prompt
     }
 
@@ -144,8 +144,8 @@ impl Manager {
             .to_string()
     }
 
-    pub(crate) fn populate_chat_history(&self, chat_history: &mut ChatHistory) {
-        let warm_up_prompt = self.create_tool_warm_up();
+    pub(crate) async fn populate_chat_history(&self, chat_history: &mut ChatHistory) {
+        let warm_up_prompt = self.create_tool_warm_up().await;
         let system_prompt = self.create_system_prompt();
 
         let prompt = [

@@ -29,10 +29,11 @@ impl ToTokens for DeriveReceiver {
 
         // dbg!(fields);
         out.extend(quote! {
+            #[async_trait::async_trait]
             impl #imp ProtoToolInvoke for #ident #ty #wher {
-                fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+                async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
                     let input = serde_yaml::from_value(input)?;
-                    let output = self.#invoke_typed_name(&input)?;
+                    let output = self.#invoke_typed_name(&input).await?;
                     Ok(serde_yaml::to_value(output)?)
                 }
             }

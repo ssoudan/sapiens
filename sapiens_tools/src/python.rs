@@ -1,15 +1,18 @@
-use std::rc::Rc;
-
 use convert_case::{Case, Casing};
 use pyo3::prelude::*;
-use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
+use pyo3::types::{IntoPyDict, PyDict};
 use sapiens::tools::{
-    invoke_simple_from_toolbox, AdvancedTool, Describe, Format, FormatPart, ProtoToolDescribe,
-    ProtoToolInvoke, ToolDescription, ToolUseError, Toolbox,
+    invoke_simple_from_toolbox, AdvancedTool, Describe, Format, ProtoToolDescribe, ProtoToolInvoke,
+    ToolDescription, ToolUseError, Toolbox,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+
+/// Conversion tools
+pub(crate) mod utils;
+
+use crate::python::utils::SimpleToolDescription;
 
 const MAX_OUTPUT_SIZE: usize = 512;
 
@@ -65,226 +68,19 @@ impl Logging {
 
 #[pyclass(unsendable)]
 struct ToolsWrapper {
-    toolbox: Rc<Toolbox>,
+    toolbox: Toolbox,
+    tool_list: Vec<SimpleToolDescription>,
 }
 
 impl ToolsWrapper {
-    fn new(toolbox: Rc<Toolbox>) -> Self {
-        ToolsWrapper { toolbox }
-    }
-}
+    async fn new(toolbox: Toolbox) -> Self {
+        let tools = toolbox.describe().await;
+        let tool_list = tools
+            .into_values()
+            .map(SimpleToolDescription::from)
+            .collect::<Vec<_>>();
 
-#[derive(thiserror::Error, Debug)]
-enum PyConversionError {
-    #[error("Invalid conversion: {error}")]
-    InvalidConversion { error: String },
-    #[error("dict key not serializable: {typename}")]
-    DictKeyNotSerializable { typename: String },
-    #[error("Invalid cast: {typename}")]
-    InvalidCast { typename: String },
-}
-
-// inspired from https://github.com/mozilla-services/python-canonicaljson-rs/blob/62599b246055a1c8a78e5777acdfe0fd594be3d8/src/lib.rs#L87-L167
-fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionError> {
-    macro_rules! return_cast {
-        ($t:ty, $f:expr) => {
-            if let Ok(val) = obj.downcast::<$t>(py) {
-                return $f(val);
-            }
-        };
-    }
-
-    macro_rules! return_to_value {
-        ($t:ty) => {
-            if let Ok(val) = obj.extract::<$t>(py) {
-                return serde_yaml::to_value(val).map_err(|error| {
-                    PyConversionError::InvalidConversion {
-                        error: format!("{}", error),
-                    }
-                });
-            }
-        };
-    }
-
-    if obj.is_none(py) {
-        return Ok(Value::Null);
-    }
-
-    return_to_value!(String);
-    return_to_value!(bool);
-    return_to_value!(u64);
-    return_to_value!(i64);
-
-    return_cast!(PyDict, |x: &PyDict| {
-        let mut map = serde_yaml::Mapping::new();
-        for (key_obj, value) in x.iter() {
-            let key = if key_obj.is_none() {
-                Ok("null".to_string())
-            } else if let Ok(val) = key_obj.extract::<bool>() {
-                Ok(if val {
-                    "true".to_string()
-                } else {
-                    "false".to_string()
-                })
-            } else if let Ok(val) = key_obj.str() {
-                Ok(val.to_string())
-            } else {
-                Err(PyConversionError::DictKeyNotSerializable {
-                    typename: key_obj
-                        .to_object(py)
-                        .as_ref(py)
-                        .get_type()
-                        .name()
-                        .map(|x| x.to_string())
-                        .unwrap_or_else(|_| "unknown".to_string()),
-                })
-            };
-            map.insert(Value::String(key?), to_yaml(py, &value.to_object(py))?);
-        }
-        Ok(Value::Mapping(map))
-    });
-
-    return_cast!(PyList, |x: &PyList| {
-        let v = x
-            .iter()
-            .map(|x| to_yaml(py, &x.to_object(py)))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Value::Sequence(v))
-    });
-
-    return_cast!(PyTuple, |x: &PyTuple| {
-        let v = x
-            .iter()
-            .map(|x| to_yaml(py, &x.to_object(py)))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Value::Sequence(v))
-    });
-
-    return_cast!(PyFloat, |x: &PyFloat| {
-        Ok(Value::Number(serde_yaml::Number::from(x.value())))
-    });
-
-    // At this point we can't cast it, set up the error object
-    Err(PyConversionError::InvalidCast {
-        typename: obj
-            .as_ref(py)
-            .get_type()
-            .name()
-            .map(|x| x.to_string())
-            .unwrap_or_else(|_| "unknown".to_string()),
-    })
-}
-
-fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
-    match val {
-        Value::Null => py.None(),
-        Value::Bool(x) => x.to_object(py),
-        Value::Number(x) => {
-            let oi64 = x.as_i64().map(|i| i.to_object(py));
-            let ou64 = x.as_u64().map(|i| i.to_object(py));
-            let of64 = x.as_f64().map(|i| i.to_object(py));
-            oi64.or(ou64).or(of64).expect("number too large")
-        }
-        Value::String(x) => x.to_object(py),
-        Value::Sequence(x) => {
-            let inner: Vec<_> = x.into_iter().map(|x| value_to_object(x, py)).collect();
-            inner.to_object(py)
-        }
-        Value::Mapping(x) => {
-            let iter = x
-                .into_iter()
-                .map(|(k, v)| (value_to_object(k, py), value_to_object(v, py)));
-            IntoPyDict::into_py_dict(iter, py).into()
-        }
-        Value::Tagged(_) => panic!("tagged values are not supported"),
-    }
-}
-
-/// Format of a field in a tool description
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SimpleFormat {
-    /// Name of the field
-    pub name: String,
-    // pub r#type: String,
-    /// Description of the field
-    pub description: String,
-}
-
-impl From<FormatPart> for SimpleFormat {
-    fn from(part: FormatPart) -> Self {
-        SimpleFormat {
-            name: part.key,
-            // r#type: part.r#type,
-            description: part.purpose,
-        }
-    }
-}
-
-impl ToPyObject for SimpleFormat {
-    fn to_object(&self, py: Python<'_>) -> PyObject {
-        let dict = PyDict::new(py);
-        dict.set_item("name", self.name.to_object(py)).unwrap();
-        // dict.set_item("type", self.r#type.to_object(py))
-        //     .unwrap();
-        dict.set_item("description", self.description.to_object(py))
-            .unwrap();
-        dict.into()
-    }
-}
-
-/// A simplified version of the tool description
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SimpleToolDescription {
-    /// Name of the tool
-    pub name: String,
-    /// Description of the tool
-    pub description: String,
-    /// Context utilization of the tool
-    pub description_context: String,
-    /// Input format of the tool
-    pub input_format: Vec<SimpleFormat>,
-    /// Output format of the tool
-    pub output_format: Vec<SimpleFormat>,
-}
-
-impl From<ToolDescription> for SimpleToolDescription {
-    fn from(desc: ToolDescription) -> Self {
-        let input_format = desc
-            .input_format
-            .parts
-            .into_iter()
-            .map(|x| x.into())
-            .collect();
-        let output_format = desc
-            .output_format
-            .parts
-            .into_iter()
-            .map(|x| x.into())
-            .collect();
-
-        SimpleToolDescription {
-            name: desc.name,
-            description: desc.description,
-            description_context: desc.description_context,
-            input_format,
-            output_format,
-        }
-    }
-}
-
-impl ToPyObject for SimpleToolDescription {
-    fn to_object(&self, py: Python<'_>) -> PyObject {
-        let dict = PyDict::new(py);
-        dict.set_item("name", self.name.clone()).unwrap();
-        dict.set_item("description", self.description.clone())
-            .unwrap();
-        dict.set_item("description_context", self.description_context.clone())
-            .unwrap();
-        dict.set_item("input_format", self.input_format.clone())
-            .unwrap();
-        dict.set_item("output_format", self.output_format.clone())
-            .unwrap();
-        dict.into()
+        ToolsWrapper { toolbox, tool_list }
     }
 }
 
@@ -293,12 +89,7 @@ impl ToolsWrapper {
     // list all tools
     #[pyo3(signature = ())]
     fn list(&self, py: Python<'_>) -> PyResult<PyObject> {
-        let tools = self.toolbox.describe();
-        let tools = tools
-            .into_values()
-            .map(SimpleToolDescription::from)
-            .collect::<Vec<_>>();
-        let tools = tools.to_object(py);
+        let tools = self.tool_list.to_object(py);
         Ok(tools)
     }
 
@@ -314,7 +105,7 @@ impl ToolsWrapper {
         let input = if let Some(input) = input {
             let input: PyObject = input.into();
 
-            to_yaml(py, &input).map_err(|e| {
+            utils::to_yaml(py, &input).map_err(|e| {
                 pyo3::exceptions::PyException::new_err(format!("Invalid input: {}", e))
             })?
         } else {
@@ -323,21 +114,52 @@ impl ToolsWrapper {
 
         // println!("invoking tool {} with input {:?}", tool_name, input);
 
-        let output =
-            invoke_simple_from_toolbox(self.toolbox.clone(), tool_name, input).map_err(|e| {
-                pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {}", e))
-            })?;
+        // Build the runtime for the new thread.
+        //
+        // The runtime is created before spawning the thread
+        // to more cleanly forward errors if the `unwrap()`
+        // panics.
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
 
-        let output = value_to_object(output, py);
+        let (tx, rx) = tokio::sync::oneshot::channel::<Result<Value, ToolUseError>>();
+
+        let toolbox = self.toolbox.clone();
+
+        let tool_name = tool_name.to_string();
+
+        std::thread::spawn(move || {
+            rt.block_on(async move {
+                let output = invoke_simple_from_toolbox(toolbox, &tool_name, input).await;
+
+                match output {
+                    Ok(output) => {
+                        tx.send(Ok(output)).unwrap();
+                    }
+                    Err(e) => {
+                        tx.send(Err(e)).unwrap();
+                    }
+                }
+            });
+        });
+
+        // blockingly wait for the result
+        let output = rx.blocking_recv().unwrap().map_err(|e| {
+            pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {}", e))
+        })?;
+
+        let output = utils::value_to_object(output, py);
 
         Ok(output)
     }
 }
 
 impl PythonTool {
-    fn invoke_typed(
+    async fn invoke_typed(
         &self,
-        toolbox: Option<Rc<Toolbox>>,
+        toolbox: Toolbox,
         input: &PythonToolInput,
     ) -> Result<PythonToolOutput, ToolUseError> {
         let mut code = input.code.clone();
@@ -351,81 +173,75 @@ impl PythonTool {
             )));
         }
 
-        let tools = toolbox.map(ToolsWrapper::new);
+        let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        // dynamically add functions to a `tools` module
-        if let Some(tools) = &tools {
-            let mut tool_class_code = String::new();
+        let mut tool_class_code = String::new();
 
-            tool_class_code.push_str("class Tools:\n");
+        tool_class_code.push_str("class Tools:\n");
+        tool_class_code.push_str("    def __init__(self, toolbox):\n");
+        tool_class_code.push_str("        self.toolbox = toolbox\n");
 
-            tool_class_code.push_str("    def __init__(self, toolbox):\n");
-            tool_class_code.push_str("        self.toolbox = toolbox\n");
+        let tools = toolwrapper.toolbox.describe().await;
 
-            for (name, description) in tools.toolbox.as_ref().describe() {
-                let inputs_parts = description.input_format.parts;
-                let inputs = inputs_parts
-                    .iter()
-                    .map(|f| f.key.clone())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let inputs = if inputs.is_empty() {
-                    "".to_string()
-                } else {
-                    format!("(self, {})", inputs)
-                };
+        for (name, description) in tools {
+            let inputs_parts = description.input_format.parts;
+            let inputs = inputs_parts
+                .iter()
+                .map(|f| f.key.clone())
+                .collect::<Vec<_>>()
+                .join(", ");
+            let inputs = if inputs.is_empty() {
+                "".to_string()
+            } else {
+                format!("(self, {})", inputs)
+            };
 
-                let dict = inputs_parts
-                    .iter()
-                    .map(|f| {
-                        let name = &f.key;
-                        format!("\"{}\": {}", name, name)
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
+            let dict = inputs_parts
+                .iter()
+                .map(|f| {
+                    let name = &f.key;
+                    format!("\"{}\": {}", name, name)
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
 
-                // in snake case
-                tool_class_code.push_str(&format!(
-                    "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                    name.to_case(Case::Snake),
-                    inputs,
-                    name,
-                    dict
-                ));
+            // in snake case
+            tool_class_code.push_str(&format!(
+                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+                name.to_case(Case::Snake),
+                inputs,
+                name,
+                dict
+            ));
 
-                // in Pascal case
-                tool_class_code.push_str(&format!(
-                    "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                    name.to_case(Case::Pascal),
-                    inputs,
-                    name,
-                    dict
-                ));
+            // in Pascal case
+            tool_class_code.push_str(&format!(
+                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+                name.to_case(Case::Pascal),
+                inputs,
+                name,
+                dict
+            ));
 
-                // FUTURE(ssoudan) set input_format and output_format
-            }
-
-            // add list function
-            tool_class_code.push_str("    def list(self):\n");
-            tool_class_code.push_str("        return self.toolbox.list()\n");
-
-            tool_class_code.push_str("tools = Tools(toolbox)\n");
-
-            // prepend the tool class code to the user code
-            code = format!("{}\n{}", tool_class_code, code);
+            // FUTURE(ssoudan) set input_format and output_format
         }
+
+        // add list function
+        tool_class_code.push_str("    def list(self):\n");
+        tool_class_code.push_str("        return self.toolbox.list()\n");
+
+        tool_class_code.push_str("tools = Tools(toolbox)\n");
+
+        // prepend the tool class code to the user code
+        code = format!("{}\n{}", tool_class_code, code);
 
         // print!("{}", code);
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             // println!("Python version: {}", py.version());
 
-            let globals = if let Some(tools) = tools {
-                let tools_cell = PyCell::new(py, tools)?;
-                [("toolbox", tools_cell)].into_py_dict(py)
-            } else {
-                PyDict::new(py)
-            };
+            let tools_cell = PyCell::new(py, toolwrapper)?;
+            let globals = [("toolbox", tools_cell)].into_py_dict(py);
 
             // capture stdout and stderr
             let sys = py.import("sys")?;
@@ -459,20 +275,68 @@ impl PythonTool {
 
         Ok(PythonToolOutput { stdout, stderr })
     }
+
+    fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
+        let code = input.code.clone();
+
+        // check for forbidden keywords - with capture
+        let re = regex::Regex::new(r"(exec|pip)").unwrap();
+        if let Some(caps) = re.captures(&code) {
+            return Err(ToolUseError::ToolInvocationFailed(format!(
+                "Python code contains forbidden keywords such as {}",
+                caps.get(0).unwrap().as_str()
+            )));
+        }
+
+        let res: PyResult<(String, String)> = Python::with_gil(|py| {
+            // println!("Python version: {}", py.version());
+
+            let globals = PyDict::new(py);
+
+            // capture stdout and stderr
+            let sys = py.import("sys")?;
+
+            let stdout = Logging::default();
+            let py_stdout_cell = PyCell::new(py, stdout)?;
+            let py_stdout = py_stdout_cell.borrow_mut();
+            sys.setattr("stdout", py_stdout.into_py(py))?;
+
+            let stderr = Logging::default();
+            let py_stderr_cell = PyCell::new(py, stderr)?;
+            let py_stderr = py_stderr_cell.borrow_mut();
+            sys.setattr("stderr", py_stderr.into_py(py))?;
+
+            // run code
+            Python::run(py, &code, globals.into(), None)?;
+
+            let stdout = py_stdout_cell.borrow().output.clone();
+            let stderr = py_stderr_cell.borrow().output.clone();
+
+            Ok((stdout, stderr))
+        });
+
+        let (stdout, stderr) = res.map_err(|e| {
+            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
+        })?;
+
+        Ok(PythonToolOutput { stdout, stderr })
+    }
 }
 
+#[async_trait::async_trait]
 impl ProtoToolInvoke for PythonTool {
-    fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
+    async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(None, &input)?;
+
+        let output = self.invoke_sync_typed(&input)?;
 
         // check the size of the output (stdout and stderr)
         let l = output.stdout.len() + output.stderr.len();
         if l > MAX_OUTPUT_SIZE {
             return Err(ToolUseError::ToolInvocationFailed(format!(
-                "Python code produced too much output on stdout and stderr combined ({} bytes) - max is {}",
-                l,
-                MAX_OUTPUT_SIZE
+                "Python code produced too much output on stdout and stderr
+        combined ({} bytes) - max is {}",
+                l, MAX_OUTPUT_SIZE
             )));
         }
 
@@ -480,28 +344,30 @@ impl ProtoToolInvoke for PythonTool {
     }
 }
 
+#[async_trait::async_trait]
 impl AdvancedTool for PythonTool {
-    fn invoke_with_toolbox(
+    async fn invoke_with_toolbox(
         &self,
-        toolbox: Rc<Toolbox>,
+        toolbox: Toolbox,
         input: Value,
     ) -> Result<Value, ToolUseError> {
         let input = serde_yaml::from_value(input)?;
-        let output = self.invoke_typed(Some(toolbox), &input)?;
+        let output = self.invoke_typed(toolbox, &input).await?;
         Ok(serde_yaml::to_value(output)?)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
     use insta::assert_snapshot;
-    use pyo3::indoc::indoc;
+    use pyo3::PyResult;
 
     use super::*;
     use crate::dummy::DummyTool;
 
-    #[test]
-    fn test_python_tool() {
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_tool() -> PyResult<()> {
         let tool = PythonTool::default();
         let input = PythonToolInput {
             code: indoc! {
@@ -516,11 +382,12 @@ mod tests {
             .to_string(),
         };
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(DummyTool::default());
-        let toolbox = Rc::new(toolbox);
+        toolbox.add_tool(DummyTool::default()).await;
 
-        let output = tool.invoke_typed(Some(toolbox), &input).unwrap();
+        let output = tool.invoke_typed(toolbox, &input).await.unwrap();
         assert_snapshot!(output.stdout);
         assert_snapshot!(output.stderr);
+
+        Ok(())
     }
 }
