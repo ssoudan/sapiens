@@ -11,8 +11,6 @@ readme = "../README.md"
 keywords.workspace = true
 categories.workspace = true
 
-package.metadata.cargo-udeps.ignore = ["pyo3-asyncio"]
-
 [features]
 default = ["wiki"]
 # Hue lights
@@ -52,3 +50,5 @@ insta = { version = "1.29.0", features = ["yaml"] }
 tokio = { version = "1.14.0", features = ["macros"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "tokio-runtime", "testing"]  }
 
+[package.metadata.cargo-udeps.ignore]
+normal = ["pyo3-asyncio"]
