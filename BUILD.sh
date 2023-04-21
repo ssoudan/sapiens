@@ -63,7 +63,9 @@ cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
 
 #open target/criterion/reports/index.html
 
-echo -e "${BLUE}Build container...${NORMAL}"
-docker build -t sapiens --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [Container build failed] $NORMAL" && exit 1)
+echo -e "${BLUE}Build containers...${NORMAL}"
+
+docker build --target sapiens_cli -t sapiens_cli --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_bot -t sapiens_bot --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
 
 echo -e "$GREEN === OK === $NORMAL"

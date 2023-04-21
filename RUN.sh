@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE_NAME="sapiens"
+IMAGE_NAME="sapiens_cli"
 
 test -e .env || (echo "Please create a .env file with the required environment variables" && exit 1)
 
