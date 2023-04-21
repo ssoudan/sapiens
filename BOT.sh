@@ -2,7 +2,7 @@
 
 set -e
 
-IMAGE_NAME="sapiens_cli"
+IMAGE_NAME="sapiens_bot"
 
 test -e .env || (echo "Please create a .env file with the required environment variables" && exit 1)
 
@@ -26,6 +26,6 @@ if ! docker image inspect $IMAGE_NAME > /dev/null 2>&1; then
 fi
 
 # Run the application
-docker run -it --rm --read-only --name sapiens \
+docker run -it --rm --read-only --name ${IMAGE_NAME} \
     --env-file .env \
     $IMAGE_NAME "${ARGS[@]}"

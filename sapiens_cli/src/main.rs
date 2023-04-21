@@ -93,7 +93,8 @@ struct Handler {
 impl TaskProgressUpdateHandler for Handler {
     fn on_start(&self, chat_history: &ChatHistory) {
         if self.show_warmup_prompt {
-            let msgs = chat_history.format(ColorFormatter {});
+            let formatter = ColorFormatter {};
+            let msgs = chat_history.format(&formatter);
 
             for msg in msgs {
                 println!("{}", msg);

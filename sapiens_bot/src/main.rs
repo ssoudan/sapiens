@@ -25,8 +25,6 @@ struct Handler {
     tx: RwLock<mpsc::Sender<NewJob>>,
 }
 
-// TODO(ssoudan) build the chat history from the channel history
-
 #[async_trait]
 impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
@@ -62,14 +60,32 @@ impl EventHandler for Handler {
             return;
         }
 
-        if new_message.content == "command" {
+        if new_message.content.starts_with("DO: ") {
+            let max_steps = 12;
+            let task = new_message.content[4..].to_string();
+
+            // TODO(ssoudan) option to hide the warmup prompts
+            // TODO(ssoudan) ask to continue after max_steps
+
+            if task.is_empty() {
+                info!("Empty task, ignoring");
+
+                new_message
+                    .channel_id
+                    .say(&ctx.http, "Please provide a task: 'DO: <task>'")
+                    .await
+                    .unwrap();
+
+                return;
+            }
+
             let (tx, mut rx) = mpsc::channel::<JobUpdate>(20);
 
             // Send the job to the runner
             self.tx
                 .write()
                 .await
-                .send(NewJob::new("Tell me a joke.".to_string(), tx))
+                .send(NewJob::new(task, max_steps, tx))
                 .await
                 .unwrap();
 
@@ -106,74 +122,33 @@ impl EventHandler for Handler {
                 .await
                 .unwrap();
 
+            // TODO(ssoudan) how to display tipping animation?
+
             // wait for job updates and post
             while let Some(job_update) = rx.next().await {
                 info!("Received job update: {:#?}", job_update);
 
                 // FIXME(ssoudan) got to split message longer than 2000 chars
 
-                match job_update {
-                    JobUpdate::Vec(v) => {
-                        // split on a newline strings longer than 2000 chars
-                        let v = v.iter().fold(vec![], |mut acc, txt| {
-                            if txt.len() > 2000 {
-                                let mut txt = txt.clone();
-                                while txt.len() > 2000 {
-                                    let (first, second) = txt.split_at(2000);
-                                    acc.push(first.to_string());
-                                    txt = second.to_string();
-                                }
-                                acc.push(txt);
-                            } else {
-                                acc.push(txt.clone());
-                            }
-                            acc
-                        });
-
-                        for txt in v {
-                            thread
-                                .send_message(&ctx.http, |message| {
-                                    message
-                                        .content(txt)
-                                        .allowed_mentions(|mentions| mentions.replied_user(true))
-                                })
-                                .await
-                                .unwrap();
-                        }
-                    }
-                    JobUpdate::Text(txt) => {
-                        thread
-                            .send_message(&ctx.http, |message| {
-                                message
-                                    .content(txt)
-                                    .allowed_mentions(|mentions| mentions.replied_user(true))
-                            })
-                            .await
-                            .unwrap();
-                    }
-                    JobUpdate::FailedToStart(e) => {
-                        let txt = format!("Error: {}", e);
-                        thread
-                            .send_message(&ctx.http, |message| {
-                                message
-                                    .content(txt)
-                                    .allowed_mentions(|mentions| mentions.replied_user(true))
-                            })
-                            .await
-                            .unwrap();
-                    }
-                    JobUpdate::ToolError(e) => {
-                        let txt = format!("Tool Error: {}", e);
-                        thread
-                            .send_message(&ctx.http, |message| {
-                                message
-                                    .content(txt)
-                                    .allowed_mentions(|mentions| mentions.replied_user(true))
-                            })
-                            .await
-                            .unwrap();
-                    }
+                let msgs = match job_update {
+                    JobUpdate::Vec(v) => Some(v),
+                    JobUpdate::FailedToStart(e) => Some(e),
+                    JobUpdate::ToolError(e) => Some(e),
+                    JobUpdate::Over => None,
                 };
+
+                if let Some(msgs) = msgs {
+                    for txt in msgs {
+                        thread
+                            .send_message(&ctx.http, |message| {
+                                message
+                                    .content(txt)
+                                    .allowed_mentions(|mentions| mentions.replied_user(true))
+                            })
+                            .await
+                            .unwrap();
+                    }
+                }
             }
 
             // Say goodbye
@@ -231,7 +206,10 @@ impl EventHandler for Handler {
 
 #[pyo3_asyncio::tokio::main]
 async fn main() -> PyResult<()> {
-    let _ = dotenv_override().unwrap();
+    let _ = dotenv_override();
+
+    // TODO(ssoudan) graceful shutdown
+    // TODO(ssoudan) build the chat history from the channel history
 
     // install global subscriber configured based on RUST_LOG envvar.
     tracing_subscriber::fmt::init();
