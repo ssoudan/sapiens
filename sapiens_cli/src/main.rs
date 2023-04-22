@@ -20,7 +20,6 @@ use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 //
 // Deployability:
 // TODO(ssoudan) Limit how long a tool can run
-// TODO(ssoudan) use insta for some of the tests
 // TODO(ssoudan) more tests
 // TODO(ssoudan) logging
 // TODO(ssoudan) monitoring
@@ -90,8 +89,9 @@ struct Handler {
     pub show_warmup_prompt: bool,
 }
 
+#[async_trait::async_trait]
 impl TaskProgressUpdateHandler for Handler {
-    fn on_start(&self, chat_history: &ChatHistory) {
+    async fn on_start(&mut self, chat_history: &ChatHistory) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
             let msgs = chat_history.format(&formatter);
@@ -109,13 +109,13 @@ impl TaskProgressUpdateHandler for Handler {
         }
     }
 
-    fn on_model_update(&self, model_message: ChatEntry) {
+    async fn on_model_update(&mut self, model_message: ChatEntry) {
         let msg = ColorFormatter.format(&model_message);
         println!("{}", msg);
         println!("=============");
     }
 
-    fn on_tool_update(&self, tool_output: ChatEntry, success: bool) {
+    async fn on_tool_update(&mut self, tool_output: ChatEntry, success: bool) {
         if success {
             let msg = ColorFormatter.format(&tool_output);
             println!("{}", msg);
@@ -126,7 +126,7 @@ impl TaskProgressUpdateHandler for Handler {
         println!("=============");
     }
 
-    fn on_tool_error(&self, error: Error) {
+    async fn on_tool_error(&mut self, error: Error) {
         println!("{}", error.to_string().red());
         println!("=============");
     }

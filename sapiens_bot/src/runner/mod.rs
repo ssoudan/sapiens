@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
@@ -34,12 +33,11 @@ impl SapiensBot {
     }
 
     /// Start a new task
-    pub fn start_task(
-        &mut self,
-        task: String,
-        handler: Box<dyn TaskProgressUpdateHandler>,
-    ) -> Result<StepOrStop, Error> {
-        StepOrStop::with_handler(self.chain.clone(), task, handler)
+    pub async fn start_task<T>(&mut self, task: String, handler: T) -> Result<StepOrStop<T>, Error>
+    where
+        T: TaskProgressUpdateHandler,
+    {
+        StepOrStop::with_handler(self.chain.clone(), task, handler).await
     }
 }
 
@@ -47,8 +45,8 @@ impl SapiensBot {
 pub struct ProgressHandler {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
-    pub job_tx: RefCell<mpsc::Sender<JobUpdate>>,
-    entry_format: Box<dyn ChatEntryFormatter + 'static + Send>,
+    pub job_tx: mpsc::Sender<JobUpdate>,
+    entry_format: Box<dyn ChatEntryFormatter + 'static + Send + Sync>,
 }
 
 impl Debug for ProgressHandler {
@@ -61,8 +59,9 @@ impl Debug for ProgressHandler {
     }
 }
 
+#[async_trait::async_trait]
 impl TaskProgressUpdateHandler for ProgressHandler {
-    fn on_start(&self, chat_history: &ChatHistory) {
+    async fn on_start(&mut self, chat_history: &ChatHistory) {
         let format = self.entry_format.as_ref();
         let msgs = chat_history.format(format);
         let last_msg = msgs.last();
@@ -70,47 +69,35 @@ impl TaskProgressUpdateHandler for ProgressHandler {
 
         let msgs = sanitize_msgs_for_discord(msgs);
 
-        self.job_tx
-            .borrow_mut()
-            .try_send(JobUpdate::Vec(msgs))
-            .unwrap();
+        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    fn on_model_update(&self, model_message: ChatEntry) {
+    async fn on_model_update(&mut self, model_message: ChatEntry) {
         let msg = self.entry_format.format(&model_message);
         debug!(msg = ?model_message, "on_model_update");
 
         let msgs = sanitize_msgs_for_discord(vec![msg]);
-        self.job_tx
-            .borrow_mut()
-            .try_send(JobUpdate::Vec(msgs))
-            .unwrap();
+        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    fn on_tool_update(&self, tool_output: ChatEntry, _success: bool) {
+    async fn on_tool_update(&mut self, tool_output: ChatEntry, _success: bool) {
         debug!(msg = ?tool_output, "on_tool_update");
 
         let msg = self.entry_format.format(&tool_output);
 
         let msgs = sanitize_msgs_for_discord(vec![msg]);
 
-        self.job_tx
-            .borrow_mut()
-            .try_send(JobUpdate::Vec(msgs))
-            .unwrap();
+        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    fn on_tool_error(&self, error: Error) {
+    async fn on_tool_error(&mut self, error: Error) {
         debug!(error = ?error, "on_tool_error");
 
         let msg = format!("*Error*: {}", error);
 
         let msgs = sanitize_msgs_for_discord(vec![msg]);
 
-        self.job_tx
-            .borrow_mut()
-            .try_send(JobUpdate::ToolError(msgs))
-            .unwrap();
+        self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
     }
 }
 
@@ -159,17 +146,17 @@ impl Runner {
 
             let mut tx = job.tx.clone();
 
-            let handler = Box::new(ProgressHandler {
+            let handler = ProgressHandler {
                 show_warmup_prompt: true,
-                job_tx: RefCell::new(job.tx),
+                job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
-            });
+            };
 
             let max_steps = job.max_steps;
 
             let mut current_step = 0;
 
-            match self.sapiens.start_task(job.task, handler) {
+            match self.sapiens.start_task(job.task, handler).await {
                 Ok(step) => {
                     let mut step = step;
                     loop {
@@ -181,8 +168,6 @@ impl Runner {
                             }
                             Ok(StepOrStop::Stop { .. }) => {
                                 info!("Task finished: {}", task);
-
-                                // TODO(ssoudan) got to send a final message
                                 break;
                             }
                             Err(e) => {

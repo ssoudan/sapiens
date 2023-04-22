@@ -173,6 +173,7 @@ pub struct Task {
 impl Task {
     /// Create the prompt for the task
     fn to_prompt(&self) -> String {
+        // NOTE(ssoudan) what about bringing focus on the answer before the tool result?
         format!(
             "# Your turn\nOriginal question: {}\nDo you have the answer? Use the Conclude Tool to terminate the task.\nObservations, Orientation, Decision, The ONLY Action?",
             self.task

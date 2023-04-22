@@ -128,8 +128,6 @@ impl EventHandler for Handler {
             while let Some(job_update) = rx.next().await {
                 info!("Received job update: {:#?}", job_update);
 
-                // FIXME(ssoudan) got to split message longer than 2000 chars
-
                 let msgs = match job_update {
                     JobUpdate::Vec(v) => Some(v),
                     JobUpdate::FailedToStart(e) => Some(e),
