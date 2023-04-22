@@ -48,8 +48,8 @@ pub struct RoomToolInput {
 /// The output of the tool
 #[derive(Serialize, Deserialize, PartialEq, Debug, Describe)]
 pub struct RoomToolOutput {
-    /// A list of Rooms with a name and a list of lights (their IDs) in that
-    /// room. E.g.: `[{"name": "Smoking room", "lights": ["light_ID1", ...]},
+    /// A list of Rooms with a name and a list of Light IDs in that
+    /// room. E.g.: `[{"name": "Smoking room", "lights": ["1", "2", ...]},
     /// ...]`
     pub rooms: Vec<Room>,
 }
