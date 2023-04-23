@@ -29,12 +29,12 @@ pub struct WikipediaToolInput {
     /// query parameters. E.g.
     /// ```yaml
     ///   parameters:
-    ///   action: query
-    ///   prop:
-    ///     - extracts
-    ///     - exintro
-    ///     - explaintext
-    ///   titles: Albert Einstein
+    ///     action: query
+    ///     prop:
+    ///       - extracts
+    ///       - exintro
+    ///       - explaintext
+    ///     titles: Albert Einstein
     /// ```
     /// - Values can be either strings or numbers. Or lists of them.
     /// - The output size is limited. Be specific and use limits where possible.
