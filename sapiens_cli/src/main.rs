@@ -6,8 +6,6 @@ use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::openai::Role;
 use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 
-// FIXME(ssoudan) - deterministic order of tools in the prompt
-//
 // Usability:
 // TODO(ssoudan) More tools: search, wx, arxiv, negotiate, text summarization
 // TODO(ssoudan) Discord bot with long-lived conversations

@@ -116,7 +116,10 @@ impl Manager {
 
         let tool_desc = self.toolbox.describe().await;
 
-        let tool_desc: Vec<ToolDescription> = tool_desc.into_values().collect();
+        let mut tool_desc: Vec<ToolDescription> = tool_desc.into_values().collect();
+
+        // sort by tool name
+        tool_desc.sort_by(|a, b| a.name.cmp(&b.name));
 
         // yaml serialize the tool description
         let tool_desc = serde_yaml::to_string(&tool_desc).unwrap();
