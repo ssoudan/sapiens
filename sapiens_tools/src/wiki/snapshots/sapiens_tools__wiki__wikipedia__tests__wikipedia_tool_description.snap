@@ -1,0 +1,13 @@
+---
+source: sapiens_tools/src/wiki/wikipedia.rs
+expression: description
+---
+name: Wikipedia
+description: "A Tool to query Wikipedia using SPARQL.\n\nWikipedia is a free online encyclopedia, created and edited by volunteers\naround the world and hosted by the Wikimedia Foundation."
+description_context: Use this when it is the best tool for the job.
+input_format:
+  parameters: "<dict[str,Any]> query parameters. E.g.\n```yaml\nparameters:\naction: query\nprop:\n- extracts\n- exintro\n- explaintext\ntitles: Albert Einstein\n```\n- Values can be either strings or numbers. Or lists of them.\n- The output size is limited. Be specific and use limits where possible."
+  limit: "<Optional[usize]> maximum number of results to return - if not specified, all results are\nreturned."
+output_format:
+  result: "<str> query result - in JSON."
+
