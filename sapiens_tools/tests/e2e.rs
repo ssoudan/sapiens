@@ -162,3 +162,76 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(feature = "arxiv")]
+mod arxiv {
+    use indoc::indoc;
+    use insta::assert_display_snapshot;
+    use pyo3::PyResult;
+    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens_tools::arxiv::ArXivTool;
+    use sapiens_tools::python::PythonTool;
+
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_arxiv() -> PyResult<()> {
+        let mut toolbox = Toolbox::default();
+        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let data = indoc! {r#"```yaml
+       command: SandboxedPython
+       input:
+         code: |           
+               import datetime               
+               search_query = f'cat:cs.AI'
+               input = {
+                   'search_query': search_query,
+                   'start': 0,
+                   'max_results': 10,
+                   'sort_by': 'lastUpdatedDate',
+                   'sort_order': 'ascending'
+               }
+               arxiv_output = tools.ArXiv(**input)
+               papers = arxiv_output['result']               
+               conclusion = f"Yes, there are {len(papers)} published papers of AI category on ArXiv this week." if papers else "No, there are no published papers of AI category on ArXiv this week."
+               print(conclusion)
+       ```
+    "#};
+
+        let (tool_name, res) = invoke_tool(toolbox, data).await;
+        assert_eq!(tool_name, "SandboxedPython");
+
+        let output = res.unwrap();
+        assert_display_snapshot!(output);
+
+        Ok(())
+    }
+
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_arxiv_2() -> PyResult<()> {
+        let mut toolbox = Toolbox::default();
+        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let data = indoc! {r#"```yaml
+       command: SandboxedPython
+       input:
+         code: |           
+               import datetime               
+               search_query = f'cat:cs.AI'               
+               arxiv_output = tools.ArXiv(search_query=search_query, start=0, max_results=10, sort_by='lastUpdatedDate', sort_order='ascending')               
+               papers = arxiv_output['result']               
+               conclusion = f"Yes, there are {len(papers)} published papers of AI category on ArXiv this week." if papers else "No, there are no published papers of AI category on ArXiv this week."
+               print(conclusion)
+       ```
+    "#};
+
+        let (tool_name, res) = invoke_tool(toolbox, data).await;
+        assert_eq!(tool_name, "SandboxedPython");
+
+        let output = res.unwrap();
+        assert_display_snapshot!(output);
+
+        Ok(())
+    }
+}

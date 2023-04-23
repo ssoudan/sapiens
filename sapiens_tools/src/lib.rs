@@ -19,3 +19,7 @@ pub mod wiki;
 
 /// Setup tools
 pub mod setup;
+
+/// Tools related to ArXiv
+#[cfg(feature = "arxiv")]
+pub mod arxiv;

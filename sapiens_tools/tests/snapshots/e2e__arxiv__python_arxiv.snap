@@ -1,0 +1,8 @@
+---
+source: sapiens_tools/tests/e2e.rs
+expression: output
+---
+stdout: |
+  Yes, there are 10 published papers of AI category on ArXiv this week.
+stderr: ''
+

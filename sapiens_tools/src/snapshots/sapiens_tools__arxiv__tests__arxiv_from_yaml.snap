@@ -1,0 +1,10 @@
+---
+source: sapiens_tools/src/arxiv.rs
+expression: input
+---
+search_query: "cat:cs.AI"
+start: ~
+sort_by: relevance
+sort_order: descending
+show_authors: true
+

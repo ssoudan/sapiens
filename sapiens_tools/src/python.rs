@@ -189,9 +189,11 @@ impl PythonTool {
 
         for (name, description) in tools {
             let inputs_parts = description.input_format.parts;
+            // FUTURE(ssoudan) might want to add None only for optional inputs
             let inputs = inputs_parts
                 .iter()
                 .map(|f| f.key.clone())
+                .map(|s| format!("{}=None", s))
                 .collect::<Vec<_>>()
                 .join(", ");
             let inputs = if inputs.is_empty() {

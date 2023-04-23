@@ -12,11 +12,13 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki"]
+default = ["wiki", "arxiv"]
 # Hue lights
 hue = ["dep:huelib2"]
 # MediaWiki: Wikipedia, Wikidata
 wiki = ["dep:mediawiki", "dep:serde_json"]
+# arXiv
+arxiv = ["dep:arxiv-rs"]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.2.2" }
@@ -24,6 +26,8 @@ sapiens_derive = { path = "../sapiens_derive", version = "^0.2.2" }
 
 huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.10", optional = true  }
+
+arxiv-rs = { version = "0.1.0", optional = true }
 
 serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
