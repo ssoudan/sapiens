@@ -3,6 +3,6 @@ source: sapiens_tools/tests/e2e.rs
 expression: output
 ---
 stdout: |
-  And the result is: hello and something else
+  Yes, there are 10 published papers of AI category on ArXiv this week.
 stderr: ''
 

@@ -24,9 +24,10 @@ RUN cargo chef cook --release --recipe-path recipe.json --features="$EXTRA_FEATU
 # Build application
 COPY . .
 RUN cargo build --release --bin sapiens_cli --features="$EXTRA_FEATURES"
+RUN cargo build --release --bin sapiens_bot --features="$EXTRA_FEATURES"
 
 # We do not need the Rust toolchain to run the binary!
-FROM debian:bookworm-slim AS runtime
+FROM debian:bookworm-slim AS base-runtime
 WORKDIR app
 
 # Install dependencies
@@ -41,8 +42,18 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+FROM base-runtime AS sapiens_cli
+
 COPY --from=builder /app/target/release/sapiens_cli /usr/local/bin
 
 USER 1000:0
 
 ENTRYPOINT ["/usr/local/bin/sapiens_cli"]
+
+FROM base-runtime AS sapiens_bot
+
+COPY --from=builder /app/target/release/sapiens_bot /usr/local/bin
+
+USER 1000:0
+
+ENTRYPOINT ["/usr/local/bin/sapiens_bot"]

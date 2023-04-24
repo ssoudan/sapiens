@@ -50,7 +50,7 @@ impl ToTokens for DeriveReceiver {
                     })
                     .fold(String::new(), |mut acc, s| {
                         if !acc.is_empty() {
-                            acc.push(' ');
+                            acc.push('\n');
                         }
                         acc.push_str(s.trim());
                         acc

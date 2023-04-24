@@ -27,14 +27,15 @@ pub struct WikipediaTool {
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct WikipediaToolInput {
     /// query parameters. E.g.
-    /// `parameters:
-    ///   action: query
-    ///   prop:
-    ///     - extracts
-    ///     - exintro
-    ///     - explaintext
-    ///   titles: Albert Einstein
-    /// `
+    /// ```yaml
+    ///   parameters:
+    ///     action: query
+    ///     prop:
+    ///       - extracts
+    ///       - exintro
+    ///       - explaintext
+    ///     titles: Albert Einstein
+    /// ```
     /// - Values can be either strings or numbers. Or lists of them.
     /// - The output size is limited. Be specific and use limits where possible.
     parameters: HashMap<String, Value>,
@@ -112,6 +113,15 @@ mod tests {
     use insta::assert_yaml_snapshot;
 
     use super::*;
+
+    #[tokio::test]
+    async fn test_wikipedia_tool_description() {
+        let tool = WikipediaTool::new().await;
+
+        let description = tool.description();
+
+        assert_yaml_snapshot!(description);
+    }
 
     #[tokio::test]
     async fn test_wikipedia_tool() {

@@ -1,0 +1,6 @@
+---
+source: sapiens_tools/tests/e2e.rs
+expression: output
+---
+{}
+

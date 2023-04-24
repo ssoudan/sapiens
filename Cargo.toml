@@ -1,6 +1,6 @@
 [workspace]
 members = [
-		"sapiens", "sapiens_derive", "sapiens_tools", "sapiens_cli",
+		"sapiens", "sapiens_derive", "sapiens_tools", "sapiens_cli", "sapiens_bot"
 ]
 
 [workspace.package]

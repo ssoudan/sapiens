@@ -150,7 +150,10 @@ impl ChatHistory {
     }
 
     /// format the history using the given formatter
-    pub fn format(&self, formatter: impl ChatEntryFormatter) -> Vec<String> {
+    pub fn format<T>(&self, formatter: &T) -> Vec<String>
+    where
+        T: ChatEntryFormatter + ?Sized,
+    {
         self.iter()
             .map(|msg| {
                 let e = ChatEntry {

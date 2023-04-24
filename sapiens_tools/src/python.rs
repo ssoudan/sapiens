@@ -124,7 +124,7 @@ impl ToolsWrapper {
             .build()
             .unwrap();
 
-        let (tx, rx) = tokio::sync::oneshot::channel::<Result<Value, ToolUseError>>();
+        let (tx, mut rx) = tokio::sync::oneshot::channel::<Result<Value, ToolUseError>>();
 
         let toolbox = self.toolbox.clone();
 
@@ -146,13 +146,17 @@ impl ToolsWrapper {
         });
 
         // blockingly wait for the result
-        let output = rx.blocking_recv().unwrap().map_err(|e| {
-            pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {}", e))
-        })?;
+        loop {
+            if let Ok(output) = rx.try_recv() {
+                let output = output.map_err(|e| {
+                    pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {}", e))
+                })?;
 
-        let output = utils::value_to_object(output, py);
+                let output = utils::value_to_object(output, py);
 
-        Ok(output)
+                return Ok(output);
+            }
+        }
     }
 }
 
@@ -185,9 +189,11 @@ impl PythonTool {
 
         for (name, description) in tools {
             let inputs_parts = description.input_format.parts;
+            // FUTURE(ssoudan) might want to add None only for optional inputs
             let inputs = inputs_parts
                 .iter()
                 .map(|f| f.key.clone())
+                .map(|s| format!("{}=None", s))
                 .collect::<Vec<_>>()
                 .join(", ");
             let inputs = if inputs.is_empty() {
@@ -354,40 +360,5 @@ impl AdvancedTool for PythonTool {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(toolbox, &input).await?;
         Ok(serde_yaml::to_value(output)?)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use indoc::indoc;
-    use insta::assert_snapshot;
-    use pyo3::PyResult;
-
-    use super::*;
-    use crate::dummy::DummyTool;
-
-    #[pyo3_asyncio::tokio::test]
-    async fn test_python_tool() -> PyResult<()> {
-        let tool = PythonTool::default();
-        let input = PythonToolInput {
-            code: indoc! {
-            r#"print('hello')
-               t = toolbox.list()
-               print("tools=", t)
-               
-               d = tools.dummy(blah="ahah")
-               print("dummy=", d)
-               
-               "#}
-            .to_string(),
-        };
-        let mut toolbox = Toolbox::default();
-        toolbox.add_tool(DummyTool::default()).await;
-
-        let output = tool.invoke_typed(toolbox, &input).await.unwrap();
-        assert_snapshot!(output.stdout);
-        assert_snapshot!(output.stderr);
-
-        Ok(())
     }
 }

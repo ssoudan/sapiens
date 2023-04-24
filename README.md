@@ -24,7 +24,20 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 - Wikipedia: Query Wikipedia
 - Wikidata: Query Wikidata
 
-## Usage
+## Usage as a Discord bot
+
+`.env` file with: 
+```
+OPENAI_API_KEY=...
+DISCORD_TOKEN=...
+GUILD_ID=...
+```
+
+```./BUILD.sh``` and ```./BOT.sh``` to build and run the docker container with the bot. 
+
+Once the bot is running, you can interact with it on Discord with: "DO: Tell me a joke.".
+
+## Usage as a CLI
 
 `.env` file with: 
 ```
@@ -34,14 +47,14 @@ HUE_BRIDGE_IP=...
 ```
 Look at `sapiens/src/main.rs` if you don't already have these.
 
-Then: `./BUILD.sh && ./RUN.sh`.
+Then: `./BUILD.sh && ./CLI.sh`.
 
-# Example of 'successful' run
+# Example of 'successful' runs
 
 ## Appetizer
 
 <pre><code>
-❯ ./RUN.sh -t "What are the last 5 papers published on Arxiv in AI about? list with for each title and the url, please. Use feedparser."
+❯ ./CLI.sh -t "What are the last 5 papers published on Arxiv in AI about? list with for each title and the url, please. Use feedparser."
 ... (snip) ...
 =============   
 The original question was: What are the last 5 papers published on Arxiv in AI about? list with for each title and the url, please. Use feedparser.
@@ -58,10 +71,89 @@ Title: Supervised Machine Learning for Breast Cancer Risk Factors Analysis and S
 URL: http://arxiv.org/abs/2304.07299
 </code></pre>
 
+## Antipasto
+
+<pre><code>
+❯ ./CLI.sh -t 'Show me an example of how to use Sympy to solve a math problem. '
+# Your turn
+Original question: Show me an example of how to use Sympy to solve a math problem.
+Do you have the answer? Use the Conclude Tool to terminate the task.
+Observations, Orientation, Decision, The ONLY Action?
+=============
+## Observations:
+- The user wants an example of how to use Sympy to solve a math problem.
+- Sympy is a Python library for symbolic mathematics.
+## Orientation:
+- I will use the SandboxedPython tool to demonstrate the solution to the problem using the Sympy library.
+- I will use the Conclude tool to terminate the task when the solution is presented.
+- The solution will be presented in plain text to the Conclude tool.
+## Decision:
+- I will demonstrate how to solve the equation "x^2 - 5x + 6 = 0" using Sympy and present the solution to the Conclude tool.
+## The ONLY Action:
+```yaml
+command: SandboxedPython
+input:
+  code: |
+    from sympy import symbols, solve
+    x = symbols('x')
+    equation = x**2 - 5*x + 6
+    solution = solve(equation)
+    print(f"The solution to x^2 - 5x + 6 = 0 is {solution}")
+```
+
+=============
+# Action SandboxedPython result:
+```yaml
+stdout: |
+  The solution to x^2 - 5x + 6 = 0 is [2, 3]
+stderr: ''
+```
+# Your turn
+Original question: Show me an example of how to use Sympy to solve a math problem.
+Do you have the answer? Use the Conclude Tool to terminate the task.
+Observations, Orientation, Decision, The ONLY Action?
+=============
+## Observations:
+- The user wants an example of how to use Sympy to solve a math problem.
+- The previous agent has already demonstrated an example of how to use Sympy to solve a quadratic equation.
+- The equation is 'x^2 - 5x + 6 = 0'.
+- The solution is the roots of the equation, which are [2, 3].
+## Orientation:
+- I know the answer to the question.
+## Decision:
+- Use the Conclude Tool to terminate the task when I have presented the solution in plain text.
+## The ONLY Action:
+```yaml
+command: Conclude
+input:
+  original_question: Show me an example of how to use Sympy to solve a math problem.
+  conclusion: |
+    An example of how to use Sympy to solve the equation "x^2 - 5x + 6 = 0" is:
+
+    from sympy import symbols, solve
+    x = symbols('x')
+    equation = x**2 - 5*x + 6
+    solution = solve(equation)
+
+    The solution is the roots of the equation: [2, 3].
+```
+
+=============
+The original question was: Show me an example of how to use Sympy to solve a math problem.
+And the conclusion is: An example of how to use Sympy to solve the equation "x^2 - 5x + 6 = 0" is:
+
+from sympy import symbols, solve
+x = symbols('x')
+equation = x**2 - 5*x + 6
+solution = solve(equation)
+
+The solution is the roots of the equation: [2, 3].
+</code></pre>
+
 ## TL;DR
 
 <pre><code>
-❯ ./RUN.sh -t "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
+❯ ./CLI.sh -t "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
 ## Observations:
 - We want to know the weather of San Jose, California, USA.
 - We don't have an API KEY to fetch the data.
@@ -131,7 +223,7 @@ The original question was: How is the weather today in San Jose, CA, USA? I have
 And the conclusion is: The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ...
 </code></pre>
 
-## Another run
+## Commented run
 
 ```
 $ cargo run

@@ -71,6 +71,11 @@ pub async fn toolbox_from_env() -> Toolbox {
             .await;
     }
 
+    #[cfg(feature = "arxiv")]
+    {
+        toolbox.add_tool(crate::arxiv::ArXivTool::new().await).await;
+    }
+
     toolbox.add_terminal_tool(ConcludeTool::default()).await;
     toolbox.add_advanced_tool(PythonTool::default()).await;
     toolbox
