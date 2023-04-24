@@ -24,7 +24,20 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 - Wikipedia: Query Wikipedia
 - Wikidata: Query Wikidata
 
-## Usage
+## Usage as a Discord bot
+
+`.env` file with: 
+```
+OPENAI_API_KEY=...
+DISCORD_TOKEN=...
+GUILD_ID=...
+```
+
+```./BUILD.sh``` and ```./BOT.sh``` to build and run the docker container with the bot. 
+
+Once the bot is running, you can interact with it on Discord with: "DO: Tell me a joke.".
+
+## Usage as a CLI
 
 `.env` file with: 
 ```

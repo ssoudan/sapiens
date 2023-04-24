@@ -7,6 +7,7 @@ use sapiens::openai::Role;
 use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 
 // Usability:
+// TODO(ssoudan) Richer interaction
 // TODO(ssoudan) More tools: search, wx, negotiate, text summarization
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
