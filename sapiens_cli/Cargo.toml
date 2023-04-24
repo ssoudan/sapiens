@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_cli"
-version= "0.2.2"
+version= "0.3.0"
 edition.workspace = true
 authors.workspace = true
 description = "The cli - Sapiens"
@@ -21,8 +21,8 @@ wiki = [ "sapiens_tools/wiki" ]
 arxiv = [ "sapiens_tools/arxiv" ]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.2.2" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.2.2", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.3.0" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.3.0", default-features = false }
 
 tokio = { version = "1.27.0", features = ["full"] }
 async-trait = "0.1.68"

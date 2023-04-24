@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_tools"
-version= "0.2.2"
+version= "0.3.0"
 edition.workspace = true
 authors.workspace = true
 description = "The tools - Sapiens"
@@ -21,8 +21,8 @@ wiki = ["dep:mediawiki", "dep:serde_json"]
 arxiv = ["dep:arxiv-rs"]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.2.2" }
-sapiens_derive = { path = "../sapiens_derive", version = "^0.2.2" }
+sapiens = { path = "../sapiens", version = "^0.3.0" }
+sapiens_derive = { path = "../sapiens_derive", version = "^0.3.0" }
 
 huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.10", optional = true  }

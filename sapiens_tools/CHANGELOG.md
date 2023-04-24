@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.3.0 (2023-04-24)
+
+### Chore
+
+ - <csr-id-14529922572878248a9f6681dfa716e87326d8ff/> release prep
+ - <csr-id-7ea6a11630303aefa30680b17f67d7f45ef08c15/> deps updated
+ - <csr-id-385aab3fb6880373a7970cd5e243e68d127dc72c/> cleanup
+
+### New Features
+
+ - <csr-id-8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114/> Discord bot
+ - <csr-id-0840086e2f5da2ebcdddec960c5308ca0eacb8c5/> arXiv query api
+ - <csr-id-f416adf7af52b0a907a9db8419bcdaa5f2a77dc5/> basic integration with discord
+
+### Bug Fixes
+
+ - <csr-id-b926c83e28c3e73484ce304f217a367b565b7f93/> wikipedia input example
+ - <csr-id-04d17622f7afea618b5f7693d3b6e7754f29a9c0/> tests snapshot
+ - <csr-id-97d7c704a78aa23661fd9b24267667e7dc5f40bf/> linefeed in tool descriptions
+ - <csr-id-56ea40e1cc483bf22ca2eaea7f333fad2b001e48/> Better definition of the format for RoomToolInput
+ - <csr-id-e1953300aac0607b8c3eabf956f06b31317a338b/> udeps config
+
+### Refactor
+
+ - <csr-id-15c52d843721fa8426573d9f6bee2c019d2bd9bb/> main loop to process model and tools outputs
+
+### New Features (BREAKING)
+
+ - <csr-id-772e8eb4184efd0b305e460a31d719c237790098/> async api for Tools and in most places actually
+
+### Refactor (BREAKING)
+
+ - <csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/> main loop to process model and tools outputs (part 2)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 15 commits contributed to the release over the course of 4 calendar days.
+ - 4 days passed between releases.
+ - 14 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Discord bot ([`8be8d0f`](https://github.com/ssoudan/sapiens/commit/8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114))
+    - Release prep ([`1452992`](https://github.com/ssoudan/sapiens/commit/14529922572878248a9f6681dfa716e87326d8ff))
+    - ArXiv query api ([`0840086`](https://github.com/ssoudan/sapiens/commit/0840086e2f5da2ebcdddec960c5308ca0eacb8c5))
+    - Wikipedia input example ([`b926c83`](https://github.com/ssoudan/sapiens/commit/b926c83e28c3e73484ce304f217a367b565b7f93))
+    - Tests snapshot ([`04d1762`](https://github.com/ssoudan/sapiens/commit/04d17622f7afea618b5f7693d3b6e7754f29a9c0))
+    - Linefeed in tool descriptions ([`97d7c70`](https://github.com/ssoudan/sapiens/commit/97d7c704a78aa23661fd9b24267667e7dc5f40bf))
+    - Merge remote-tracking branch 'origin/main' into bot ([`4f17f43`](https://github.com/ssoudan/sapiens/commit/4f17f438ab2eea6a7f2f6b8cff5fdbec9fbac32e))
+    - Better definition of the format for RoomToolInput ([`56ea40e`](https://github.com/ssoudan/sapiens/commit/56ea40e1cc483bf22ca2eaea7f333fad2b001e48))
+    - Deps updated ([`7ea6a11`](https://github.com/ssoudan/sapiens/commit/7ea6a11630303aefa30680b17f67d7f45ef08c15))
+    - Basic integration with discord ([`f416adf`](https://github.com/ssoudan/sapiens/commit/f416adf7af52b0a907a9db8419bcdaa5f2a77dc5))
+    - Udeps config ([`e195330`](https://github.com/ssoudan/sapiens/commit/e1953300aac0607b8c3eabf956f06b31317a338b))
+    - Async api for Tools and in most places actually ([`772e8eb`](https://github.com/ssoudan/sapiens/commit/772e8eb4184efd0b305e460a31d719c237790098))
+    - Main loop to process model and tools outputs (part 2) ([`b11b947`](https://github.com/ssoudan/sapiens/commit/b11b947d3b3699807c03c4500a8dc7a0e53d41d0))
+    - Main loop to process model and tools outputs ([`15c52d8`](https://github.com/ssoudan/sapiens/commit/15c52d843721fa8426573d9f6bee2c019d2bd9bb))
+    - Cleanup ([`385aab3`](https://github.com/ssoudan/sapiens/commit/385aab3fb6880373a7970cd5e243e68d127dc72c))
+</details>
+
 ## 0.2.2 (2023-04-20)
 
 <csr-id-41bca7d7b24a7a7c27e8358d2a1ea3c5b5f786ed/>
@@ -37,7 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 11 commits contributed to the release.
+ - 12 commits contributed to the release.
  - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -48,6 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.2.2, sapiens_derive v0.2.2, sapiens_tools v0.2.2, sapiens_cli v0.2.2 ([`1d9981b`](https://github.com/ssoudan/sapiens/commit/1d9981bef2fe1b4f4441c28e11713470ff1b1f5d))
     - Release sapiens v0.2.2, sapiens_derive v0.2.2, sapiens_tools v0.2.2, sapiens_cli v0.2.2 ([`b72b47f`](https://github.com/ssoudan/sapiens/commit/b72b47f99c52d2d88dc3e2108917103707dc13ba))
     - Changelog ([`1844702`](https://github.com/ssoudan/sapiens/commit/1844702fb1a2ffd5bb1ce4717e19c6675527738a))
     - Build container without Hue support by default - EXTRA_FEATURE="hue" to enable. ([`3e15ff7`](https://github.com/ssoudan/sapiens/commit/3e15ff7b615faaab87addf4aff26ae841d94b4dc))
