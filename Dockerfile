@@ -30,6 +30,14 @@ RUN cargo build --release --bin sapiens_bot --features="$EXTRA_FEATURES"
 FROM debian:bookworm-slim AS base-runtime
 WORKDIR app
 
+ARG USERNAME=not_me
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+# Create the user
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
+
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libpython3.11 \
@@ -39,21 +47,32 @@ RUN apt-get update && apt-get install -y \
     python3-urllib3 \
     python3-bs4 \
     python3-feedparser \
+    python3-pip \
+    python3-venv \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+USER $USERNAME
+RUN python3 -m venv /home/$USERNAME/.venv
+ENV PATH="/home/$USERNAME/.venv/bin:$PATH"
+RUN pip3 install --no-cache-dir arxiv
+
 FROM base-runtime AS sapiens_cli
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
 COPY --from=builder /app/target/release/sapiens_cli /usr/local/bin
 
-USER 1000:0
+USER $USER_UID:$USER_GID
 
 ENTRYPOINT ["/usr/local/bin/sapiens_cli"]
 
 FROM base-runtime AS sapiens_bot
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
 
 COPY --from=builder /app/target/release/sapiens_bot /usr/local/bin
 
-USER 1000:0
+USER $USER_UID:$USER_GID
 
 ENTRYPOINT ["/usr/local/bin/sapiens_bot"]

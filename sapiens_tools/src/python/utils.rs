@@ -1,6 +1,6 @@
 use pyo3::types::{IntoPyDict, PyDict, PyFloat, PyList, PyTuple};
 use pyo3::{PyObject, Python, ToPyObject};
-use sapiens::tools::{FormatPart, ToolDescription};
+use sapiens::tools::{FieldFormat, ToolDescription};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
 
@@ -135,17 +135,21 @@ pub(crate) fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
 pub struct SimpleFormat {
     /// Name of the field
     pub name: String,
-    // pub r#type: String,
+    /// Type of the field
+    pub r#type: String,
+    /// Whether the field is optional
+    pub optional: bool,
     /// Description of the field
     pub description: String,
 }
 
-impl From<FormatPart> for SimpleFormat {
-    fn from(part: FormatPart) -> Self {
+impl From<FieldFormat> for SimpleFormat {
+    fn from(part: FieldFormat) -> Self {
         SimpleFormat {
-            name: part.key,
-            // r#type: part.r#type,
-            description: part.purpose,
+            name: part.name,
+            r#type: part.r#type,
+            optional: part.optional,
+            description: part.description,
         }
     }
 }
@@ -154,8 +158,9 @@ impl ToPyObject for SimpleFormat {
     fn to_object(&self, py: Python<'_>) -> PyObject {
         let dict = PyDict::new(py);
         dict.set_item("name", self.name.to_object(py)).unwrap();
-        // dict.set_item("type", self.r#type.to_object(py))
-        //     .unwrap();
+        dict.set_item("type", self.r#type.to_object(py)).unwrap();
+        dict.set_item("optional", self.optional.to_object(py))
+            .unwrap();
         dict.set_item("description", self.description.to_object(py))
             .unwrap();
         dict.into()
@@ -169,8 +174,6 @@ pub(crate) struct SimpleToolDescription {
     pub name: String,
     /// Description of the tool
     pub description: String,
-    /// Context utilization of the tool
-    pub description_context: String,
     /// Input format of the tool
     pub input_format: Vec<SimpleFormat>,
     /// Output format of the tool
@@ -181,13 +184,13 @@ impl From<ToolDescription> for SimpleToolDescription {
     fn from(desc: ToolDescription) -> Self {
         let input_format = desc
             .input_format
-            .parts
+            .fields
             .into_iter()
             .map(|x| x.into())
             .collect();
         let output_format = desc
             .output_format
-            .parts
+            .fields
             .into_iter()
             .map(|x| x.into())
             .collect();
@@ -195,7 +198,6 @@ impl From<ToolDescription> for SimpleToolDescription {
         SimpleToolDescription {
             name: desc.name,
             description: desc.description,
-            description_context: desc.description_context,
             input_format,
             output_format,
         }
@@ -207,8 +209,6 @@ impl ToPyObject for SimpleToolDescription {
         let dict = PyDict::new(py);
         dict.set_item("name", self.name.clone()).unwrap();
         dict.set_item("description", self.description.clone())
-            .unwrap();
-        dict.set_item("description_context", self.description_context.clone())
             .unwrap();
         dict.set_item("input_format", self.input_format.clone())
             .unwrap();

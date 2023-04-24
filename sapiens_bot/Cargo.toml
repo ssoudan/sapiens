@@ -20,6 +20,8 @@ hue = [ "dep:huelib2", "sapiens_tools/hue" ]
 wiki = [ "sapiens_tools/wiki" ]
 # Arxiv related tools
 arxiv = [ "sapiens_tools/arxiv" ]
+# Summarization
+summarize = ["sapiens_tools/summarize"]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.3.0" }

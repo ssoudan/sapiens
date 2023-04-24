@@ -12,13 +12,15 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki", "arxiv"]
+default = ["wiki", "arxiv", "summarize"]
 # Hue lights
 hue = ["dep:huelib2"]
 # MediaWiki: Wikipedia, Wikidata
 wiki = ["dep:mediawiki", "dep:serde_json"]
 # arXiv
 arxiv = ["dep:arxiv-rs"]
+# Summarization
+summarize = ["dep:async-openai"]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.3.0" }
@@ -40,8 +42,7 @@ regex = "1.8.1"
 
 pyo3 = { version = "0.18.3", features = [] }
 
-tiktoken-rs = { version = "0.4.1", features = ["async-openai"] }
-async-openai = "0.10.3"
+async-openai = { version = "0.10.3", optional = true }
 
 convert_case = "0.6.0"
 

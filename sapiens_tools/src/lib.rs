@@ -23,3 +23,7 @@ pub mod setup;
 /// Tools related to ArXiv
 #[cfg(feature = "arxiv")]
 pub mod arxiv;
+
+/// Text summarization tools
+#[cfg(feature = "summarize")]
+pub mod summarize;

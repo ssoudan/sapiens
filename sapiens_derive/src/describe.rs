@@ -1,6 +1,7 @@
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
+use syn::{Path, PathSegment};
 
 use crate::DocumentedStructField;
 
@@ -12,6 +13,25 @@ struct DeriveReceiver {
     data: darling::ast::Data<(), DocumentedStructField>,
 
     generics: syn::Generics,
+}
+
+fn extract_type_path(ty: &syn::Type) -> Option<&Path> {
+    match *ty {
+        syn::Type::Path(ref typepath) if typepath.qself.is_none() => Some(&typepath.path),
+        _ => None,
+    }
+}
+
+fn extract_option_segment(path: &Path) -> Option<&PathSegment> {
+    let idents_of_path = path.segments.iter().fold(String::new(), |mut acc, v| {
+        acc.push_str(&v.ident.to_string());
+        acc.push('|');
+        acc
+    });
+    vec!["Option|", "std|option|Option|", "core|option|Option|"]
+        .into_iter()
+        .find(|s| idents_of_path == *s)
+        .and_then(|_| path.segments.last())
 }
 
 impl ToTokens for DeriveReceiver {
@@ -62,16 +82,25 @@ impl ToTokens for DeriveReceiver {
                     doc
                 };
 
+                let is_optional = extract_type_path(ty)
+                    .and_then(extract_option_segment)
+                    .is_some();
+
                 let ty = ty.to_token_stream().to_string();
 
                 // Python-ify the type
                 let ty = pythonify(ty);
 
                 // add type information to the docstring
-                let doc = format!("<{}> {}", ty, doc);
+                // let doc = format!("<{}> {}", ty, doc);
 
                 quote! {
-                    (stringify!(#ident).to_string(), #doc).into()
+                    sapiens::tools::FieldFormat{
+                        name: stringify!(#ident).to_string(),
+                        r#type: #ty.to_string(),
+                        optional: #is_optional,
+                        description: #doc.to_string(),
+                    }
                 }
             })
             .collect::<Vec<_>>();
@@ -79,7 +108,7 @@ impl ToTokens for DeriveReceiver {
         // dbg!(fields);
         out.extend(quote! {
             impl #imp Describe for #ident #ty #wher {
-                fn describe() -> Format {
+                fn describe() -> sapiens::tools::Format {
                     vec![
                          #(#doc_tuples),*
                     ].into()

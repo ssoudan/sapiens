@@ -76,6 +76,13 @@ pub async fn toolbox_from_env() -> Toolbox {
         toolbox.add_tool(crate::arxiv::ArXivTool::new().await).await;
     }
 
+    #[cfg(feature = "summarize")]
+    {
+        toolbox
+            .add_tool(crate::summarize::SummarizeTool::default())
+            .await;
+    }
+
     toolbox.add_terminal_tool(ConcludeTool::default()).await;
     toolbox.add_advanced_tool(PythonTool::default()).await;
     toolbox

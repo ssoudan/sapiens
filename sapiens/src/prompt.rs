@@ -30,7 +30,7 @@ Please use the following format for your response - no need to be verbose:
 - ...
 ## Decision:
 - ...
-## The ONLY Action: <Do not give multiple command. Only one per response.>
+## The ONLY Action: <You must give only one action.>
 ```yaml
 command: <ToolName>
 input:

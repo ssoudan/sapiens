@@ -3,9 +3,82 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 pub use llm_chain::parsing::{find_yaml, ExtractionError};
-pub use llm_chain::tools::{Describe, Format, FormatPart, ToolDescription};
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 use tokio::sync::RwLock;
+
+/// Part of a [`Format`]
+#[derive(Debug, Clone)]
+pub struct FieldFormat {
+    /// Name of the field
+    pub name: String,
+    /// Type of the field
+    pub r#type: String,
+    /// True if the field is optional
+    pub optional: bool,
+    /// Description of the field
+    pub description: String,
+}
+
+/// Input or output format of a tool
+pub trait Describe {
+    /// Describe the format
+    fn describe() -> Format;
+}
+
+/// Format of [`Tools`] input and output
+#[derive(Debug, Clone)]
+pub struct Format {
+    /// Fields of the format
+    pub fields: Vec<FieldFormat>,
+}
+
+impl Serialize for Format {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let n = self.fields.len();
+        let mut map = serializer.serialize_map(Some(n))?;
+        for field in &self.fields {
+            let description = if field.optional {
+                format!("<{}> {} (optional)", field.r#type, field.description)
+            } else {
+                format!("<{}> {}", field.r#type, field.description)
+            };
+            map.serialize_entry(&field.name, &description)?;
+        }
+        map.end()
+    }
+}
+
+impl From<Vec<FieldFormat>> for Format {
+    fn from(fields: Vec<FieldFormat>) -> Self {
+        Format { fields }
+    }
+}
+
+/// Tool description
+#[derive(Debug, Serialize, Clone)]
+pub struct ToolDescription {
+    /// Name of the tool
+    pub name: String,
+    /// Description of the tool
+    pub description: String,
+    /// Input format
+    pub input_format: Format,
+    /// Output format
+    pub output_format: Format,
+}
+
+impl ToolDescription {
+    /// Create a new tool description
+    pub fn new(name: &str, description: &str, input_format: Format, output_format: Format) -> Self {
+        ToolDescription {
+            name: name.to_string(),
+            description: description.to_string(),
+            input_format,
+            output_format,
+        }
+    }
+}
 
 /// Error while using a tool
 #[derive(Debug, thiserror::Error)]
@@ -17,7 +90,7 @@ pub enum ToolUseError {
     #[error("Tool invocation failed: {0}")]
     ToolInvocationFailed(String),
     /// Invalid YAML
-    #[error("Invalid YAML")]
+    #[error("Invalid YAML: {0}")]
     InvalidYaml(#[from] serde_yaml::Error),
     /// Invalid input
     #[error("Invalid input: {0}")]

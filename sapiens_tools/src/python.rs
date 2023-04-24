@@ -1,8 +1,10 @@
+use std::cmp::Ordering;
+
 use convert_case::{Case, Casing};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
 use sapiens::tools::{
-    invoke_simple_from_toolbox, AdvancedTool, Describe, Format, ProtoToolDescribe, ProtoToolInvoke,
+    invoke_simple_from_toolbox, AdvancedTool, Describe, ProtoToolDescribe, ProtoToolInvoke,
     ToolDescription, ToolUseError, Toolbox,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe};
@@ -27,7 +29,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 /// 'output':.., 'description_context':.. }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
-/// BeautifulSoup4, feedparser.
+/// BeautifulSoup4, feedparser, arxiv.
 /// - No PIP.
 #[derive(Default, ProtoToolDescribe)]
 #[tool(
@@ -188,14 +190,33 @@ impl PythonTool {
         let tools = toolwrapper.toolbox.describe().await;
 
         for (name, description) in tools {
-            let inputs_parts = description.input_format.parts;
+            let inputs_parts = description.input_format.fields;
             // FUTURE(ssoudan) might want to add None only for optional inputs
-            let inputs = inputs_parts
-                .iter()
-                .map(|f| f.key.clone())
-                .map(|s| format!("{}=None", s))
-                .collect::<Vec<_>>()
-                .join(", ");
+            let mut inputs = inputs_parts.clone();
+
+            // sort with the optional inputs at the end
+            inputs.sort_by(|a, b| {
+                if a.optional && !b.optional {
+                    Ordering::Greater
+                } else if !a.optional && b.optional {
+                    Ordering::Less
+                } else {
+                    Ordering::Equal
+                }
+            });
+
+            let inputs = inputs
+                .into_iter()
+                .map(|f| {
+                    if f.optional {
+                        format!("{}=None", f.name)
+                    } else {
+                        f.name
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            let inputs = inputs.join(", ");
             let inputs = if inputs.is_empty() {
                 "".to_string()
             } else {
@@ -205,7 +226,7 @@ impl PythonTool {
             let dict = inputs_parts
                 .iter()
                 .map(|f| {
-                    let name = &f.key;
+                    let name = &f.name;
                     format!("\"{}\": {}", name, name)
                 })
                 .collect::<Vec<_>>()

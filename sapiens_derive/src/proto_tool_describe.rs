@@ -75,7 +75,6 @@ impl ToTokens for DeriveReceiver {
                     ToolDescription {
                         name: #name.to_string(),
                         description: #doc.to_string(),
-                        description_context: "Use this when it is the best tool for the job.".to_string(), 
                         input_format: #input_ty::describe(),
                         output_format: #output_ty::describe(),
                     }

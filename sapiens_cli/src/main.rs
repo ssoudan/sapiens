@@ -8,7 +8,7 @@ use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 
 // Usability:
 // TODO(ssoudan) Richer interaction
-// TODO(ssoudan) More tools: search, wx, negotiate, text summarization
+// TODO(ssoudan) More tools: search, wx, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
 // TODO(ssoudan) Token budget management and completion termination reason

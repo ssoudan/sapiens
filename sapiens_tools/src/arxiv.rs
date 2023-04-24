@@ -3,9 +3,7 @@ use std::fmt::Display;
 use arxiv;
 use arxiv::{Arxiv, ArxivQuery};
 use sapiens::tools::ToolUseError::ToolInvocationFailed;
-use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
+use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +19,7 @@ use serde::{Deserialize, Serialize};
 pub struct ArXivTool {}
 
 /// Sort order
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub enum SortOrder {
     /// Ascending
     #[serde(rename = "ascending")]
@@ -42,7 +40,7 @@ impl Display for SortOrder {
 }
 
 /// Sort by
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub enum SortBy {
     /// Relevance
     #[serde(rename = "relevance")]
@@ -81,7 +79,6 @@ pub struct ArXivToolInput {
     pub search_query: String,
 
     /// id_list: Comma-separated list of arXiv IDs to return
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub id_list: Option<String>,
 
     /// start: Result offset for pagination
@@ -89,33 +86,26 @@ pub struct ArXivToolInput {
 
     /// max_results: Maximum number of results to return in a single response.
     /// Default is 10.
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_results: Option<i32>,
 
     /// Sort by. Can be either `relevance`, `lastUpdatedDate` or
     /// `submittedDate`. Default is `relevance`.
-    #[serde(default)]
-    pub sort_by: SortBy,
+    pub sort_by: Option<SortBy>,
 
     /// Sort order. Can be either `ascending` or `descending`.
     /// Default is `descending`.
-    #[serde(default)]
-    pub sort_order: SortOrder,
+    pub sort_order: Option<SortOrder>,
 
     /// show PDF url - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_pdf_url: Option<bool>,
 
     /// show authors - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_authors: Option<bool>,
 
     /// show comments - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_comments: Option<bool>,
 
     /// show summary - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub show_summary: Option<bool>,
 }
 
@@ -127,8 +117,8 @@ impl From<&ArXivToolInput> for ArxivQuery {
             id_list: input.id_list.clone().unwrap_or_default(),
             start: input.start,
             max_results: input.max_results,
-            sort_by: input.sort_by.to_string(),
-            sort_order: input.sort_order.to_string(),
+            sort_by: input.sort_by.clone().unwrap_or_default().to_string(),
+            sort_order: input.sort_order.clone().unwrap_or_default().to_string(),
         }
     }
 }
@@ -235,8 +225,8 @@ mod tests {
             id_list: None,
             start: None,
             max_results: None,
-            sort_by: SortBy::Relevance,
-            sort_order: SortOrder::Ascending,
+            sort_by: Some(SortBy::Relevance),
+            sort_order: Some(SortOrder::Ascending),
             show_authors: None,
             show_comments: None,
             show_summary: Some(false),
@@ -244,7 +234,7 @@ mod tests {
         };
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert!(output.result.len() == 10);
+        assert_eq!(output.result.len(), 10);
     }
 
     #[tokio::test]
@@ -261,7 +251,30 @@ mod tests {
 
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert!(output.result.len() == 10);
+        assert_eq!(output.result.len(), 10);
         assert!(!output.result[0].authors.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_arxiv_from_yaml_2() {
+        let tool = ArXivTool::new().await;
+        let input = indoc! {"
+            search_query: cat:cs.DB
+            max_results: 4
+            show_authors: true
+            show_pdf_url: true  
+        "};
+
+        let input: ArXivToolInput = serde_yaml::from_str(input).unwrap();
+
+        assert_yaml_snapshot!(input);
+
+        let output = tool.invoke_typed(&input).await.unwrap();
+
+        assert_eq!(output.result.len(), 4);
+        assert!(!output.result[0].authors.is_empty());
+
+        let yaml = serde_yaml::to_value(&output).unwrap();
+        assert_yaml_snapshot!(yaml);
     }
 }

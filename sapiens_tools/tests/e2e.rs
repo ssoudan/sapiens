@@ -166,10 +166,11 @@ mod tests {
 #[cfg(feature = "arxiv")]
 mod arxiv {
     use indoc::indoc;
-    use insta::assert_display_snapshot;
+    use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
     use sapiens::tools::{invoke_tool, Toolbox};
     use sapiens_tools::arxiv::ArXivTool;
+    use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::python::PythonTool;
 
     #[pyo3_asyncio::tokio::test]
@@ -231,6 +232,83 @@ mod arxiv {
 
         let output = res.unwrap();
         assert_display_snapshot!(output);
+
+        Ok(())
+    }
+
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_arxiv_3() -> PyResult<()> {
+        let mut toolbox = Toolbox::default();
+        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let data = indoc! {r#"```yaml
+       command: SandboxedPython
+       input:
+         code: |
+            latest_papers = tools.ArXiv(
+              search_query="cat:cs.DB",
+              max_results=4,
+              show_summary=True,
+              show_pdf_url=True
+              )["result"]           
+            print(latest_papers)
+       ```
+    "#};
+
+        let (tool_name, res) = invoke_tool(toolbox, data).await;
+        assert_eq!(tool_name, "SandboxedPython");
+
+        let output = res.unwrap();
+        assert_display_snapshot!(output);
+
+        Ok(())
+    }
+
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_arxiv_4() -> PyResult<()> {
+        let mut toolbox = Toolbox::default();
+        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_terminal_tool(ConcludeTool::default()).await;
+        toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let data = indoc! {r#"```yaml
+        command: SandboxedPython
+        input:
+          code: |
+            latest_papers = tools.ArXiv(
+              search_query="cat:cs.DB",
+              max_results=4,
+              show_summary=True,
+              show_pdf_url=True,
+              sort_order="ascending",
+              )["result"]
+        
+            summaries = []
+            for paper in latest_papers:
+                summary = paper["summary"]
+                summaries.append(summary)
+        
+            task_conclusion = "\n\n\n".join([f"Title: {paper['title']}\nSummary: {summary}\nPDF Url: {paper['pdf_url']}"
+                                            for paper, summary in zip(latest_papers, summaries)])
+        
+            tools.Conclude(
+                    original_question="What are the 4 latest papers on database published on arXiv? What are they about?",
+                    conclusion=task_conclusion)
+       ```
+    "#};
+
+        let (tool_name, res) = invoke_tool(toolbox.clone(), data).await;
+        assert_eq!(tool_name, "SandboxedPython");
+
+        let output = res.unwrap();
+        assert_display_snapshot!(output);
+
+        let termination_messages = toolbox.termination_messages().await;
+        let done = !termination_messages.is_empty();
+        assert!(done);
+
+        assert_yaml_snapshot!(termination_messages);
 
         Ok(())
     }

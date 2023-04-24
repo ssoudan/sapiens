@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
+    Describe, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
     ToolDescription, ToolUseError,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
