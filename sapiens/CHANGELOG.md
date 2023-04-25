@@ -5,7 +5,50 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Chore
+
+ - <csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/> update
+
+### New Features
+
+ - <csr-id-a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c/> reduce initial prompt size
+ - <csr-id-23383eb67f19e8fdcff185709ca3a6d12b3000fa/> summarize tool
+
+### Bug Fixes (BREAKING)
+
+ - <csr-id-11de03cd0c11100c654eb171c1f0ac03e561661a/> renamed Arxiv tool
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release.
+ - 1 day passed between releases.
+ - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Update ([`35a6a99`](https://github.com/ssoudan/sapiens/commit/35a6a992c57951ebe2a325d81d60c540053bcb94))
+    - Reduce initial prompt size ([`a08cd20`](https://github.com/ssoudan/sapiens/commit/a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c))
+    - Renamed Arxiv tool ([`11de03c`](https://github.com/ssoudan/sapiens/commit/11de03cd0c11100c654eb171c1f0ac03e561661a))
+    - Summarize tool ([`23383eb`](https://github.com/ssoudan/sapiens/commit/23383eb67f19e8fdcff185709ca3a6d12b3000fa))
+</details>
+
 ## 0.3.0 (2023-04-24)
+
+<csr-id-cc8115aed3e0723dbc3158317b7e62c94c6021de/>
+<csr-id-7ea6a11630303aefa30680b17f67d7f45ef08c15/>
+<csr-id-1a0bdf6c3525dfee29211feab7a9700c632a3195/>
+<csr-id-15c52d843721fa8426573d9f6bee2c019d2bd9bb/>
+<csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/>
 
 ### Chore
 
@@ -44,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 16 commits contributed to the release over the course of 3 calendar days.
+ - 17 commits contributed to the release over the course of 3 calendar days.
  - 4 days passed between releases.
  - 15 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -56,6 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.3.0, sapiens_derive v0.3.0, sapiens_tools v0.3.0, sapiens_bot v0.2.2, sapiens_cli v0.3.0, safety bump 3 crates ([`12e417c`](https://github.com/ssoudan/sapiens/commit/12e417cc394cbd9b7e18366d427cdd89132ee299))
     - Discord bot ([`8be8d0f`](https://github.com/ssoudan/sapiens/commit/8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114))
     - Sorted tool descriptions (by name) ([`c37e7ca`](https://github.com/ssoudan/sapiens/commit/c37e7ca813eaff1fe87b11736670024b81c5088d))
     - Duplicate entry ([`c0604dc`](https://github.com/ssoudan/sapiens/commit/c0604dc55545bb092bab88baa3138e7d4401f72d))
