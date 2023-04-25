@@ -5,6 +5,68 @@ async fn main() -> pyo3::PyResult<()> {
     pyo3_asyncio::testing::main().await
 }
 
+#[cfg(feature = "hue")]
+mod hue_test {
+    use indoc::indoc;
+    use insta::{assert_display_snapshot, assert_yaml_snapshot};
+    use pyo3::PyResult;
+    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens_tools::conclude::ConcludeTool;
+    use sapiens_tools::hue::room::fake::FakeRoomTool;
+    use sapiens_tools::hue::status::fake::FakeStatusTool;
+    use sapiens_tools::python::PythonTool;
+
+    #[pyo3_asyncio::tokio::test]
+    async fn test_python_hue() -> PyResult<()> {
+        let data = indoc! {r#"
+        # Action
+        ```yaml
+        command: SandboxedPython
+        input:
+          code: |
+            room_name = "Bedroom"
+        
+            import json
+        
+            # Get the list of room objects with names and Lights ID lists.
+            rooms = tools.Room(room_filter=[]).get('rooms')
+        
+            # Find the relevant room and get only its lights IDs.
+            room_lights = next(room for room in rooms if room_name in room.get('name'))
+            room_lights_ids = room_lights.get('lights')
+                            
+            # Get the statuses of Lights in the Bedroom.
+            Bedroom_lights_status = tools.LightStatus(light_filter=room_lights_ids).get('lights')
+        
+            # Conclude the task with the result.
+            tools.Conclude(
+                original_question="what is the status of the lights in the Bedroom?",
+                conclusion=f"The light(s) status in {room_name} is {json.dumps(Bedroom_lights_status)}"
+            )
+        ```
+        "#};
+
+        let mut toolbox = Toolbox::default();
+        toolbox.add_advanced_tool(PythonTool::default()).await;
+        toolbox.add_terminal_tool(ConcludeTool::default()).await;
+        toolbox.add_tool(FakeRoomTool::default()).await;
+        toolbox.add_tool(FakeStatusTool::default()).await;
+
+        let (tool_name, res) = invoke_tool(toolbox.clone(), data).await;
+        assert_eq!(tool_name, "SandboxedPython");
+        let output = res.unwrap();
+
+        assert_display_snapshot!(output);
+
+        // collect the conclusion
+        let termination_messages = toolbox.termination_messages().await;
+
+        assert_yaml_snapshot!(termination_messages);
+
+        Ok(())
+    }
+}
+
 mod tests {
     use indoc::indoc;
     use insta::assert_display_snapshot;

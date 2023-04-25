@@ -23,16 +23,14 @@ const MAX_OUTPUT_SIZE: usize = 512;
 ///
 /// - To use another Tool:
 /// ```python
-/// input = {'field': ...}
-/// output = tools.ToolName(**input)
-/// print(output['field'])
+/// output = tools.ToolName(input_field_1=..., input_field_2=...)
+/// print(output['output_field_1'])
 /// ```
 /// - Only stdout and stderr are captured and made available (limited to 512B
 ///   total). If the output is larger, use `tools.Conclude` directly from the
 ///   code.
 /// - List available tools with `tools.list()`. And returns a list of
-///   `{'name':.., 'description':.., 'input':..,
-/// 'output':.., 'description_context':.. }`.
+///   `{'name':.., 'description':.., 'input':.., 'output':.., }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser, arxiv.
