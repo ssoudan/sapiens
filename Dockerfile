@@ -49,7 +49,7 @@ RUN apt-get update && apt-get install -y \
 USER $USERNAME
 RUN python3 -m venv /home/$USERNAME/.venv
 ENV PATH="/home/$USERNAME/.venv/bin:$PATH"
-RUN pip3 install --no-cache-dir arxiv requests numpy sympy bs4 feedparser urllib3
+RUN pip3 install --no-cache-dir arxiv requests numpy sympy bs4 feedparser urllib3 lxml
 
 FROM base-runtime AS sapiens_cli
 ARG USER_UID=1000
