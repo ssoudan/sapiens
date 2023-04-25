@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
+    Describe, ProtoToolDescribe, ProtoToolInvoke, TerminalTool, TerminationMessage,
     ToolDescription, ToolUseError,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
@@ -41,8 +41,9 @@ impl TerminalTool for ConcludeTool {
 /// A tool that is called to wrap the task.
 #[derive(Debug, Clone, Serialize, Deserialize, Describe)]
 pub struct ConcludeToolInput {
-    /// The final textual answer for this task. No string interpolation
-    /// supported. Plain text ONLY. MANDATORY.
+    /// The final answer for this task. Plain text ONLY. No string interpolation
+    /// supported. MANDATORY. Call directly from `SandboxPython` Tool for long
+    /// answers.
     pub conclusion: String,
     /// The original question that was asked to the user. No string
     /// interpolation supported, only plain text. MANDATORY.

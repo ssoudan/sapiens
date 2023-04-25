@@ -1,9 +1,33 @@
 # Sapiens
 
-*Sapiens use tools to interact with the world.*
+![Sapiens](docs/sapiens.png)
 
-Fun with chatGPT API, [llm-chain](https://github.com/sobelio/llm-chain) and 
-[huelib (fork)](https://github.com/ssoudan/huelib-rs/).
+*Sapiens uses tools to interact with the world.*
+
+An experiment with handing over the tools to the machine.
+
+
+> From primal birth, we walked the Earth, <br>
+> Tools guiding evolution's stride, <br>
+> Shaping land and air, with thoughtful care, <br>
+> In Anthropocene, we reside. <br>
+>
+> As we forge ahead, the path we tread, <br>
+> Leads to new horizons vast, <br>
+> Future tools in hand, for a world so grand, <br>
+> Built on foundations of the past. <br>
+>
+> Digital realms emerge, as we converge, <br>
+> With AI as our guide, <br>
+> New worlds to mold, as the tale unfolds, <br>
+> In this wondrous, boundless ride. <br>
+>
+> Innovation thrives, as humankind strives, <br>
+> To shape the future, ever bright, <br>
+> A legacy we leave, as we interweave, <br>
+> The old world with the new light. <br>
+
+<p style="text-align: right">Not Me</p>
 
 ## Disclaimer
 
@@ -19,10 +43,12 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 
 ## Tools
 
-- SandboxedPython: execute Python code in a (not so) sandboxed environment
-- Hue: control Philips Hue lights: List Rooms, List Lights, Get/Set Light State - use 'hue' feature.
-- Wikipedia: Query Wikipedia
-- Wikidata: Query Wikidata
+- *SandboxedPython*: execute Python code in a (not so) sandboxed environment
+- *Hue*: control Philips Hue lights: List Rooms, List Lights, Get/Set Light State - use 'hue' feature.
+- *Wikipedia*: query Wikipedia
+- *Wikidata*: query Wikidata (SPARQL)
+- *Summarize*: summarize text with OpenAI
+- *Arxiv*: query arXiv
 
 ## Usage as a Discord bot
 
@@ -35,7 +61,7 @@ GUILD_ID=...
 
 ```./BUILD.sh``` and ```./BOT.sh``` to build and run the docker container with the bot. 
 
-Once the bot is running, you can interact with it on Discord with: "DO: Tell me a joke.".
+Once the bot is running, you can interact with it on Discord with: `DO: Tell me a joke.`
 
 ## Usage as a CLI
 

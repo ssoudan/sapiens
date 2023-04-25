@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use mediawiki::api::Api;
-use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
+use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 use serde_json;

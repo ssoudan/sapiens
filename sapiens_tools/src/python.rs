@@ -1,8 +1,11 @@
+use std::cmp::Ordering;
+use std::collections::HashMap;
+
 use convert_case::{Case, Casing};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
 use sapiens::tools::{
-    invoke_simple_from_toolbox, AdvancedTool, Describe, Format, ProtoToolDescribe, ProtoToolInvoke,
+    invoke_simple_from_toolbox, AdvancedTool, Describe, ProtoToolDescribe, ProtoToolInvoke,
     ToolDescription, ToolUseError, Toolbox,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe};
@@ -17,17 +20,22 @@ use crate::python::utils::SimpleToolDescription;
 const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
+///
+/// - To use another Tool:
+/// ```python
+/// input = {'field': ...}
+/// output = tools.ToolName(**input)
+/// print(output['field'])
+/// ```
 /// - Only stdout and stderr are captured and made available (limited to 512B
-/// total).
-/// - To use other Tools from here: `input = {...}; output =
-/// tools.tool_name(**input); print(output["field_xxx"])`. The `output` is an
-/// object.
-/// - List available tools with `tools.list()`. `tools` is already
-/// imported. And returns a list of `{'name':.., 'description':.., 'input':..,
+///   total). If the output is larger, use `tools.Conclude` directly from the
+///   code.
+/// - List available tools with `tools.list()`. And returns a list of
+///   `{'name':.., 'description':.., 'input':..,
 /// 'output':.., 'description_context':.. }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
-/// BeautifulSoup4, feedparser.
+/// BeautifulSoup4, feedparser, arxiv.
 /// - No PIP.
 #[derive(Default, ProtoToolDescribe)]
 #[tool(
@@ -166,80 +174,13 @@ impl PythonTool {
         toolbox: Toolbox,
         input: &PythonToolInput,
     ) -> Result<PythonToolOutput, ToolUseError> {
-        let mut code = input.code.clone();
+        let code = input.code.clone();
 
-        // check for forbidden keywords - with capture
-        let re = regex::Regex::new(r"(exec|pip)").unwrap();
-        if let Some(caps) = re.captures(&code) {
-            return Err(ToolUseError::ToolInvocationFailed(format!(
-                "Python code contains forbidden keywords such as {}",
-                caps.get(0).unwrap().as_str()
-            )));
-        }
+        let tools = toolbox.describe().await;
+
+        let code = Self::transform_code(code, tools)?;
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
-
-        let mut tool_class_code = String::new();
-
-        tool_class_code.push_str("class Tools:\n");
-        tool_class_code.push_str("    def __init__(self, toolbox):\n");
-        tool_class_code.push_str("        self.toolbox = toolbox\n");
-
-        let tools = toolwrapper.toolbox.describe().await;
-
-        for (name, description) in tools {
-            let inputs_parts = description.input_format.parts;
-            // FUTURE(ssoudan) might want to add None only for optional inputs
-            let inputs = inputs_parts
-                .iter()
-                .map(|f| f.key.clone())
-                .map(|s| format!("{}=None", s))
-                .collect::<Vec<_>>()
-                .join(", ");
-            let inputs = if inputs.is_empty() {
-                "".to_string()
-            } else {
-                format!("(self, {})", inputs)
-            };
-
-            let dict = inputs_parts
-                .iter()
-                .map(|f| {
-                    let name = &f.key;
-                    format!("\"{}\": {}", name, name)
-                })
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            // in snake case
-            tool_class_code.push_str(&format!(
-                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                name.to_case(Case::Snake),
-                inputs,
-                name,
-                dict
-            ));
-
-            // in Pascal case
-            tool_class_code.push_str(&format!(
-                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                name.to_case(Case::Pascal),
-                inputs,
-                name,
-                dict
-            ));
-
-            // FUTURE(ssoudan) set input_format and output_format
-        }
-
-        // add list function
-        tool_class_code.push_str("    def list(self):\n");
-        tool_class_code.push_str("        return self.toolbox.list()\n");
-
-        tool_class_code.push_str("tools = Tools(toolbox)\n");
-
-        // prepend the tool class code to the user code
-        code = format!("{}\n{}", tool_class_code, code);
 
         // print!("{}", code);
 
@@ -280,6 +221,129 @@ impl PythonTool {
         })?;
 
         Ok(PythonToolOutput { stdout, stderr })
+    }
+
+    fn transform_code(
+        code: String,
+        tools: HashMap<String, ToolDescription>,
+    ) -> Result<String, ToolUseError> {
+        lazy_static::lazy_static! {
+            static ref EXEC_RE: regex::Regex = regex::Regex::new(r"(exec|pip)").unwrap();
+            static ref IMPORT_RE: regex::Regex = regex::Regex::new(r"(?x)import \s+ tools.*").unwrap();
+            static ref FROM_RE: regex::Regex =
+                regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
+        }
+
+        // check for forbidden keywords - with capture
+
+        if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
+            return Err(ToolUseError::ToolInvocationFailed(format!(
+                "Python code contains forbidden keywords such as {}",
+                caps.get(0).unwrap().as_str()
+            )));
+        }
+
+        // remove the `import tools` if present
+        // remove the `from tools import xxx` if present
+        let code = code
+            .lines()
+            .filter(|&l| !IMPORT_RE.is_match(l))
+            .filter(|&l| !FROM_RE.is_match(l))
+            // .map(|l| l.replace(r"^import tools.*$", ""))
+            // .map(|l| l.replace(r"^from tools import.*", ""))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        let mut tool_class_code = String::new();
+
+        tool_class_code.push_str("class Tools:\n");
+        tool_class_code.push_str("    def __init__(self, toolbox):\n");
+        tool_class_code.push_str("        self.toolbox = toolbox\n");
+
+        let mut binding_code = String::new();
+
+        for (name, description) in tools {
+            let inputs_parts = description.input_format.fields;
+            // FUTURE(ssoudan) might want to add None only for optional inputs
+            let mut inputs = inputs_parts.clone();
+
+            // sort with the optional inputs at the end
+            inputs.sort_by(|a, b| {
+                if a.optional && !b.optional {
+                    Ordering::Greater
+                } else if !a.optional && b.optional {
+                    Ordering::Less
+                } else {
+                    Ordering::Equal
+                }
+            });
+
+            let inputs = inputs
+                .into_iter()
+                .map(|f| {
+                    if f.optional {
+                        format!("{}=None", f.name)
+                    } else {
+                        f.name
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            let inputs = inputs.join(", ");
+            let inputs = if inputs.is_empty() {
+                "".to_string()
+            } else {
+                format!("(self, {})", inputs)
+            };
+
+            let dict = inputs_parts
+                .iter()
+                .map(|f| {
+                    let name = &f.name;
+                    format!("\"{}\": {}", name, name)
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            // in snake case
+            // tool_class_code.push_str(&format!(
+            //     "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+            //     name.to_case(Case::Snake),
+            //     inputs,
+            //     name,
+            //     dict
+            // ));
+
+            // in Pascal case
+            tool_class_code.push_str(&format!(
+                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+                name.to_case(Case::Pascal),
+                inputs,
+                name,
+                dict
+            ));
+
+            // add ToolName(..) to the binding code
+            binding_code.push_str(&format!(
+                "def {}{}:\n        return tools.toolbox.invoke(\"{}\", {{{}}})\n",
+                name, inputs, name, dict
+            ));
+
+            // FUTURE(ssoudan) set input_format and output_format
+        }
+
+        // add list function
+        tool_class_code.push_str("    def list(self):\n");
+        tool_class_code.push_str("        return self.toolbox.list()\n");
+
+        tool_class_code.push_str("tools = Tools(toolbox)\n");
+
+        let code_to_prepend = format!("{}{}", tool_class_code, binding_code);
+
+        // prepend the code to the user code
+        let code = format!("{}\n# ======== user code\n{}", code_to_prepend, code);
+
+        Ok(code)
     }
 
     fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
@@ -360,5 +424,53 @@ impl AdvancedTool for PythonTool {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(toolbox, &input).await?;
         Ok(serde_yaml::to_value(output)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+    use insta::assert_display_snapshot;
+    use sapiens::tools::Toolbox;
+
+    use crate::conclude::ConcludeTool;
+    use crate::python::{PythonTool, PythonToolInput};
+
+    #[tokio::test]
+    async fn test_code_transformation() {
+        let input = PythonToolInput {
+            code: indoc! {
+                r#"
+                import tools
+                from tools import Arxiv
+
+                arxiv_results = Arxiv(
+                  search_query='cat:cs.AI',
+                  max_results=5,
+                  sort_by='lastUpdatedDate',
+                  sort_order='descending',
+                  show_summary=True
+                )
+            
+                formatted_results = []
+                for result in arxiv_results['result']:
+                    formatted_results.append(f"{result['title']} : {result['pdf_url']}")
+                formatted_results = "\n".join(formatted_results)
+            
+                print({'formatted_results': formatted_results})
+            "#}
+            .to_string(),
+        };
+
+        let mut toolbox = Toolbox::default();
+        // toolbox.add_tool(ArxivTool::new().await).await;
+        toolbox.add_terminal_tool(ConcludeTool::default()).await;
+        // toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let tools = toolbox.describe().await;
+
+        let code = PythonTool::transform_code(input.code, tools).unwrap();
+
+        assert_display_snapshot!(code);
     }
 }

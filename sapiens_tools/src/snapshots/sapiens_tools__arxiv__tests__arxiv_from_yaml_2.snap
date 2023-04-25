@@ -2,13 +2,13 @@
 source: sapiens_tools/src/arxiv.rs
 expression: input
 ---
-search_query: "cat:cs.AI"
+search_query: "cat:cs.DB"
 id_list: ~
 start: ~
-max_results: ~
+max_results: 4
 sort_by: ~
 sort_order: ~
-show_pdf_url: ~
+show_pdf_url: true
 show_authors: true
 show_comments: ~
 show_summary: ~

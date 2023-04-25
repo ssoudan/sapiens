@@ -5,7 +5,76 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Chore
+
+ - <csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/> update
+ - <csr-id-14529922572878248a9f6681dfa716e87326d8ff/> release prep
+
+### New Features
+
+ - <csr-id-a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c/> reduce initial prompt size
+ - <csr-id-23383eb67f19e8fdcff185709ca3a6d12b3000fa/> summarize tool
+ - <csr-id-8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114/> Discord bot
+ - <csr-id-0840086e2f5da2ebcdddec960c5308ca0eacb8c5/> arXiv query api
+ - <csr-id-774d5a6c2dbadf934166e2d7e5665b6cf2ac4280/> async TaskProgressUpdateHandler
+ - <csr-id-dee80b442c8035b4d2bf17a2683ff2c3c2a9a585/> basic integration with discord
+ - <csr-id-d497429d749d9f62a36133e29d1063e8842bd7cf/> more detailed updates while working on a task
+
+### Bug Fixes
+
+ - <csr-id-c37e7ca813eaff1fe87b11736670024b81c5088d/> sorted tool descriptions (by name)
+
+### Refactor
+
+ - <csr-id-15c52d843721fa8426573d9f6bee2c019d2bd9bb/> main loop to process model and tools outputs
+
+### New Features (BREAKING)
+
+ - <csr-id-772e8eb4184efd0b305e460a31d719c237790098/> async api for Tools and in most places actually
+
+### Refactor (BREAKING)
+
+ - <csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/> main loop to process model and tools outputs (part 2)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 14 commits contributed to the release over the course of 4 calendar days.
+ - 5 days passed between releases.
+ - 13 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Update ([`35a6a99`](https://github.com/ssoudan/sapiens/commit/35a6a992c57951ebe2a325d81d60c540053bcb94))
+    - Reduce initial prompt size ([`a08cd20`](https://github.com/ssoudan/sapiens/commit/a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c))
+    - Summarize tool ([`23383eb`](https://github.com/ssoudan/sapiens/commit/23383eb67f19e8fdcff185709ca3a6d12b3000fa))
+    - Release sapiens v0.3.0, sapiens_derive v0.3.0, sapiens_tools v0.3.0, sapiens_bot v0.2.2, sapiens_cli v0.3.0, safety bump 3 crates ([`12e417c`](https://github.com/ssoudan/sapiens/commit/12e417cc394cbd9b7e18366d427cdd89132ee299))
+    - Discord bot ([`8be8d0f`](https://github.com/ssoudan/sapiens/commit/8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114))
+    - Release prep ([`1452992`](https://github.com/ssoudan/sapiens/commit/14529922572878248a9f6681dfa716e87326d8ff))
+    - ArXiv query api ([`0840086`](https://github.com/ssoudan/sapiens/commit/0840086e2f5da2ebcdddec960c5308ca0eacb8c5))
+    - Sorted tool descriptions (by name) ([`c37e7ca`](https://github.com/ssoudan/sapiens/commit/c37e7ca813eaff1fe87b11736670024b81c5088d))
+    - Async TaskProgressUpdateHandler ([`774d5a6`](https://github.com/ssoudan/sapiens/commit/774d5a6c2dbadf934166e2d7e5665b6cf2ac4280))
+    - Basic integration with discord ([`dee80b4`](https://github.com/ssoudan/sapiens/commit/dee80b442c8035b4d2bf17a2683ff2c3c2a9a585))
+    - Async api for Tools and in most places actually ([`772e8eb`](https://github.com/ssoudan/sapiens/commit/772e8eb4184efd0b305e460a31d719c237790098))
+    - More detailed updates while working on a task ([`d497429`](https://github.com/ssoudan/sapiens/commit/d497429d749d9f62a36133e29d1063e8842bd7cf))
+    - Main loop to process model and tools outputs (part 2) ([`b11b947`](https://github.com/ssoudan/sapiens/commit/b11b947d3b3699807c03c4500a8dc7a0e53d41d0))
+    - Main loop to process model and tools outputs ([`15c52d8`](https://github.com/ssoudan/sapiens/commit/15c52d843721fa8426573d9f6bee2c019d2bd9bb))
+</details>
+
 ## 0.3.0 (2023-04-24)
+
+<csr-id-14529922572878248a9f6681dfa716e87326d8ff/>
+<csr-id-15c52d843721fa8426573d9f6bee2c019d2bd9bb/>
+<csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/>
 
 ### Chore
 
@@ -34,34 +103,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Refactor (BREAKING)
 
  - <csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/> main loop to process model and tools outputs (part 2)
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 10 commits contributed to the release over the course of 3 calendar days.
- - 4 days passed between releases.
- - 10 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Discord bot ([`8be8d0f`](https://github.com/ssoudan/sapiens/commit/8be8d0f3044a1bbfb5fdbc6fb6c7c8ec682f7114))
-    - Release prep ([`1452992`](https://github.com/ssoudan/sapiens/commit/14529922572878248a9f6681dfa716e87326d8ff))
-    - ArXiv query api ([`0840086`](https://github.com/ssoudan/sapiens/commit/0840086e2f5da2ebcdddec960c5308ca0eacb8c5))
-    - Sorted tool descriptions (by name) ([`c37e7ca`](https://github.com/ssoudan/sapiens/commit/c37e7ca813eaff1fe87b11736670024b81c5088d))
-    - Async TaskProgressUpdateHandler ([`774d5a6`](https://github.com/ssoudan/sapiens/commit/774d5a6c2dbadf934166e2d7e5665b6cf2ac4280))
-    - Basic integration with discord ([`dee80b4`](https://github.com/ssoudan/sapiens/commit/dee80b442c8035b4d2bf17a2683ff2c3c2a9a585))
-    - Async api for Tools and in most places actually ([`772e8eb`](https://github.com/ssoudan/sapiens/commit/772e8eb4184efd0b305e460a31d719c237790098))
-    - More detailed updates while working on a task ([`d497429`](https://github.com/ssoudan/sapiens/commit/d497429d749d9f62a36133e29d1063e8842bd7cf))
-    - Main loop to process model and tools outputs (part 2) ([`b11b947`](https://github.com/ssoudan/sapiens/commit/b11b947d3b3699807c03c4500a8dc7a0e53d41d0))
-    - Main loop to process model and tools outputs ([`15c52d8`](https://github.com/ssoudan/sapiens/commit/15c52d843721fa8426573d9f6bee2c019d2bd9bb))
-</details>
 
 ## 0.2.2 (2023-04-20)
 

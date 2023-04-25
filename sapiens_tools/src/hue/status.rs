@@ -1,7 +1,5 @@
 use huelib2::resource::Adjust;
-use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
+use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
@@ -217,7 +215,6 @@ pub mod fake {
             ToolDescription::new(
                 "LightStatus",
                 "A tool to use that the source of truth for the Light statuses.",
-                "Use this to fetch the Light statuses",
                 StatusToolInput::describe(),
                 StatusToolOutput::describe(),
             )

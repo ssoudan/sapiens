@@ -91,7 +91,6 @@ impl<T: TaskProgressUpdateHandler> Step<T> {
         let model_message = self.task_chain.query_model().await?;
 
         // show the message from the assistant
-
         self.handler.on_model_update(model_message.clone()).await;
 
         // pass the message to the tools and get the response

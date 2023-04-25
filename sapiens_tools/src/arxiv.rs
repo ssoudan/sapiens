@@ -2,10 +2,7 @@ use std::fmt::Display;
 
 use arxiv;
 use arxiv::{Arxiv, ArxivQuery};
-use sapiens::tools::ToolUseError::ToolInvocationFailed;
-use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
+use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
@@ -17,11 +14,11 @@ use serde::{Deserialize, Serialize};
 /// engineering and systems science, and economics. Materials on this site are
 /// not peer-reviewed by arXiv.
 #[derive(ProtoToolInvoke, ProtoToolDescribe)]
-#[tool(name = "ArXiv", input = "ArXivToolInput", output = "ArXivToolOutput")]
-pub struct ArXivTool {}
+#[tool(name = "Arxiv", input = "ArxivToolInput", output = "ArxivToolOutput")]
+pub struct ArxivTool {}
 
 /// Sort order
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub enum SortOrder {
     /// Ascending
     #[serde(rename = "ascending")]
@@ -42,7 +39,7 @@ impl Display for SortOrder {
 }
 
 /// Sort by
-#[derive(Debug, Deserialize, Serialize, Default)]
+#[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub enum SortBy {
     /// Relevance
     #[serde(rename = "relevance")]
@@ -66,11 +63,11 @@ impl Display for SortBy {
     }
 }
 
-/// [`ArXivTool`] input
+/// [`ArxivTool`] input
 ///
-/// ArXiv API documentation query specification
+/// Arxiv API documentation query specification
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivToolInput {
+pub struct ArxivToolInput {
     /// search_query: Search query - see https://info.arxiv.org/help/api/user-manual.html
     /// for details. E.g. `cs.AI` or `cat:cs.AI` or `au:John Smith`
     /// The fields that can be searched are: `ti` (title), `au` (author), `abs`
@@ -81,68 +78,73 @@ pub struct ArXivToolInput {
     pub search_query: String,
 
     /// id_list: Comma-separated list of arXiv IDs to return
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub id_list: Option<String>,
 
     /// start: Result offset for pagination
     pub start: Option<i32>,
 
     /// max_results: Maximum number of results to return in a single response.
-    /// Default is 10.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Default is 10. Maximum allowed value is 100.
     pub max_results: Option<i32>,
 
     /// Sort by. Can be either `relevance`, `lastUpdatedDate` or
     /// `submittedDate`. Default is `relevance`.
-    #[serde(default)]
-    pub sort_by: SortBy,
+    pub sort_by: Option<SortBy>,
 
     /// Sort order. Can be either `ascending` or `descending`.
     /// Default is `descending`.
-    #[serde(default)]
-    pub sort_order: SortOrder,
+    pub sort_order: Option<SortOrder>,
 
-    /// show PDF url - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// True to gather PDF url - default is false
     pub show_pdf_url: Option<bool>,
 
-    /// show authors - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// True to gather authors - default is false
     pub show_authors: Option<bool>,
 
-    /// show comments - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// True to gather comments - default is false
     pub show_comments: Option<bool>,
 
-    /// show summary - default is false
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// True to gather summary - default is false
     pub show_summary: Option<bool>,
 }
 
-impl From<&ArXivToolInput> for ArxivQuery {
-    fn from(input: &ArXivToolInput) -> Self {
+impl From<&ArxivToolInput> for ArxivQuery {
+    fn from(input: &ArxivToolInput) -> Self {
         ArxivQuery {
             base_url: "https://export.arxiv.org/api/query?".to_string(),
             search_query: input.search_query.clone(),
             id_list: input.id_list.clone().unwrap_or_default(),
             start: input.start,
             max_results: input.max_results,
-            sort_by: input.sort_by.to_string(),
-            sort_order: input.sort_order.to_string(),
+            sort_by: input.sort_by.clone().unwrap_or_default().to_string(),
+            sort_order: input.sort_order.clone().unwrap_or_default().to_string(),
         }
     }
 }
 
-/// [`ArXivTool`] output
+/// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivToolOutput {
-    /// query result - in JSON.
-    result: Vec<ArXivResult>,
+pub struct ArxivToolOutput {
+    // TODO(ssoudan) proc_macro_derive to generate this
+    /// query result. `ArxivResult` is an object containing the following
+    /// fields:
+    /// - `id`: <str> arXiv ID
+    /// - `updated`: <str> last updated date
+    /// - `published`: <str> published date
+    /// - `title`: <str> title
+    /// - `summary`: <Optional[str]> summary - omitted unless `show_summary` is
+    ///   true - can be quite long
+    /// - `authors`: <list[str]> authors - omitted unless `show_authors` is true
+    /// - `pdf_url`: <Optional[str]> PDF URL - omitted unless `show_pdf_url` is
+    ///   true
+    /// - `comments`: <Optional[str]> Comments - omitted unless `show_comments`
+    ///   is true
+    result: Vec<ArxivResult>,
 }
 
-/// ArXiv result
+/// Arxiv result
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivResult {
+pub struct ArxivResult {
     /// arXiv ID
     pub id: String,
     /// last updated date
@@ -151,23 +153,23 @@ pub struct ArXivResult {
     pub published: String,
     /// title
     pub title: String,
-    /// summary
+    /// summary - only if `show_summary` is true - can be quite long
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
-    /// authors
+    /// authors - only if `show_authors` is true
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub authors: Vec<String>,
-    /// PDF URL
+    /// PDF URL - only if `show_pdf_url` is true
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pdf_url: Option<String>,
-    /// Comments
+    /// Comments - only if `show_comments` is true
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
 }
 
-impl From<Arxiv> for ArXivResult {
+impl From<Arxiv> for ArxivResult {
     fn from(arxiv: Arxiv) -> Self {
-        ArXivResult {
+        ArxivResult {
             id: arxiv.id,
             updated: arxiv.updated,
             published: arxiv.published,
@@ -180,22 +182,29 @@ impl From<Arxiv> for ArXivResult {
     }
 }
 
-impl ArXivTool {
-    /// Create a new [`ArXivTool`]
-    pub async fn new() -> ArXivTool {
-        ArXivTool {}
+impl ArxivTool {
+    /// Create a new [`ArxivTool`]
+    pub async fn new() -> ArxivTool {
+        ArxivTool {}
     }
 
-    async fn invoke_typed(&self, input: &ArXivToolInput) -> Result<ArXivToolOutput, ToolUseError> {
+    async fn invoke_typed(&self, input: &ArxivToolInput) -> Result<ArxivToolOutput, ToolUseError> {
         let query = ArxivQuery::from(input);
+
+        if query.max_results.unwrap_or(0) > 100 {
+            return Err(ToolUseError::ToolInvocationFailed(
+                "max_results cannot be greater than 100".to_string(),
+            ));
+        }
+
         let result = arxiv::fetch_arxivs(query)
             .await
-            .map_err(|e| ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
 
         let vec = result
             .into_iter()
             .map(|x| x.into())
-            .map(|mut x: ArXivResult| {
+            .map(|mut x: ArxivResult| {
                 if !(input.show_pdf_url.unwrap_or(false)) {
                     x.pdf_url = None;
                 }
@@ -216,7 +225,7 @@ impl ArXivTool {
             })
             .collect();
 
-        Ok(ArXivToolOutput { result: vec })
+        Ok(ArxivToolOutput { result: vec })
     }
 }
 
@@ -229,14 +238,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv() {
-        let tool = ArXivTool::new().await;
-        let input = ArXivToolInput {
+        let tool = ArxivTool::new().await;
+        let input = ArxivToolInput {
             search_query: "cat:cs.AI".to_string(),
             id_list: None,
             start: None,
             max_results: None,
-            sort_by: SortBy::Relevance,
-            sort_order: SortOrder::Ascending,
+            sort_by: Some(SortBy::Relevance),
+            sort_order: Some(SortOrder::Ascending),
             show_authors: None,
             show_comments: None,
             show_summary: Some(false),
@@ -244,24 +253,47 @@ mod tests {
         };
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert!(output.result.len() == 10);
+        assert_eq!(output.result.len(), 10);
     }
 
     #[tokio::test]
     async fn test_arxiv_from_yaml() {
-        let tool = ArXivTool::new().await;
+        let tool = ArxivTool::new().await;
         let input = indoc! {"
             search_query: cat:cs.AI
-            show_authors: true
+            show_authors: true           
         "};
 
-        let input: ArXivToolInput = serde_yaml::from_str(input).unwrap();
+        let input: ArxivToolInput = serde_yaml::from_str(input).unwrap();
 
         assert_yaml_snapshot!(input);
 
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert!(output.result.len() == 10);
+        assert_eq!(output.result.len(), 10);
         assert!(!output.result[0].authors.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_arxiv_from_yaml_2() {
+        let tool = ArxivTool::new().await;
+        let input = indoc! {"
+            search_query: cat:cs.DB
+            max_results: 4
+            show_authors: true
+            show_pdf_url: true  
+        "};
+
+        let input: ArxivToolInput = serde_yaml::from_str(input).unwrap();
+
+        assert_yaml_snapshot!(input);
+
+        let output = tool.invoke_typed(&input).await.unwrap();
+
+        assert_eq!(output.result.len(), 4);
+        assert!(!output.result[0].authors.is_empty());
+
+        let yaml = serde_yaml::to_value(&output).unwrap();
+        assert_yaml_snapshot!(yaml);
     }
 }

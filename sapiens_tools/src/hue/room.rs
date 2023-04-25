@@ -1,8 +1,6 @@
 use huelib2::resource::group::CreatableKind;
 use huelib2::resource::group::Kind::Creatable;
-use sapiens::tools::{
-    Describe, Format, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
-};
+use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
@@ -121,7 +119,6 @@ pub mod fake {
         fn description(&self) -> ToolDescription {
             ToolDescription::new(
                 "Room",
-                "A fake tool to get the lights of a Room.",
                 "Use this to get the lights of a Room.",
                 RoomToolInput::describe(),
                 RoomToolOutput::describe(),

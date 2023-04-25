@@ -7,8 +7,9 @@ use sapiens::openai::Role;
 use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 
 // Usability:
+// TODO(ssoudan) search
 // TODO(ssoudan) Richer interaction
-// TODO(ssoudan) More tools: search, wx, negotiate, text summarization
+// TODO(ssoudan) More tools: wx, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
 // TODO(ssoudan) Settings
 // TODO(ssoudan) Token budget management and completion termination reason
@@ -163,8 +164,14 @@ async fn main() -> Result<(), pyo3::PyErr> {
             show_warmup_prompt: args.show_warmup_prompt,
         },
     )
-    .await
-    .unwrap();
+    .await;
+
+    if let Err(e) = termination_messages {
+        println!("{}", e.to_string().red());
+        return Ok(());
+    }
+
+    let termination_messages = termination_messages.unwrap();
 
     for message in termination_messages {
         println!(

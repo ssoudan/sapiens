@@ -1,0 +1,31 @@
+---
+source: sapiens_tools/src/python.rs
+expression: code
+---
+class Tools:
+    def __init__(self, toolbox):
+        self.toolbox = toolbox
+    def Conclude(self, conclusion, original_question):
+        return self.toolbox.invoke("Conclude", {"conclusion": conclusion, "original_question": original_question})
+    def list(self):
+        return self.toolbox.list()
+tools = Tools(toolbox)
+def Conclude(self, conclusion, original_question):
+        return tools.toolbox.invoke("Conclude", {"conclusion": conclusion, "original_question": original_question})
+
+# ======== user code
+
+arxiv_results = Arxiv(
+  search_query='cat:cs.AI',
+  max_results=5,
+  sort_by='lastUpdatedDate',
+  sort_order='descending',
+  show_summary=True
+)
+
+formatted_results = []
+for result in arxiv_results['result']:
+    formatted_results.append(f"{result['title']} : {result['pdf_url']}")
+formatted_results = "\n".join(formatted_results)
+
+print({'formatted_results': formatted_results})

@@ -20,6 +20,10 @@ pub mod wiki;
 /// Setup tools
 pub mod setup;
 
-/// Tools related to ArXiv
+/// Tools related to Arxiv
 #[cfg(feature = "arxiv")]
 pub mod arxiv;
+
+/// Text summarization tools
+#[cfg(feature = "summarize")]
+pub mod summarize;
