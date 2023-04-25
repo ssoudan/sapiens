@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use arxiv;
 use arxiv::{Arxiv, ArxivQuery};
-use sapiens::tools::ToolUseError::ToolInvocationFailed;
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
@@ -126,7 +125,20 @@ impl From<&ArxivToolInput> for ArxivQuery {
 /// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct ArxivToolOutput {
-    /// query result - in JSON.
+    // TODO(ssoudan) proc_macro_derive to generate this
+    /// query result. `ArxivResult` is an object containing the following
+    /// fields:
+    /// - `id`: <str> arXiv ID
+    /// - `updated`: <str> last updated date
+    /// - `published`: <str> published date
+    /// - `title`: <str> title
+    /// - `summary`: <Optional[str]> summary - omitted unless `show_summary` is
+    ///   true - can be quite long
+    /// - `authors`: <list[str]> authors - omitted unless `show_authors` is true
+    /// - `pdf_url`: <Optional[str]> PDF URL - omitted unless `show_pdf_url` is
+    ///   true
+    /// - `comments`: <Optional[str]> Comments - omitted unless `show_comments`
+    ///   is true
     result: Vec<ArxivResult>,
 }
 
@@ -141,16 +153,16 @@ pub struct ArxivResult {
     pub published: String,
     /// title
     pub title: String,
-    /// summary
+    /// summary - only if `show_summary` is true - can be quite long
     #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
-    /// authors
+    /// authors - only if `show_authors` is true
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub authors: Vec<String>,
-    /// PDF URL
+    /// PDF URL - only if `show_pdf_url` is true
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pdf_url: Option<String>,
-    /// Comments
+    /// Comments - only if `show_comments` is true
     #[serde(skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
 }
@@ -187,7 +199,7 @@ impl ArxivTool {
 
         let result = arxiv::fetch_arxivs(query)
             .await
-            .map_err(|e| ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
 
         let vec = result
             .into_iter()
