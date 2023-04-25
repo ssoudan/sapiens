@@ -16,7 +16,7 @@ use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
 use serenity::prelude::*;
 use tokio::spawn;
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::runner::{JobUpdate, NewJob};
 
@@ -52,7 +52,10 @@ impl EventHandler for Handler {
     async fn message(&self, ctx: Context, new_message: Message) {
         let channel = new_message.channel_id.to_channel(&ctx.http).await.unwrap();
 
-        info!("Received a message on {}: {:#?}", channel, new_message);
+        info!(
+            "Received a message on {}: {:#?}",
+            channel, new_message.content
+        );
 
         // if message is not from me
         if new_message.author.id == ctx.cache().unwrap().current_user_id() {
@@ -85,7 +88,7 @@ impl EventHandler for Handler {
             self.tx
                 .write()
                 .await
-                .send(NewJob::new(task, max_steps, tx))
+                .send(NewJob::new(task, max_steps, false, tx))
                 .await
                 .unwrap();
 
@@ -98,10 +101,10 @@ impl EventHandler for Handler {
                 .await
                 .unwrap();
 
-            info!("Created thread: {:#?}", thread);
+            debug!("Created thread: {:#?}", thread);
 
             thread.id.join_thread(&ctx.http).await.unwrap();
-            info!("Joined thread: {:#?}", thread);
+            debug!("Joined thread: {:#?}", thread);
 
             // add the user who called the command to the thread
             thread
@@ -126,7 +129,7 @@ impl EventHandler for Handler {
 
             // wait for job updates and post
             while let Some(job_update) = rx.next().await {
-                info!("Received job update: {:#?}", job_update);
+                debug!("Received job update: {:#?}", job_update);
 
                 let msgs = match job_update {
                     JobUpdate::Vec(v) => Some(v),
@@ -172,7 +175,7 @@ impl EventHandler for Handler {
             .into_iter()
             .collect();
 
-        info!(
+        debug!(
             "Old Messages: {:#?}",
             old_messages
                 .iter()

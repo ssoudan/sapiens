@@ -115,15 +115,22 @@ pub struct NewJob {
     task: String,
     tx: mpsc::Sender<JobUpdate>,
     max_steps: usize,
+    show_warmup_prompt: bool,
 }
 
 impl NewJob {
     /// Create a new job
-    pub fn new(task: String, max_steps: usize, tx: mpsc::Sender<JobUpdate>) -> Self {
+    pub fn new(
+        task: String,
+        max_steps: usize,
+        show_warmup_prompt: bool,
+        tx: mpsc::Sender<JobUpdate>,
+    ) -> Self {
         Self {
             task,
             tx,
             max_steps,
+            show_warmup_prompt,
         }
     }
 }
@@ -147,7 +154,7 @@ impl Runner {
             let mut tx = job.tx.clone();
 
             let handler = ProgressHandler {
-                show_warmup_prompt: true,
+                show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
             };
