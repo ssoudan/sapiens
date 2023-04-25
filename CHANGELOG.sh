@@ -8,5 +8,3 @@ for a in ${ALL};
 do
 		cargo changelog -w $a
 done
-
-cargo smart-release ${ALL}
