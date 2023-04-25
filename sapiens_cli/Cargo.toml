@@ -27,7 +27,7 @@ summarize = ["sapiens_tools/summarize"]
 sapiens = { path = "../sapiens", version = "^0.3.0" }
 sapiens_tools = { path = "../sapiens_tools", version = "^0.3.0", default-features = false }
 
-tokio = { version = "1.27.0", features = ["full"] }
+tokio = { version = "1.28.0", features = ["full"] }
 async-trait = "0.1.68"
 
 pyo3 = { version = "0.18.3", features = [] }
