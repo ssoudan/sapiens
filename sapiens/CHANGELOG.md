@@ -5,43 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-
-### Chore
-
- - <csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/> update
-
-### New Features
-
- - <csr-id-a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c/> reduce initial prompt size
- - <csr-id-23383eb67f19e8fdcff185709ca3a6d12b3000fa/> summarize tool
-
-### Bug Fixes (BREAKING)
-
- - <csr-id-11de03cd0c11100c654eb171c1f0ac03e561661a/> renamed Arxiv tool
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 4 commits contributed to the release.
- - 1 day passed between releases.
- - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Update ([`35a6a99`](https://github.com/ssoudan/sapiens/commit/35a6a992c57951ebe2a325d81d60c540053bcb94))
-    - Reduce initial prompt size ([`a08cd20`](https://github.com/ssoudan/sapiens/commit/a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c))
-    - Renamed Arxiv tool ([`11de03c`](https://github.com/ssoudan/sapiens/commit/11de03cd0c11100c654eb171c1f0ac03e561661a))
-    - Summarize tool ([`23383eb`](https://github.com/ssoudan/sapiens/commit/23383eb67f19e8fdcff185709ca3a6d12b3000fa))
-</details>
-
 ## 0.3.0 (2023-04-24)
 
 <csr-id-cc8115aed3e0723dbc3158317b7e62c94c6021de/>

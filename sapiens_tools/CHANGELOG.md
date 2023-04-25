@@ -5,56 +5,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-
-### Chore
-
- - <csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/> update
-
-### New Features
-
- - <csr-id-3744b79d5b49d205842d041031a0a69ccef50330/> improved format description
- - <csr-id-a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c/> reduce initial prompt size
- - <csr-id-23383eb67f19e8fdcff185709ca3a6d12b3000fa/> summarize tool
-
-### Bug Fixes
-
- - <csr-id-f62eb17dff74090e0f1def6119895b571c7f4835/> eliminate `import tools` and `from tools import...`
- - <csr-id-b1521356547d673c5695fd69558901f4dba2f8ae/> deps
- - <csr-id-d79778b8b215e2ae5fdc9a1e40913fa3d1d711cf/> filtering of import tools and from tools import
- - <csr-id-ee0c2df176086df1287249abc60f2a5003fc583e/> eliminate `import tools` from the code
-
-### Bug Fixes (BREAKING)
-
- - <csr-id-11de03cd0c11100c654eb171c1f0ac03e561661a/> renamed Arxiv tool
-
-### Commit Statistics
-
-<csr-read-only-do-not-edit/>
-
- - 9 commits contributed to the release.
- - 1 day passed between releases.
- - 9 commits were understood as [conventional](https://www.conventionalcommits.org).
- - 0 issues like '(#ID)' were seen in commit messages
-
-### Commit Details
-
-<csr-read-only-do-not-edit/>
-
-<details><summary>view details</summary>
-
- * **Uncategorized**
-    - Update ([`35a6a99`](https://github.com/ssoudan/sapiens/commit/35a6a992c57951ebe2a325d81d60c540053bcb94))
-    - Eliminate `import tools` and `from tools import...` ([`f62eb17`](https://github.com/ssoudan/sapiens/commit/f62eb17dff74090e0f1def6119895b571c7f4835))
-    - Improved format description ([`3744b79`](https://github.com/ssoudan/sapiens/commit/3744b79d5b49d205842d041031a0a69ccef50330))
-    - Reduce initial prompt size ([`a08cd20`](https://github.com/ssoudan/sapiens/commit/a08cd2093594b57d54ab5a85b0cd9a1ba83aac2c))
-    - Deps ([`b152135`](https://github.com/ssoudan/sapiens/commit/b1521356547d673c5695fd69558901f4dba2f8ae))
-    - Filtering of import tools and from tools import ([`d79778b`](https://github.com/ssoudan/sapiens/commit/d79778b8b215e2ae5fdc9a1e40913fa3d1d711cf))
-    - Renamed Arxiv tool ([`11de03c`](https://github.com/ssoudan/sapiens/commit/11de03cd0c11100c654eb171c1f0ac03e561661a))
-    - Eliminate `import tools` from the code ([`ee0c2df`](https://github.com/ssoudan/sapiens/commit/ee0c2df176086df1287249abc60f2a5003fc583e))
-    - Summarize tool ([`23383eb`](https://github.com/ssoudan/sapiens/commit/23383eb67f19e8fdcff185709ca3a6d12b3000fa))
-</details>
-
 ## 0.3.0 (2023-04-24)
 
 <csr-id-14529922572878248a9f6681dfa716e87326d8ff/>
