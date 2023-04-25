@@ -2,30 +2,30 @@
 
 ![Sapiens](docs/sapiens.png)
 
-*Sapiens use tools to interact with the world.*
+*Sapiens uses tools to interact with the world.*
 
 An experiment with handing over the tools to the machine.
 
 
-> From primal birth, we walked the Earth,
-> Tools guiding evolution's stride,
-> Shaping land and air, with thoughtful care,
-> In Anthropocene, we reside.
+> From primal birth, we walked the Earth, <br>
+> Tools guiding evolution's stride, <br>
+> Shaping land and air, with thoughtful care, <br>
+> In Anthropocene, we reside. <br>
 >
-> As we forge ahead, the path we tread,
-> Leads to new horizons vast,
-> Future tools in hand, for a world so grand,
-> Built on foundations of the past.
+> As we forge ahead, the path we tread, <br>
+> Leads to new horizons vast, <br>
+> Future tools in hand, for a world so grand, <br>
+> Built on foundations of the past. <br>
 >
-> Digital realms emerge, as we converge,
-> With AI as our guide,
-> New worlds to mold, as the tale unfolds,
-> In this wondrous, boundless ride.
+> Digital realms emerge, as we converge, <br>
+> With AI as our guide, <br>
+> New worlds to mold, as the tale unfolds, <br>
+> In this wondrous, boundless ride. <br>
 >
-> Innovation thrives, as humankind strives,
-> To shape the future, ever bright,
-> A legacy we leave, as we interweave,
-> The old world with the new light.
+> Innovation thrives, as humankind strives, <br>
+> To shape the future, ever bright, <br>
+> A legacy we leave, as we interweave, <br>
+> The old world with the new light. <br>
 
 <p style="text-align: right">Not Me</p>
 
@@ -48,7 +48,7 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 - *Wikipedia*: query Wikipedia
 - *Wikidata*: query Wikidata (SPARQL)
 - *Summarize*: summarize text with OpenAI
-- *ArXiV*: query ArXiV
+- *Arxiv*: query arXiv
 
 ## Usage as a Discord bot
 
