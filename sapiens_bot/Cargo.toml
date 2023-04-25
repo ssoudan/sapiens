@@ -24,8 +24,8 @@ arxiv = [ "sapiens_tools/arxiv" ]
 summarize = ["sapiens_tools/summarize"]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.3.0" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.3.0", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.4.0" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.4.0", default-features = false }
 
 huelib2 = { version = "0.13.3", optional = true }
 
