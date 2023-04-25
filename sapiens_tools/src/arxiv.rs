@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 /// engineering and systems science, and economics. Materials on this site are
 /// not peer-reviewed by arXiv.
 #[derive(ProtoToolInvoke, ProtoToolDescribe)]
-#[tool(name = "ArXiv", input = "ArXivToolInput", output = "ArXivToolOutput")]
-pub struct ArXivTool {}
+#[tool(name = "Arxiv", input = "ArxivToolInput", output = "ArxivToolOutput")]
+pub struct ArxivTool {}
 
 /// Sort order
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
@@ -64,11 +64,11 @@ impl Display for SortBy {
     }
 }
 
-/// [`ArXivTool`] input
+/// [`ArxivTool`] input
 ///
-/// ArXiv API documentation query specification
+/// Arxiv API documentation query specification
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivToolInput {
+pub struct ArxivToolInput {
     /// search_query: Search query - see https://info.arxiv.org/help/api/user-manual.html
     /// for details. E.g. `cs.AI` or `cat:cs.AI` or `au:John Smith`
     /// The fields that can be searched are: `ti` (title), `au` (author), `abs`
@@ -85,7 +85,7 @@ pub struct ArXivToolInput {
     pub start: Option<i32>,
 
     /// max_results: Maximum number of results to return in a single response.
-    /// Default is 10.
+    /// Default is 10. Maximum allowed value is 100.
     pub max_results: Option<i32>,
 
     /// Sort by. Can be either `relevance`, `lastUpdatedDate` or
@@ -96,21 +96,21 @@ pub struct ArXivToolInput {
     /// Default is `descending`.
     pub sort_order: Option<SortOrder>,
 
-    /// show PDF url - default is false
+    /// True to gather PDF url - default is false
     pub show_pdf_url: Option<bool>,
 
-    /// show authors - default is false
+    /// True to gather authors - default is false
     pub show_authors: Option<bool>,
 
-    /// show comments - default is false
+    /// True to gather comments - default is false
     pub show_comments: Option<bool>,
 
-    /// show summary - default is false
+    /// True to gather summary - default is false
     pub show_summary: Option<bool>,
 }
 
-impl From<&ArXivToolInput> for ArxivQuery {
-    fn from(input: &ArXivToolInput) -> Self {
+impl From<&ArxivToolInput> for ArxivQuery {
+    fn from(input: &ArxivToolInput) -> Self {
         ArxivQuery {
             base_url: "https://export.arxiv.org/api/query?".to_string(),
             search_query: input.search_query.clone(),
@@ -123,16 +123,16 @@ impl From<&ArXivToolInput> for ArxivQuery {
     }
 }
 
-/// [`ArXivTool`] output
+/// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivToolOutput {
+pub struct ArxivToolOutput {
     /// query result - in JSON.
-    result: Vec<ArXivResult>,
+    result: Vec<ArxivResult>,
 }
 
-/// ArXiv result
+/// Arxiv result
 #[derive(Debug, Deserialize, Serialize, Describe)]
-pub struct ArXivResult {
+pub struct ArxivResult {
     /// arXiv ID
     pub id: String,
     /// last updated date
@@ -155,9 +155,9 @@ pub struct ArXivResult {
     pub comment: Option<String>,
 }
 
-impl From<Arxiv> for ArXivResult {
+impl From<Arxiv> for ArxivResult {
     fn from(arxiv: Arxiv) -> Self {
-        ArXivResult {
+        ArxivResult {
             id: arxiv.id,
             updated: arxiv.updated,
             published: arxiv.published,
@@ -170,14 +170,21 @@ impl From<Arxiv> for ArXivResult {
     }
 }
 
-impl ArXivTool {
-    /// Create a new [`ArXivTool`]
-    pub async fn new() -> ArXivTool {
-        ArXivTool {}
+impl ArxivTool {
+    /// Create a new [`ArxivTool`]
+    pub async fn new() -> ArxivTool {
+        ArxivTool {}
     }
 
-    async fn invoke_typed(&self, input: &ArXivToolInput) -> Result<ArXivToolOutput, ToolUseError> {
+    async fn invoke_typed(&self, input: &ArxivToolInput) -> Result<ArxivToolOutput, ToolUseError> {
         let query = ArxivQuery::from(input);
+
+        if query.max_results.unwrap_or(0) > 100 {
+            return Err(ToolUseError::ToolInvocationFailed(
+                "max_results cannot be greater than 100".to_string(),
+            ));
+        }
+
         let result = arxiv::fetch_arxivs(query)
             .await
             .map_err(|e| ToolInvocationFailed(e.to_string()))?;
@@ -185,7 +192,7 @@ impl ArXivTool {
         let vec = result
             .into_iter()
             .map(|x| x.into())
-            .map(|mut x: ArXivResult| {
+            .map(|mut x: ArxivResult| {
                 if !(input.show_pdf_url.unwrap_or(false)) {
                     x.pdf_url = None;
                 }
@@ -206,7 +213,7 @@ impl ArXivTool {
             })
             .collect();
 
-        Ok(ArXivToolOutput { result: vec })
+        Ok(ArxivToolOutput { result: vec })
     }
 }
 
@@ -219,8 +226,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv() {
-        let tool = ArXivTool::new().await;
-        let input = ArXivToolInput {
+        let tool = ArxivTool::new().await;
+        let input = ArxivToolInput {
             search_query: "cat:cs.AI".to_string(),
             id_list: None,
             start: None,
@@ -239,13 +246,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv_from_yaml() {
-        let tool = ArXivTool::new().await;
+        let tool = ArxivTool::new().await;
         let input = indoc! {"
             search_query: cat:cs.AI
-            show_authors: true
+            show_authors: true           
         "};
 
-        let input: ArXivToolInput = serde_yaml::from_str(input).unwrap();
+        let input: ArxivToolInput = serde_yaml::from_str(input).unwrap();
 
         assert_yaml_snapshot!(input);
 
@@ -257,7 +264,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv_from_yaml_2() {
-        let tool = ArXivTool::new().await;
+        let tool = ArxivTool::new().await;
         let input = indoc! {"
             search_query: cat:cs.DB
             max_results: 4
@@ -265,7 +272,7 @@ mod tests {
             show_pdf_url: true  
         "};
 
-        let input: ArXivToolInput = serde_yaml::from_str(input).unwrap();
+        let input: ArxivToolInput = serde_yaml::from_str(input).unwrap();
 
         assert_yaml_snapshot!(input);
 

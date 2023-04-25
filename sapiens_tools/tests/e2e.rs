@@ -169,14 +169,14 @@ mod arxiv {
     use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
     use sapiens::tools::{invoke_tool, Toolbox};
-    use sapiens_tools::arxiv::ArXivTool;
+    use sapiens_tools::arxiv::ArxivTool;
     use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::python::PythonTool;
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv() -> PyResult<()> {
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
@@ -192,7 +192,7 @@ mod arxiv {
                    'sort_by': 'lastUpdatedDate',
                    'sort_order': 'ascending'
                }
-               arxiv_output = tools.ArXiv(**input)
+               arxiv_output = tools.Arxiv(**input)
                papers = arxiv_output['result']               
                conclusion = f"Yes, there are {len(papers)} published papers of AI category on ArXiv this week." if papers else "No, there are no published papers of AI category on ArXiv this week."
                print(conclusion)
@@ -211,7 +211,7 @@ mod arxiv {
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_2() -> PyResult<()> {
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
@@ -220,7 +220,7 @@ mod arxiv {
          code: |           
                import datetime               
                search_query = f'cat:cs.AI'               
-               arxiv_output = tools.ArXiv(search_query=search_query, start=0, max_results=10, sort_by='lastUpdatedDate', sort_order='ascending')               
+               arxiv_output = tools.Arxiv(search_query=search_query, start=0, max_results=10, sort_by='lastUpdatedDate', sort_order='ascending')               
                papers = arxiv_output['result']               
                conclusion = f"Yes, there are {len(papers)} published papers of AI category on ArXiv this week." if papers else "No, there are no published papers of AI category on ArXiv this week."
                print(conclusion)
@@ -239,14 +239,14 @@ mod arxiv {
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_3() -> PyResult<()> {
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
        command: SandboxedPython
        input:
          code: |
-            latest_papers = tools.ArXiv(
+            latest_papers = tools.Arxiv(
               search_query="cat:cs.DB",
               max_results=4,
               show_summary=True,
@@ -268,7 +268,7 @@ mod arxiv {
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_4() -> PyResult<()> {
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArXivTool::new().await).await;
+        toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
@@ -276,7 +276,7 @@ mod arxiv {
         command: SandboxedPython
         input:
           code: |
-            latest_papers = tools.ArXiv(
+            latest_papers = tools.Arxiv(
               search_query="cat:cs.DB",
               max_results=4,
               show_summary=True,
