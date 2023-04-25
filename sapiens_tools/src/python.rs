@@ -19,13 +19,17 @@ use crate::python::utils::SimpleToolDescription;
 const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
+///
 /// - Only stdout and stderr are captured and made available (limited to 512B
-/// total).
-/// - To use other Tools from here: `input = {...}; output =
-/// tools.tool_name(**input); print(output["field_xxx"])`. The `output` is an
-/// object.
-/// - List available tools with `tools.list()`. `tools` is already
-/// imported. And returns a list of `{'name':.., 'description':.., 'input':..,
+///   total).
+/// - To use another Tool:
+/// ```python
+/// input = {'field': ...}
+/// output = tools.ToolName(**input)
+/// print(output['field'])
+/// ```
+/// - List available tools with `tools.list()`. And returns a list of
+///   `{'name':.., 'description':.., 'input':..,
 /// 'output':.., 'description_context':.. }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
@@ -179,6 +183,15 @@ impl PythonTool {
             )));
         }
 
+        // remove the `import tools` if present
+        // remove the `from tools import xxx` if present
+        code = code
+            .lines()
+            .map(|l| l.replace(r"^import tools.*$", ""))
+            .map(|l| l.replace(r"^from tools import.*$", ""))
+            .collect::<Vec<_>>()
+            .join("\n");
+
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
         let mut tool_class_code = String::new();
@@ -188,6 +201,8 @@ impl PythonTool {
         tool_class_code.push_str("        self.toolbox = toolbox\n");
 
         let tools = toolwrapper.toolbox.describe().await;
+
+        let mut binding_code = String::new();
 
         for (name, description) in tools {
             let inputs_parts = description.input_format.fields;
@@ -250,6 +265,12 @@ impl PythonTool {
                 dict
             ));
 
+            // add ToolName(..) to the binding code
+            binding_code.push_str(&format!(
+                "def {}{}:\n        return tools.toolbox.invoke(\"{}\", {{{}}})\n",
+                name, inputs, name, dict
+            ));
+
             // FUTURE(ssoudan) set input_format and output_format
         }
 
@@ -259,8 +280,10 @@ impl PythonTool {
 
         tool_class_code.push_str("tools = Tools(toolbox)\n");
 
-        // prepend the tool class code to the user code
-        code = format!("{}\n{}", tool_class_code, code);
+        let code_to_prepend = format!("{}\n{}\n", tool_class_code, binding_code);
+
+        // prepend the code to the user code
+        code = format!("{}\n{}", code_to_prepend, code);
 
         // print!("{}", code);
 
