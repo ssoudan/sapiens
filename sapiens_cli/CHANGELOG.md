@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <csr-id-14529922572878248a9f6681dfa716e87326d8ff/>
 <csr-id-15c52d843721fa8426573d9f6bee2c019d2bd9bb/>
 <csr-id-b11b947d3b3699807c03c4500a8dc7a0e53d41d0/>
+<csr-id-1a6b8972bab61215ebd95f74ebc46be4e63b98e7/>
+<csr-id-6e90dcd3947a192c62da6fddf4dcde0342365081/>
+<csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/>
 
 ### Chore
 
@@ -34,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Bug Fixes
 
  - <csr-id-c37e7ca813eaff1fe87b11736670024b81c5088d/> sorted tool descriptions (by name)
+ - <csr-id-260cbe62ebe60a5798d976d0586e528e5722c665/> pyo3-asyncio features
 
 ### Refactor
 
@@ -51,9 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 17 commits contributed to the release over the course of 4 calendar days.
+ - 19 commits contributed to the release over the course of 4 calendar days.
  - 5 days passed between releases.
- - 15 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 16 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -63,6 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Pyo3-asyncio features ([`260cbe6`](https://github.com/ssoudan/sapiens/commit/260cbe62ebe60a5798d976d0586e528e5722c665))
+    - Release sapiens v0.4.0, sapiens_derive v0.3.1, sapiens_tools v0.4.0, sapiens_bot v0.2.2, sapiens_cli v0.3.0, safety bump 3 crates ([`0da51f4`](https://github.com/ssoudan/sapiens/commit/0da51f431c56f43088c651b0428c3f2fc6be11be))
     - CHANGELOGs ([`1a6b897`](https://github.com/ssoudan/sapiens/commit/1a6b8972bab61215ebd95f74ebc46be4e63b98e7))
     - Merge pull request #8 from ssoudan/tools ([`3b7f2b2`](https://github.com/ssoudan/sapiens/commit/3b7f2b25afb545217e9d0c078b372e1a24981d78))
     - CHANGELOG ([`6e90dcd`](https://github.com/ssoudan/sapiens/commit/6e90dcd3947a192c62da6fddf4dcde0342365081))
