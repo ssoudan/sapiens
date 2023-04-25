@@ -41,12 +41,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libpython3.11 \
-    python3-sympy \
-    python3-numpy \
-    python3-requests \
-    python3-urllib3 \
-    python3-bs4 \
-    python3-feedparser \
     python3-pip \
     python3-venv \
     ca-certificates \
@@ -55,7 +49,7 @@ RUN apt-get update && apt-get install -y \
 USER $USERNAME
 RUN python3 -m venv /home/$USERNAME/.venv
 ENV PATH="/home/$USERNAME/.venv/bin:$PATH"
-RUN pip3 install --no-cache-dir arxiv
+RUN pip3 install --no-cache-dir arxiv requests numpy sympy bs4 feedparser urllib3
 
 FROM base-runtime AS sapiens_cli
 ARG USER_UID=1000
