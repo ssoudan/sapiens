@@ -1,9 +1,33 @@
 # Sapiens
 
+![Sapiens](docs/sapiens.png)
+
 *Sapiens use tools to interact with the world.*
 
-Fun with chatGPT API, [llm-chain](https://github.com/sobelio/llm-chain) and 
-[huelib (fork)](https://github.com/ssoudan/huelib-rs/).
+An experiment with handing over the tools to the machine.
+
+
+> From primal birth, we walked the Earth,
+> Tools guiding evolution's stride,
+> Shaping land and air, with thoughtful care,
+> In Anthropocene, we reside.
+>
+> As we forge ahead, the path we tread,
+> Leads to new horizons vast,
+> Future tools in hand, for a world so grand,
+> Built on foundations of the past.
+>
+> Digital realms emerge, as we converge,
+> With AI as our guide,
+> New worlds to mold, as the tale unfolds,
+> In this wondrous, boundless ride.
+>
+> Innovation thrives, as humankind strives,
+> To shape the future, ever bright,
+> A legacy we leave, as we interweave,
+> The old world with the new light.
+
+<p style="text-align: right">Not Me</p>
 
 ## Disclaimer
 
@@ -19,10 +43,12 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 
 ## Tools
 
-- SandboxedPython: execute Python code in a (not so) sandboxed environment
-- Hue: control Philips Hue lights: List Rooms, List Lights, Get/Set Light State - use 'hue' feature.
-- Wikipedia: Query Wikipedia
-- Wikidata: Query Wikidata
+- *SandboxedPython*: execute Python code in a (not so) sandboxed environment
+- *Hue*: control Philips Hue lights: List Rooms, List Lights, Get/Set Light State - use 'hue' feature.
+- *Wikipedia*: query Wikipedia
+- *Wikidata*: query Wikidata (SPARQL)
+- *Summarize*: summarize text with OpenAI
+- *ArXiV*: query ArXiV
 
 ## Usage as a Discord bot
 
@@ -35,7 +61,7 @@ GUILD_ID=...
 
 ```./BUILD.sh``` and ```./BOT.sh``` to build and run the docker container with the bot. 
 
-Once the bot is running, you can interact with it on Discord with: "DO: Tell me a joke.".
+Once the bot is running, you can interact with it on Discord with: `DO: Tell me a joke.`
 
 ## Usage as a CLI
 
