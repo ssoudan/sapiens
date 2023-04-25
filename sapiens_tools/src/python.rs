@@ -21,14 +21,15 @@ const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
 ///
-/// - Only stdout and stderr are captured and made available (limited to 512B
-///   total).
 /// - To use another Tool:
 /// ```python
 /// input = {'field': ...}
 /// output = tools.ToolName(**input)
 /// print(output['field'])
 /// ```
+/// - Only stdout and stderr are captured and made available (limited to 512B
+///   total). If the output is larger, use `tools.Conclude` directly from the
+///   code.
 /// - List available tools with `tools.list()`. And returns a list of
 ///   `{'name':.., 'description':.., 'input':..,
 /// 'output':.., 'description_context':.. }`.
@@ -305,13 +306,13 @@ impl PythonTool {
                 .join(", ");
 
             // in snake case
-            tool_class_code.push_str(&format!(
-                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                name.to_case(Case::Snake),
-                inputs,
-                name,
-                dict
-            ));
+            // tool_class_code.push_str(&format!(
+            //     "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
+            //     name.to_case(Case::Snake),
+            //     inputs,
+            //     name,
+            //     dict
+            // ));
 
             // in Pascal case
             tool_class_code.push_str(&format!(
@@ -432,7 +433,6 @@ mod tests {
     use insta::assert_display_snapshot;
     use sapiens::tools::Toolbox;
 
-    use crate::arxiv::ArxivTool;
     use crate::conclude::ConcludeTool;
     use crate::python::{PythonTool, PythonToolInput};
 
@@ -463,7 +463,7 @@ mod tests {
         };
 
         let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArxivTool::new().await).await;
+        // toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         // toolbox.add_advanced_tool(PythonTool::default()).await;
 
