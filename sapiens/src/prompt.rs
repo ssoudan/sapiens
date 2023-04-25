@@ -5,14 +5,10 @@ use crate::openai::Role;
 use crate::tools::{ToolDescription, ToolUseError, Toolbox};
 
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
-You will proceed iteratively using an OODA loop made of the following steps:
-- Observations: What do you know to be true? What is your source? What don't you know? Note down important information for later. 
-- Orientation: Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.  
-- Decision: Choose what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?
-- Action: Take a single Action consisting of exactly one tool invocation. The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.
+You will proceed iteratively using an OODA loop.
 
-Action results in a new Observation. These 4 steps are repeated until you have the answer to the original question. No task is complete until the Conclude Tool is used to provide the answer.
-You cannot use jinja2 templating in your response. 
+Action result will be provided to you. The loop will repeated until you have the answer to the original question. No task is complete until the Conclude Tool is used to provide the answer.
+You cannot use jinja2 templating in your response. Be concise. 
 ";
 
 const TOOL_PREFIX: &str = r"
@@ -22,25 +18,25 @@ const TOOL_PREFIX: &str = r"
 const FORMAT: &str = r"
 # Format of your response
 
-Please use the following format for your response - no need to be verbose:
+Please use the following format for your response - no need to be verbose. Comments are in bold and should be removed from your response.
 ====================
-## Observations:
+## Observations: 
+**What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**
 - ...
-## Orientation:
+## Orientation: 
+**Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**
 - ...
-## Decision:
+## Decision: 
+**Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
 - ...
-## The ONLY Action: <You must give only one action with one `command` and one `input` fields. Other fields are ignored.>  
+## The ONLY Action: 
+**Take a single Action consisting of exactly one tool invocation (`command` and `input`). The available Tools listed below. Use Conclude Tool when you have the final answer to the original question. Never give more than one `command` and one `input` fields. Never give more than one YAML.**  
 ```yaml
 command: <ToolName>
 input:
   <... using the `input_format` for the Tool ...>
 ```
 ====================
-";
-
-const PROTO_EXCHANGE_1: &str = r"
-## Original question: Sort in ascending order: [2, 3, 1, 4, 5]. 
 ";
 
 const PROTO_EXCHANGE_2: &str = r#"
@@ -67,15 +63,10 @@ input:
 const PROTO_EXCHANGE_3: &str = r"
 # Action SandboxedPython result:
 ```yaml
-status: 0
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
 stderr: ''
 ```
-# Your turn
-Original question: Sort the following list: [2, 3, 1, 4, 5]
-Do you have the answer? Use the Conclude Tool to terminate the task.
-Observations, Orientation, Decision, The ONLY Action?
 ";
 
 const PROTO_EXCHANGE_4: &str = r"
@@ -151,14 +142,23 @@ impl Manager {
         let warm_up_prompt = self.create_tool_warm_up().await;
         let system_prompt = self.create_system_prompt();
 
+        let warmup_task = Task {
+            task: "Sort in ascending order: [2, 3, 1, 4, 5]".to_string(),
+        };
+
         let prompt = [
-            (Role::System, system_prompt),
-            (Role::User, warm_up_prompt),
+            (Role::System, system_prompt.trim().to_string()),
+            (Role::User, warm_up_prompt.trim().to_string()),
             (Role::Assistant, "Understood.".to_string()),
-            (Role::User, PROTO_EXCHANGE_1.to_string()),
-            (Role::Assistant, PROTO_EXCHANGE_2.to_string()),
-            (Role::User, PROTO_EXCHANGE_3.to_string()),
-            (Role::Assistant, PROTO_EXCHANGE_4.to_string()),
+            (Role::User, warmup_task.to_prompt()),
+            (Role::Assistant, PROTO_EXCHANGE_2.trim().to_string()),
+            (
+                Role::User,
+                (format!("{}{}", PROTO_EXCHANGE_3, warmup_task.to_prompt()))
+                    .trim()
+                    .to_string(),
+            ),
+            (Role::Assistant, PROTO_EXCHANGE_4.trim().to_string()),
         ];
 
         chat_history.add_prompts(&prompt);

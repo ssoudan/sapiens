@@ -75,7 +75,7 @@ mod tests {
                 print("Hello world!")
                 rooms = toolbox.invoke("Dummy", {"blah": "blah"})
                 print(rooms)
-                rooms = tools.dummy(blah="blah")
+                rooms = tools.Dummy(blah="blah")
                 print(rooms)          
         ```
         "#};
