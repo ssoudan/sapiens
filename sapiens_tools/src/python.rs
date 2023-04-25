@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use convert_case::{Case, Casing};
 use pyo3::prelude::*;
@@ -172,11 +173,69 @@ impl PythonTool {
         toolbox: Toolbox,
         input: &PythonToolInput,
     ) -> Result<PythonToolOutput, ToolUseError> {
-        let mut code = input.code.clone();
+        let code = input.code.clone();
+
+        let tools = toolbox.describe().await;
+
+        let code = Self::transform_code(code, tools)?;
+
+        let toolwrapper = ToolsWrapper::new(toolbox).await;
+
+        // print!("{}", code);
+
+        let res: PyResult<(String, String)> = Python::with_gil(|py| {
+            // println!("Python version: {}", py.version());
+
+            let tools_cell = PyCell::new(py, toolwrapper)?;
+            let globals = [("toolbox", tools_cell)].into_py_dict(py);
+
+            // capture stdout and stderr
+            let sys = py.import("sys")?;
+
+            let stdout = Logging::default();
+            let py_stdout_cell = PyCell::new(py, stdout)?;
+            let py_stdout = py_stdout_cell.borrow_mut();
+            sys.setattr("stdout", py_stdout.into_py(py))?;
+
+            let stderr = Logging::default();
+            let py_stderr_cell = PyCell::new(py, stderr)?;
+            let py_stderr = py_stderr_cell.borrow_mut();
+            sys.setattr("stderr", py_stderr.into_py(py))?;
+
+            // FUTURE(ssoudan) pass something in
+
+            // run code
+            Python::run(py, &code, globals.into(), None)?;
+
+            // NOFUTURE(ssoudan) get something out
+
+            let stdout = py_stdout_cell.borrow().output.clone();
+            let stderr = py_stderr_cell.borrow().output.clone();
+
+            Ok((stdout, stderr))
+        });
+
+        let (stdout, stderr) = res.map_err(|e| {
+            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
+        })?;
+
+        Ok(PythonToolOutput { stdout, stderr })
+    }
+
+    fn transform_code(
+        code: String,
+        tools: HashMap<String, ToolDescription>,
+    ) -> Result<String, ToolUseError> {
+        lazy_static::lazy_static! {
+            static ref EXEC_RE: regex::Regex = regex::Regex::new(r"(exec|pip)").unwrap();
+            static ref IMPORT_RE: regex::Regex = regex::Regex::new(r"(?x)import \s+ tools.*").unwrap();
+            static ref FROM_RE: regex::Regex =
+                regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
+        }
 
         // check for forbidden keywords - with capture
-        let re = regex::Regex::new(r"(exec|pip)").unwrap();
-        if let Some(caps) = re.captures(&code) {
+
+        if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
             return Err(ToolUseError::ToolInvocationFailed(format!(
                 "Python code contains forbidden keywords such as {}",
                 caps.get(0).unwrap().as_str()
@@ -185,22 +244,20 @@ impl PythonTool {
 
         // remove the `import tools` if present
         // remove the `from tools import xxx` if present
-        code = code
+        let code = code
             .lines()
-            .map(|l| l.replace(r"^import tools.*$", ""))
-            .map(|l| l.replace(r"^from tools import.*$", ""))
+            .filter(|&l| !IMPORT_RE.is_match(l))
+            .filter(|&l| !FROM_RE.is_match(l))
+            // .map(|l| l.replace(r"^import tools.*$", ""))
+            // .map(|l| l.replace(r"^from tools import.*", ""))
             .collect::<Vec<_>>()
             .join("\n");
-
-        let toolwrapper = ToolsWrapper::new(toolbox).await;
 
         let mut tool_class_code = String::new();
 
         tool_class_code.push_str("class Tools:\n");
         tool_class_code.push_str("    def __init__(self, toolbox):\n");
         tool_class_code.push_str("        self.toolbox = toolbox\n");
-
-        let tools = toolwrapper.toolbox.describe().await;
 
         let mut binding_code = String::new();
 
@@ -280,50 +337,12 @@ impl PythonTool {
 
         tool_class_code.push_str("tools = Tools(toolbox)\n");
 
-        let code_to_prepend = format!("{}\n{}\n", tool_class_code, binding_code);
+        let code_to_prepend = format!("{}{}", tool_class_code, binding_code);
 
         // prepend the code to the user code
-        code = format!("{}\n{}", code_to_prepend, code);
+        let code = format!("{}\n# ======== user code\n{}", code_to_prepend, code);
 
-        // print!("{}", code);
-
-        let res: PyResult<(String, String)> = Python::with_gil(|py| {
-            // println!("Python version: {}", py.version());
-
-            let tools_cell = PyCell::new(py, toolwrapper)?;
-            let globals = [("toolbox", tools_cell)].into_py_dict(py);
-
-            // capture stdout and stderr
-            let sys = py.import("sys")?;
-
-            let stdout = Logging::default();
-            let py_stdout_cell = PyCell::new(py, stdout)?;
-            let py_stdout = py_stdout_cell.borrow_mut();
-            sys.setattr("stdout", py_stdout.into_py(py))?;
-
-            let stderr = Logging::default();
-            let py_stderr_cell = PyCell::new(py, stderr)?;
-            let py_stderr = py_stderr_cell.borrow_mut();
-            sys.setattr("stderr", py_stderr.into_py(py))?;
-
-            // FUTURE(ssoudan) pass something in
-
-            // run code
-            Python::run(py, &code, globals.into(), None)?;
-
-            // NOFUTURE(ssoudan) get something out
-
-            let stdout = py_stdout_cell.borrow().output.clone();
-            let stderr = py_stderr_cell.borrow().output.clone();
-
-            Ok((stdout, stderr))
-        });
-
-        let (stdout, stderr) = res.map_err(|e| {
-            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
-        })?;
-
-        Ok(PythonToolOutput { stdout, stderr })
+        Ok(code)
     }
 
     fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
@@ -404,5 +423,54 @@ impl AdvancedTool for PythonTool {
         let input = serde_yaml::from_value(input)?;
         let output = self.invoke_typed(toolbox, &input).await?;
         Ok(serde_yaml::to_value(output)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indoc::indoc;
+    use insta::assert_display_snapshot;
+    use sapiens::tools::Toolbox;
+
+    use crate::arxiv::ArxivTool;
+    use crate::conclude::ConcludeTool;
+    use crate::python::{PythonTool, PythonToolInput};
+
+    #[tokio::test]
+    async fn test_code_transformation() {
+        let input = PythonToolInput {
+            code: indoc! {
+                r#"
+                import tools
+                from tools import Arxiv
+
+                arxiv_results = Arxiv(
+                  search_query='cat:cs.AI',
+                  max_results=5,
+                  sort_by='lastUpdatedDate',
+                  sort_order='descending',
+                  show_summary=True
+                )
+            
+                formatted_results = []
+                for result in arxiv_results['result']:
+                    formatted_results.append(f"{result['title']} : {result['pdf_url']}")
+                formatted_results = "\n".join(formatted_results)
+            
+                print({'formatted_results': formatted_results})
+            "#}
+            .to_string(),
+        };
+
+        let mut toolbox = Toolbox::default();
+        toolbox.add_tool(ArxivTool::new().await).await;
+        toolbox.add_terminal_tool(ConcludeTool::default()).await;
+        // toolbox.add_advanced_tool(PythonTool::default()).await;
+
+        let tools = toolbox.describe().await;
+
+        let code = PythonTool::transform_code(input.code, tools).unwrap();
+
+        assert_display_snapshot!(code);
     }
 }
