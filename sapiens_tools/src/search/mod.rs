@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use reqwest::{Client, Response, Url};
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
@@ -15,7 +17,7 @@ pub mod gce;
 /// A Tool to search the web - powered by Google Custom Search Engine.
 ///
 /// Returns a list of [`Item`] with: `title`, `link`, `snippet`.
-#[derive(Debug, ProtoToolInvoke, ProtoToolDescribe)]
+#[derive(ProtoToolInvoke, ProtoToolDescribe)]
 #[tool(
     name = "Search",
     input = "SearchToolInput",
@@ -28,6 +30,12 @@ pub struct SearchTool {
     cse_id: String,
     /// HTTP client
     client: Mutex<Client>,
+}
+
+impl Debug for SearchTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SearchTool").finish()
+    }
 }
 
 /// [`SearchTool`] input
