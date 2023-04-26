@@ -30,3 +30,4 @@ thiserror = "1.0.40"
 
 [dev-dependencies]
 indoc = "2"
+insta = "1.29.0"

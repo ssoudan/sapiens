@@ -5,9 +5,10 @@ use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::openai::Role;
 use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
+use tracing::info;
+use tracing_subscriber::EnvFilter;
 
 // Usability:
-// TODO(ssoudan) search
 // TODO(ssoudan) Richer interaction
 // TODO(ssoudan) More tools: wx, negotiate
 // TODO(ssoudan) Discord bot with long-lived conversations
@@ -21,7 +22,6 @@ use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 // Deployability:
 // TODO(ssoudan) Limit how long a tool can run
 // TODO(ssoudan) more tests
-// TODO(ssoudan) logging
 // TODO(ssoudan) monitoring
 //
 // Adoption:
@@ -137,6 +137,13 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let args = Args::parse();
 
     let _ = dotenv_override();
+
+    tracing_subscriber::fmt()
+        .compact()
+        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
+        .init();
+
+    info!("Starting sapiens_cli");
 
     let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 

@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki", "arxiv"]
+default = ["wiki", "arxiv", "summarize", "search" ]
 # Hue lights related tools
 hue = [ "dep:huelib2", "sapiens_tools/hue" ]
 # MediaWiki related tools
@@ -21,11 +21,16 @@ wiki = [ "sapiens_tools/wiki" ]
 arxiv = [ "sapiens_tools/arxiv" ]
 # Summarization
 summarize = ["sapiens_tools/summarize"]
+# Search
+search = ["sapiens_tools/search"]
 
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.4.0" }
 sapiens_tools = { path = "../sapiens_tools", version = "^0.4.0", default-features = false }
+
+tracing = "0.1.38"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 tokio = { version = "1.28.0", features = ["full"] }
 async-trait = "0.1.68"

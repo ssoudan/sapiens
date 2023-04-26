@@ -13,7 +13,7 @@ categories.workspace = true
 
 
 [features]
-default = ["wiki", "arxiv"]
+default = ["wiki", "arxiv", "summarize", "search"]
 # Hue lights related tools
 hue = [ "dep:huelib2", "sapiens_tools/hue" ]
 # MediaWiki related tools
@@ -22,6 +22,9 @@ wiki = [ "sapiens_tools/wiki" ]
 arxiv = [ "sapiens_tools/arxiv" ]
 # Summarization
 summarize = ["sapiens_tools/summarize"]
+# Search
+search = ["sapiens_tools/search"]
+
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.4.0" }
@@ -30,7 +33,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.4.0", default-feature
 huelib2 = { version = "0.13.3", optional = true }
 
 tracing = "0.1.38"
-tracing-subscriber = "0.3.17"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 serenity = { version = "0.11.5", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "cache"] }
 tokio = { version = "1.28", features = ["macros", "rt-multi-thread", "sync"] }

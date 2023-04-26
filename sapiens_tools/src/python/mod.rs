@@ -23,21 +23,19 @@ const MAX_OUTPUT_SIZE: usize = 512;
 ///
 /// - To use another Tool:
 /// ```python
-/// input = {'field': ...}
-/// output = tools.ToolName(**input)
-/// print(output['field'])
+/// output = tools.ToolName(input_field_1=..., input_field_2=...)
+/// print(output['output_field_1'])
 /// ```
 /// - Only stdout and stderr are captured and made available (limited to 512B
 ///   total). If the output is larger, use `tools.Conclude` directly from the
 ///   code.
 /// - List available tools with `tools.list()`. And returns a list of
-///   `{'name':.., 'description':.., 'input':..,
-/// 'output':.., 'description_context':.. }`.
+///   `{'name':.., 'description':.., 'input':.., 'output':.., }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser, arxiv.
 /// - No PIP.
-#[derive(Default, ProtoToolDescribe)]
+#[derive(Debug, Default, ProtoToolDescribe)]
 #[tool(
     name = "SandboxedPython",
     input = "PythonToolInput",
@@ -46,7 +44,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 pub struct PythonTool {}
 
 /// The input of the Python tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct PythonToolInput {
     /// The Python code to run. MANDATORY
     pub code: String,
@@ -234,8 +232,9 @@ impl PythonTool {
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
 
-        // check for forbidden keywords - with capture
+        // TODO(ssoudan) use PyModule::from_code ?
 
+        // check for forbidden keywords - with capture
         if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
             return Err(ToolUseError::ToolInvocationFailed(format!(
                 "Python code contains forbidden keywords such as {}",
@@ -291,7 +290,7 @@ impl PythonTool {
 
             let inputs = inputs.join(", ");
             let inputs = if inputs.is_empty() {
-                "".to_string()
+                "(self)".to_string()
             } else {
                 format!("(self, {})", inputs)
             };
@@ -346,6 +345,7 @@ impl PythonTool {
         Ok(code)
     }
 
+    #[tracing::instrument]
     fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
         let code = input.code.clone();
 

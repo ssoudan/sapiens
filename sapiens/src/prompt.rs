@@ -30,7 +30,8 @@ Please use the following format for your response - no need to be verbose. Comme
 **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
 - ...
 ## The ONLY Action: 
-**Take a single Action consisting of exactly one tool invocation (`command` and `input`). The available Tools listed below. Use Conclude Tool when you have the final answer to the original question. Never give more than one `command` and one `input` fields. Never give more than one YAML.**  
+**Take a single Action consisting of exactly one tool invocation (`command` and `input`). The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.**
+Never give more than one `command` and one `input` fields. Never give more than one YAML.  
 ```yaml
 command: <ToolName>
 input:
@@ -45,6 +46,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 - I need to sort this list in ascending order.
 ## Orientation:
 - SandboxedPython can be used to sort the list.
+- I need to provide only the `command` and `input` fields for the SandboxedPython Tool.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list
 - I need to provide the conclusion in plain text to the Conclude Tool.
 ## Decision:
@@ -76,6 +78,7 @@ const PROTO_EXCHANGE_4: &str = r"
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
+- I need to provide the `command` and `input` fields for the Conclude Tool.
 ## Decision:
 - Use the Conclude Tool to terminate the task with the sorted list.
 ## The ONLY Action:

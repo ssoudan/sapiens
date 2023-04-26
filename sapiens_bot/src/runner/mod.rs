@@ -2,6 +2,7 @@ use std::fmt::Debug;
 
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::runner::Chain;
+use sapiens::tools::TerminationMessage;
 use sapiens::{Config, Error, StepOrStop, TaskProgressUpdateHandler};
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
@@ -67,9 +68,18 @@ impl TaskProgressUpdateHandler for ProgressHandler {
         let last_msg = msgs.last();
         debug!(last_msg = ?last_msg, "on_start");
 
-        let msgs = sanitize_msgs_for_discord(msgs);
-
-        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+        if self.show_warmup_prompt {
+            let msgs = sanitize_msgs_for_discord(msgs);
+            self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+        } else {
+            // Show only the last message
+            if let Some(last_msg) = last_msg {
+                let msgs = sanitize_msgs_for_discord(vec![last_msg.to_string()]);
+                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+            } else {
+                warn!("No messages to show - this should not happen");
+            }
+        }
     }
 
     async fn on_model_update(&mut self, model_message: ChatEntry) {
@@ -104,6 +114,7 @@ impl TaskProgressUpdateHandler for ProgressHandler {
 /// A job update
 #[derive(Debug)]
 pub enum JobUpdate {
+    Completed(Vec<String>),
     Vec(Vec<String>),
     FailedToStart(Vec<String>),
     ToolError(Vec<String>),
@@ -115,15 +126,22 @@ pub struct NewJob {
     task: String,
     tx: mpsc::Sender<JobUpdate>,
     max_steps: usize,
+    show_warmup_prompt: bool,
 }
 
 impl NewJob {
     /// Create a new job
-    pub fn new(task: String, max_steps: usize, tx: mpsc::Sender<JobUpdate>) -> Self {
+    pub fn new(
+        task: String,
+        max_steps: usize,
+        show_warmup_prompt: bool,
+        tx: mpsc::Sender<JobUpdate>,
+    ) -> Self {
         Self {
             task,
             tx,
             max_steps,
+            show_warmup_prompt,
         }
     }
 }
@@ -147,7 +165,7 @@ impl Runner {
             let mut tx = job.tx.clone();
 
             let handler = ProgressHandler {
-                show_warmup_prompt: true,
+                show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
             };
@@ -166,8 +184,17 @@ impl Runner {
                                 // update is going to come through the handler
                                 debug!("Step for: {}", task);
                             }
-                            Ok(StepOrStop::Stop { .. }) => {
+                            Ok(StepOrStop::Stop { stop }) => {
                                 info!("Task finished: {}", task);
+
+                                let messages = stop
+                                    .termination_messages.iter()
+                                    .flat_map(|m: &TerminationMessage| {
+                                        let msg = format!("# Termination message\n - original question: {}\n - conclusion: {}", m.original_question.trim(), m.conclusion.trim());
+                                        sanitize_msgs_for_discord(vec![msg])
+                                    }).collect();
+
+                                tx.send(JobUpdate::Completed(messages)).await.unwrap();
                                 break;
                             }
                             Err(e) => {

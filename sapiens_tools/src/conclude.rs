@@ -21,6 +21,12 @@ pub struct ConcludeTool {
     done: Mutex<Option<ConcludeToolInput>>,
 }
 
+impl Debug for ConcludeTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConcludeTool").finish()
+    }
+}
+
 #[async_trait::async_trait]
 impl TerminalTool for ConcludeTool {
     async fn is_done(&self) -> bool {
@@ -64,6 +70,7 @@ impl From<ConcludeToolInput> for TerminationMessage {
 pub struct ConcludeToolOutput {}
 
 impl ConcludeTool {
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &ConcludeToolInput,

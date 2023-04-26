@@ -12,6 +12,13 @@ use crate::python::PythonTool;
 pub async fn toolbox_from_env() -> Toolbox {
     let mut toolbox = Toolbox::default();
 
+    #[cfg(feature = "search")]
+    {
+        use crate::search::SearchTool;
+
+        toolbox.add_tool(SearchTool::default()).await;
+    }
+
     #[cfg(feature = "hue")]
     {
         use std::net::IpAddr;

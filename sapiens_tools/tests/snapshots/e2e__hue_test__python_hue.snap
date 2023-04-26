@@ -1,5 +1,5 @@
 ---
-source: sapiens_tools/tests/arxiv.rs
+source: sapiens_tools/tests/hue_test.rs
 expression: output
 ---
 stdout: ''

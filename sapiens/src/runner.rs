@@ -20,10 +20,10 @@ pub struct Chain {
 impl Debug for Chain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Chain")
-            .field("toolbox", &self.toolbox)
+            // .field("toolbox", &self.toolbox)
             .field("config", &self.config)
-            .field("openai_client", &self.openai_client)
-            .field("chat_history", &self.chat_history)
+            // .field("openai_client", &self.openai_client)
+            // .field("chat_history", &self.chat_history)
             .finish()
     }
 }
@@ -84,6 +84,7 @@ impl Debug for TaskChain {
 
 impl TaskChain {
     /// Query the model
+    #[tracing::instrument]
     pub async fn query_model(&mut self) -> Result<ChatEntry, Error> {
         let input = self.prepare_chat_completion_request();
 
@@ -132,6 +133,7 @@ impl TaskChain {
     /// corresponding tool.
     ///
     /// See [`crate::invoke_tool`] for more details.
+    #[tracing::instrument]
     pub async fn invoke_tool(&self, data: &str) -> (String, Result<String, ToolUseError>) {
         let toolbox = self.chain.toolbox.clone();
         crate::tools::invoke_tool(toolbox, data).await
@@ -153,7 +155,7 @@ impl TaskChain {
         const MAX_RESPONSE_CHAR: usize = 2048;
         if msg.len() > MAX_RESPONSE_CHAR {
             let e = ToolUseError::ToolInvocationFailed(format!(
-                "The response is too long ({}B). Max allowed is {}B.",
+                "The response is too long ({}B). Max allowed is {}B. Ask for a shorter response or use SandboxedPython Tool to process the response the data.",
                 msg.len(),
                 MAX_RESPONSE_CHAR
             ));

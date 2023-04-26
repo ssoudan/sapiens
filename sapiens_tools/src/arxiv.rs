@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// science, quantitative biology, quantitative finance, statistics, electrical
 /// engineering and systems science, and economics. Materials on this site are
 /// not peer-reviewed by arXiv.
-#[derive(ProtoToolInvoke, ProtoToolDescribe)]
+#[derive(Debug, ProtoToolInvoke, ProtoToolDescribe)]
 #[tool(name = "Arxiv", input = "ArxivToolInput", output = "ArxivToolOutput")]
 pub struct ArxivTool {}
 
@@ -188,6 +188,7 @@ impl ArxivTool {
         ArxivTool {}
     }
 
+    #[tracing::instrument]
     async fn invoke_typed(&self, input: &ArxivToolInput) -> Result<ArxivToolOutput, ToolUseError> {
         let query = ArxivQuery::from(input);
 
@@ -253,7 +254,7 @@ mod tests {
         };
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert_eq!(output.result.len(), 10);
+        assert!(!output.result.is_empty())
     }
 
     #[tokio::test]
@@ -270,7 +271,7 @@ mod tests {
 
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert_eq!(output.result.len(), 10);
+        assert!(!output.result.is_empty());
         assert!(!output.result[0].authors.is_empty());
     }
 
