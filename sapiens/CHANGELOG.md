@@ -5,7 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.1 (2023-04-26)
+
+### New Features
+
+ - <csr-id-3c9e702c2e0e1624882c83b66c42113bc99b3b5d/> search and logging/tracing
+ - <csr-id-87ae158cc01d299f60a05577f9a20516cf65e6c2/> search tool"
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #9 from ssoudan/search ([`8976be2`](https://github.com/ssoudan/sapiens/commit/8976be2e7e056ed5a976a37a5723abc9f531d238))
+    - Search and logging/tracing ([`3c9e702`](https://github.com/ssoudan/sapiens/commit/3c9e702c2e0e1624882c83b66c42113bc99b3b5d))
+    - Search tool" ([`87ae158`](https://github.com/ssoudan/sapiens/commit/87ae158cc01d299f60a05577f9a20516cf65e6c2))
+</details>
+
 ## 0.4.0 (2023-04-25)
+
+<csr-id-1a6b8972bab61215ebd95f74ebc46be4e63b98e7/>
+<csr-id-6e90dcd3947a192c62da6fddf4dcde0342365081/>
+<csr-id-35a6a992c57951ebe2a325d81d60c540053bcb94/>
 
 ### Chore
 
@@ -26,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 1 calendar day.
+ - 8 commits contributed to the release over the course of 1 calendar day.
  - 1 day passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -38,6 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.4.0, sapiens_derive v0.3.1, sapiens_tools v0.4.0, sapiens_bot v0.2.2, sapiens_cli v0.3.0, safety bump 3 crates ([`0da51f4`](https://github.com/ssoudan/sapiens/commit/0da51f431c56f43088c651b0428c3f2fc6be11be))
     - CHANGELOGs ([`1a6b897`](https://github.com/ssoudan/sapiens/commit/1a6b8972bab61215ebd95f74ebc46be4e63b98e7))
     - Merge pull request #8 from ssoudan/tools ([`3b7f2b2`](https://github.com/ssoudan/sapiens/commit/3b7f2b25afb545217e9d0c078b372e1a24981d78))
     - CHANGELOG ([`6e90dcd`](https://github.com/ssoudan/sapiens/commit/6e90dcd3947a192c62da6fddf4dcde0342365081))
