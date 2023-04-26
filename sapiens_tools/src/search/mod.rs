@@ -206,6 +206,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_search_tool() {
+        let _ = dotenvy::dotenv();
+
         let tool = SearchTool::default();
 
         let input = SearchToolInput {
@@ -226,6 +228,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_search_tool_2() {
+        let _ = dotenvy::dotenv();
+
         let tool = SearchTool::default();
 
         let input = SearchToolInput {
