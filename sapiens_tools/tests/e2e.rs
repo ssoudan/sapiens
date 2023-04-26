@@ -252,5 +252,7 @@ mod search {
 
 #[pyo3_asyncio::tokio::main(flavor = "multi_thread")]
 async fn main() -> pyo3::PyResult<()> {
+    let _ = dotenvy::dotenv();
+
     pyo3_asyncio::testing::main().await
 }
