@@ -238,7 +238,7 @@ impl<T: TaskProgressUpdateHandler> StepOrStop<T> {
 ///
 /// See ['StepOrStop::new'], [`StepOrStop::step`] and ['StepOrStop::run] for
 /// more flexible ways to run a task
-#[tracing::instrument]
+#[tracing::instrument(skip(toolbox, openai_client, handler))]
 pub async fn run_to_the_end(
     toolbox: tools::Toolbox,
     openai_client: Client,

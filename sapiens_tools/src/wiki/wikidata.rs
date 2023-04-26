@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use mediawiki::api::Api;
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
@@ -20,6 +22,12 @@ use serde_json;
 )]
 pub struct WikidataTool {
     client: Api,
+}
+
+impl Debug for WikidataTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WikidataTool").finish()
+    }
 }
 
 /// [`WikidataTool`] input
@@ -45,6 +53,7 @@ impl WikidataTool {
         Self { client }
     }
 
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &WikidataToolInput,

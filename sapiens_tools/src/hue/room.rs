@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use huelib2::resource::group::CreatableKind;
 use huelib2::resource::group::Kind::Creatable;
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
@@ -11,6 +13,12 @@ use crate::hue::Room;
 #[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
 pub struct RoomTool {
     bridge: huelib2::bridge::Bridge,
+}
+
+impl Debug for RoomTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RoomTool").finish()
+    }
 }
 
 impl RoomTool {
@@ -36,7 +44,7 @@ impl Default for RoomTool {
 }
 
 /// The input of the tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct RoomToolInput {
     /// The list of Room names (<string>) to get the lights for, e.g.
     /// `room_filter: ["Bedroom"]`. If unsure, use `[]` to get all Rooms.
@@ -44,7 +52,7 @@ pub struct RoomToolInput {
 }
 
 /// The output of the tool
-#[derive(Serialize, Deserialize, PartialEq, Debug, Describe)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Describe)]
 pub struct RoomToolOutput {
     /// A list of Rooms with a name and a list of Light IDs in that
     /// room. E.g.: `[{"name": "Smoking room", "lights": ["1", "2", ...]},
@@ -53,6 +61,7 @@ pub struct RoomToolOutput {
 }
 
 impl RoomTool {
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(&self, input: &RoomToolInput) -> Result<RoomToolOutput, ToolUseError> {
         let room_filter = &input.room_filter;
 

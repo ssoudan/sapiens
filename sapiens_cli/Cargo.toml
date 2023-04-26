@@ -29,6 +29,9 @@ search = ["sapiens_tools/search"]
 sapiens = { path = "../sapiens", version = "^0.4.0" }
 sapiens_tools = { path = "../sapiens_tools", version = "^0.4.0", default-features = false }
 
+tracing = "0.1.38"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+
 tokio = { version = "1.28.0", features = ["full"] }
 async-trait = "0.1.68"
 

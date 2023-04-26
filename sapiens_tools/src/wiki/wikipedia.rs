@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 
 use mediawiki::api::Api;
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
@@ -19,6 +20,12 @@ use serde_yaml::Value;
 )]
 pub struct WikipediaTool {
     client: Api,
+}
+
+impl Debug for WikipediaTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("WikipediaTool").finish()
+    }
 }
 
 /// [`WikipediaTool`] input
@@ -59,6 +66,7 @@ impl WikipediaTool {
         WikipediaTool { client }
     }
 
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &WikipediaToolInput,

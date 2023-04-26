@@ -17,6 +17,7 @@ use serenity::model::id::GuildId;
 use serenity::prelude::*;
 use tokio::spawn;
 use tracing::{debug, info, trace, warn};
+use tracing_subscriber::EnvFilter;
 
 use crate::runner::{JobUpdate, NewJob};
 
@@ -223,7 +224,10 @@ async fn main() -> PyResult<()> {
     // TODO(ssoudan) build the chat history from the channel history
 
     // install global subscriber configured based on RUST_LOG envvar.
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .compact()
+        .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
+        .init();
 
     let guild_id = GuildId(
         env::var("GUILD_ID")

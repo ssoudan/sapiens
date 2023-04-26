@@ -35,7 +35,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser, arxiv.
 /// - No PIP.
-#[derive(Default, ProtoToolDescribe)]
+#[derive(Debug, Default, ProtoToolDescribe)]
 #[tool(
     name = "SandboxedPython",
     input = "PythonToolInput",
@@ -44,7 +44,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 pub struct PythonTool {}
 
 /// The input of the Python tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct PythonToolInput {
     /// The Python code to run. MANDATORY
     pub code: String,
@@ -345,6 +345,7 @@ impl PythonTool {
         Ok(code)
     }
 
+    #[tracing::instrument]
     fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
         let code = input.code.clone();
 

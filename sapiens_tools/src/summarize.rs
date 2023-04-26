@@ -18,6 +18,12 @@ pub struct SummarizeTool {
     model: String,
 }
 
+impl Debug for SummarizeTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SummarizeTool").finish()
+    }
+}
+
 impl SummarizeTool {
     /// Create a new SummarizeTool
     pub fn with_model(openai_client: Client, model: String) -> Self {
@@ -57,6 +63,7 @@ pub struct SummarizeToolOutput {
 }
 
 impl SummarizeTool {
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &SummarizeToolInput,

@@ -1,11 +1,12 @@
-use reqwest::{Client, Url};
+use reqwest::{Client, Response, Url};
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
+use tracing::error;
 
 use crate::search::gce::SearchResultNumber::Four;
-use crate::search::gce::{Item, Lr, QueryParameters, SearchResults};
+use crate::search::gce::{ErrorBody, Item, Lr, QueryParameters, SearchResults};
 
 /// A Tool to search the web - powered by Google Custom Search Engine.
 #[cfg(feature = "search")]
@@ -14,7 +15,7 @@ pub mod gce;
 /// A Tool to search the web - powered by Google Custom Search Engine.
 ///
 /// Returns a list of [`Item`] with: `title`, `link`, `snippet`.
-#[derive(ProtoToolInvoke, ProtoToolDescribe)]
+#[derive(Debug, ProtoToolInvoke, ProtoToolDescribe)]
 #[tool(
     name = "Search",
     input = "SearchToolInput",
@@ -32,7 +33,8 @@ pub struct SearchTool {
 /// [`SearchTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct SearchToolInput {
-    /// query to search - `q` parameter of the Google Custom Search Engine API
+    /// query to search. `q` parameter of the Google Custom Search Engine API
+    /// Use `exclude_terms` and `exact_terms` to refine your search.
     q: String,
 
     /// word or phrase to exclude from search
@@ -117,14 +119,61 @@ impl SearchTool {
         }
     }
 
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &SearchToolInput,
     ) -> Result<SearchToolOutput, ToolUseError> {
+        let query_params = QueryParameters::from(input);
+
+        let resp = self.do_query(query_params).await;
+
+        let resp = resp.map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+
+        if resp.status().is_success() {
+            let body = resp
+                .text()
+                .await
+                .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+
+            let resp = match serde_json::from_str::<SearchResults>(&body) {
+                Ok(resp) => resp,
+                Err(e) => {
+                    error!(body = body, "Error parsing response: {}", e);
+
+                    return Err(ToolUseError::ToolInvocationFailed(e.to_string()));
+                }
+            };
+
+            // let resp = resp
+            //     .json::<SearchResults>()
+            //     .await
+            //     .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+
+            let next_start_index = resp.next_page().map(|x| x.start);
+
+            Ok(SearchToolOutput {
+                results: resp.items,
+                next_start_index,
+            })
+        } else {
+            let code = resp.status();
+
+            let body = resp
+                .json::<ErrorBody>()
+                .await
+                .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+
+            Err(ToolUseError::ToolInvocationFailed(format!(
+                "Error code {}: {}",
+                code, body.error.message
+            )))
+        }
+    }
+
+    async fn do_query(&self, mut query_params: QueryParameters) -> Result<Response, ToolUseError> {
         let url =
             Url::parse(gce::URL).map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
-
-        let mut query_params = QueryParameters::from(input);
 
         let query_params = query_params.key(&self.api_key).cx(&self.cse_id);
 
@@ -139,18 +188,7 @@ impl SearchTool {
                 .await
         };
 
-        let resp = resp
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
-            .json::<SearchResults>()
-            .await
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
-
-        let next_start_index = resp.next_page().map(|x| x.start);
-
-        Ok(SearchToolOutput {
-            results: resp.items,
-            next_start_index,
-        })
+        resp.map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))
     }
 }
 
@@ -176,5 +214,28 @@ mod tests {
         // assert_yaml_snapshot!(output);
 
         assert_eq!(output.results.len(), 3);
+    }
+
+    #[tokio::test]
+    async fn test_search_tool_2() {
+        let tool = SearchTool::default();
+
+        let input = SearchToolInput {
+            q: "Alain Prost -motorcycle".to_string(),
+            exclude_terms: None,
+            exact_terms: None,
+            num: Some(1),
+            lr: None,
+            start_index: None,
+        };
+
+        let query_params = QueryParameters::from(&input);
+
+        let resp = tool.do_query(query_params).await.unwrap();
+
+        println!("{:#?}", resp);
+
+        let body = resp.text().await.unwrap();
+        println!("{}", body);
     }
 }

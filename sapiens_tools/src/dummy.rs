@@ -5,7 +5,7 @@ use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
 use serde::{Deserialize, Serialize};
 
 /// A tool that is called to test stuffs
-#[derive(Default, ProtoToolDescribe, ProtoToolInvoke)]
+#[derive(Debug, Default, ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(name = "Dummy", input = "DummyToolInput", output = "DummyToolOutput")]
 pub struct DummyTool {}
 
@@ -24,6 +24,7 @@ pub struct DummyToolOutput {
 }
 
 impl DummyTool {
+    #[tracing::instrument]
     async fn invoke_typed(&self, input: &DummyToolInput) -> Result<DummyToolOutput, ToolUseError> {
         Ok(DummyToolOutput {
             something: input.blah.clone() + " and something else",

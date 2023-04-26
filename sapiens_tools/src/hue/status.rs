@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use huelib2::resource::Adjust;
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
@@ -32,7 +34,7 @@ impl Default for StatusTool {
 }
 
 /// The input of the tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct StatusToolInput {
     /// The list of Lights IDs (<string>) to get the status for, e.g.: `["1",
     /// "2"]`. To get all the lights: `[]`
@@ -40,7 +42,7 @@ pub struct StatusToolInput {
 }
 
 /// The output of the tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct StatusToolOutput {
     /// A list of Lights with their statuses. E.g.: `[{"id": "1", "name":
     /// "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation":
@@ -54,6 +56,7 @@ impl StatusTool {
         StatusTool { bridge }
     }
 
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &StatusToolInput,
@@ -90,12 +93,19 @@ pub struct SetStatusTool {
     bridge: huelib2::bridge::Bridge,
 }
 
+impl Debug for SetStatusTool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SetStatusTool").finish()
+    }
+}
+
 impl SetStatusTool {
     /// Create a new StatusTool
     pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
         SetStatusTool { bridge }
     }
 
+    #[tracing::instrument]
     async fn invoke_typed(
         &self,
         input: &SetStatusToolInput,
@@ -177,7 +187,7 @@ impl Default for SetStatusTool {
 }
 
 /// The input of the tool
-#[derive(Serialize, Deserialize, Describe)]
+#[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct SetStatusToolInput {
     /// The list of Lights statuses to set for, e.g.: `[{"id": "1", "on": True,
     /// "brightness": 126, "hue": 2456, "saturation":

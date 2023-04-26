@@ -6,6 +6,24 @@ use serde_json::{Map, Value};
 /// Google Custom Search Engine URL
 pub const URL: &str = "https://customsearch.googleapis.com/customsearch/v1";
 
+/// Error details
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ErrorDetail {
+    /// Error code
+    pub code: u16,
+    /// Error message
+    pub message: String,
+    /// Status
+    pub status: String,
+}
+
+/// Error body
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ErrorBody {
+    /// Error details
+    pub error: ErrorDetail,
+}
+
 /// Enable Simplified/Traditional Chinese
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum C2COff {
