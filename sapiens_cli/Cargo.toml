@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki", "arxiv"]
+default = ["wiki", "arxiv", "summarize", "search" ]
 # Hue lights related tools
 hue = [ "dep:huelib2", "sapiens_tools/hue" ]
 # MediaWiki related tools
@@ -21,6 +21,8 @@ wiki = [ "sapiens_tools/wiki" ]
 arxiv = [ "sapiens_tools/arxiv" ]
 # Summarization
 summarize = ["sapiens_tools/summarize"]
+# Search
+search = ["sapiens_tools/search"]
 
 
 [dependencies]

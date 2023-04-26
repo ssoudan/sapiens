@@ -27,3 +27,7 @@ pub mod arxiv;
 /// Text summarization tools
 #[cfg(feature = "summarize")]
 pub mod summarize;
+
+/// Search the web
+#[cfg(feature = "search")]
+pub mod search;

@@ -1,0 +1,16 @@
+---
+source: sapiens/src/tools.rs
+expression: serialized
+---
+command: Search
+input:
+  q: Marcel Deneuve
+  excluded_terms: Resident Evil
+  num_results: 10
+output:
+  items:
+  - Marcel Deneuve is a character in the Resident Evil film series,
+  - 'playing a minor role in Resident Evil: Apocalypse and a much larger'
+  - ' role in Resident Evil: Extinction. Explore historical records and '
+  - family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
+

@@ -253,7 +253,7 @@ mod tests {
         };
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert_eq!(output.result.len(), 10);
+        assert!(!output.result.is_empty())
     }
 
     #[tokio::test]

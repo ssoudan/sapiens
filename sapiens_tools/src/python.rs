@@ -232,8 +232,9 @@ impl PythonTool {
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
 
-        // check for forbidden keywords - with capture
+        // TODO(ssoudan) use PyModule::from_code ?
 
+        // check for forbidden keywords - with capture
         if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
             return Err(ToolUseError::ToolInvocationFailed(format!(
                 "Python code contains forbidden keywords such as {}",
@@ -289,7 +290,7 @@ impl PythonTool {
 
             let inputs = inputs.join(", ");
             let inputs = if inputs.is_empty() {
-                "".to_string()
+                "(self)".to_string()
             } else {
                 format!("(self, {})", inputs)
             };

@@ -12,7 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki", "arxiv", "summarize"]
+default = ["wiki", "arxiv", "summarize", "search"]
 # Hue lights
 hue = ["dep:huelib2"]
 # MediaWiki: Wikipedia, Wikidata
@@ -21,6 +21,8 @@ wiki = ["dep:mediawiki", "dep:serde_json"]
 arxiv = ["dep:arxiv-rs"]
 # Summarization
 summarize = ["dep:async-openai"]
+# Search
+search = ["dep:reqwest"]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.4.0" }
@@ -30,6 +32,8 @@ huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.10", optional = true  }
 
 arxiv-rs = { version = "0.1.5", optional = true }
+
+reqwest = { version = "0.11", features = ["json"], optional = true }
 
 serde = { version = "1.0.160", features = ["derive"] }
 serde_yaml = "0.9.21"
@@ -63,3 +67,4 @@ normal = ["pyo3-asyncio"]
 name = "e2e"
 path = "tests/e2e.rs"
 harness = false
+

@@ -101,7 +101,8 @@ pub enum ToolUseError {
 struct ToolInvocationInput {
     command: String,
     input: serde_yaml::Value,
-    output: Option<serde_yaml::Value>,
+    #[serde(skip_serializing_if = "HashMap::is_empty", flatten)]
+    junk: HashMap<String, serde_yaml::Value>,
 }
 
 /// Something meant to become a [`Tool`] - description
@@ -338,11 +339,20 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String
 
             // if any tool_invocations have an 'output' field, we return an error
             for invocation in tool_invocations.iter() {
-                if invocation.output.is_some() {
+                if !invocation.junk.is_empty() {
+                    let junk_keys = invocation
+                        .junk
+                        .keys()
+                        .cloned()
+                        .collect::<Vec<String>>()
+                        .join(", ");
+
+                    // TODO(ssoudan) they should not reach the ChatHistory
+
                     return (
                         "unknown".to_string(),
                         Err(ToolUseError::ToolInvocationFailed(
-                            "The Action cannot have an `output` field. Only `command` and `input` are allowed.".to_string(),
+                            format!("The Action cannot have fields: {}. Only `command` and `input` are allowed.", junk_keys),
                         )),
                     );
                 }
@@ -361,5 +371,161 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String
             }
         }
         Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidInput(e))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use indoc::indoc;
+    use insta::assert_display_snapshot;
+    use serde::{Deserialize, Serialize};
+    use serde_yaml::Number;
+
+    #[tokio::test]
+    async fn test_extraction_of_one_yaml() {
+        let data = indoc! {r#"# Some text
+        ```yaml
+        command: Search
+        input:
+          q: Marcel Deneuve
+          excluded_terms: Resident Evil
+          num_results: 10
+        ```        
+        Some other text
+        "#};
+
+        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
+
+        assert_eq!(tool_invocations.len(), 1);
+
+        let invocation = &tool_invocations[0];
+
+        assert_eq!(invocation.command, "Search");
+    }
+
+    #[tokio::test]
+    async fn test_extraction_of_one_yaml_with_output() {
+        let data = indoc! {r#"# Some text
+        ```yaml
+        command: Search
+        input:
+          q: Marcel Deneuve
+          excluded_terms: Resident Evil
+          num_results: 10
+        output: 
+          something: | 
+            Marcel Deneuve is a character in the Resident Evil film series, playing a minor role in Resident Evil: Apocalypse and a much larger role in Resident Evil: Extinction. Explore historical records and family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
+        ```        
+        Some other text
+        "#};
+
+        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
+
+        assert_eq!(tool_invocations.len(), 1);
+
+        let invocation = &tool_invocations[0];
+
+        assert_eq!(invocation.command, "Search");
+        assert_eq!(invocation.input.get("q").unwrap(), "Marcel Deneuve");
+        assert_eq!(
+            invocation.input.get("excluded_terms").unwrap(),
+            "Resident Evil"
+        );
+        assert_eq!(
+            invocation.input.get("num_results").unwrap(),
+            &serde_yaml::Value::Number(Number::from(10))
+        );
+        assert!(!invocation.junk.is_empty());
+        assert!(invocation.junk.get("output").is_some());
+    }
+
+    #[tokio::test]
+    async fn test_extraction_of_three_yaml_with_output() {
+        let data = indoc! {r#"# Some text
+        ```yaml
+        command: Search
+        input:
+          q: Marcel Deneuve
+          excluded_terms: Resident Evil
+          num_results: 10
+        output: 
+          something: | 
+            Marcel Deneuve is a character in the Resident Evil film series, playing a minor role in Resident Evil: Apocalypse and a much larger role in Resident Evil: Extinction. Explore historical records and family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
+        ```        
+        Some other text
+        ```yaml
+        command: Erf
+        input:
+          q: Marcel Prouse
+          excluded_terms: La Recherche du Temps Perdu
+          num_results: 10
+        ```        
+        Some other other text
+        ```yaml
+        command: Plaff
+        input:
+          q: Marcel et son Orchestre
+          excluded_terms: Les Vaches
+          num_results: 10
+        ```
+        That's all folks!          
+        "#};
+
+        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
+
+        assert_eq!(tool_invocations.len(), 3);
+
+        let invocation = &tool_invocations[0];
+        assert_eq!(invocation.command, "Plaff");
+
+        let invocation = &tool_invocations[1];
+        assert_eq!(invocation.command, "Erf");
+
+        let invocation = &tool_invocations[2];
+        assert_eq!(invocation.command, "Search");
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct FakeToolInput {
+        q: String,
+        excluded_terms: Option<String>,
+        num_results: Option<u32>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct FakeToolOutput {
+        items: Vec<String>,
+    }
+
+    #[tokio::test]
+    async fn test_serializing_tool_invocation() {
+        let input = FakeToolInput {
+            q: "Marcel Deneuve".to_string(),
+            excluded_terms: Some("Resident Evil".to_string()),
+            num_results: Some(10),
+        };
+
+        let output = FakeToolOutput {
+            items: vec![
+                "Marcel Deneuve is a character in the Resident Evil film series,".to_string(), 
+                "playing a minor role in Resident Evil: Apocalypse and a much larger".to_string(),
+                " role in Resident Evil: Extinction. Explore historical records and ".to_string(),
+                "family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.".to_string()
+            ]
+        };
+
+        let junk = vec![("output".to_string(), serde_yaml::to_value(output).unwrap())];
+
+        let invocation = super::ToolInvocationInput {
+            command: "Search".to_string(),
+            input: serde_yaml::to_value(input).unwrap(),
+            junk: HashMap::from_iter(junk.into_iter()),
+        };
+
+        let serialized = serde_yaml::to_string(&invocation).unwrap();
+
+        assert_display_snapshot!(serialized);
     }
 }

@@ -1,0 +1,8 @@
+---
+source: sapiens_tools/tests/search.rs
+expression: output
+---
+stdout: |
+  4
+stderr: ''
+

@@ -1,5 +1,5 @@
 ---
-source: sapiens_tools/tests/e2e.rs
+source: sapiens_tools/tests/arxiv.rs
 expression: output
 ---
 stdout: ''
