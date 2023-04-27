@@ -70,7 +70,7 @@ impl From<ConcludeToolInput> for TerminationMessage {
 pub struct ConcludeToolOutput {}
 
 impl ConcludeTool {
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &ConcludeToolInput,
@@ -80,7 +80,7 @@ impl ConcludeTool {
             let mut done = self.done.lock().await;
 
             if done.is_some() {
-                return Err(ToolUseError::ToolInvocationFailed(
+                return Err(ToolUseError::InvocationFailed(
                     "This task is already done.".to_string(),
                 ));
             }

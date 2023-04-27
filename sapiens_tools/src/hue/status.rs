@@ -78,7 +78,7 @@ impl StatusTool {
                 }
                 Ok(StatusToolOutput { lights: res })
             })
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?
     }
 }
 
@@ -105,7 +105,7 @@ impl SetStatusTool {
         SetStatusTool { bridge }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &SetStatusToolInput,
@@ -127,7 +127,7 @@ impl SetStatusTool {
                 self.bridge
                     .set_light_state(&light.id, &state)
                     .map_err(|e| {
-                        ToolUseError::ToolInvocationFailed(format!(
+                        ToolUseError::InvocationFailed(format!(
                             "Failed to set light state for light {}: {}",
                             light.id, e
                         ))
@@ -143,7 +143,7 @@ impl SetStatusTool {
             .unwrap_or_default();
 
         if light_ids.is_empty() {
-            return Err(ToolUseError::ToolInvocationFailed(
+            return Err(ToolUseError::InvocationFailed(
                 "No lights to set status for".to_string(),
             ));
         }
@@ -152,7 +152,7 @@ impl SetStatusTool {
         let lights_status: Vec<Light> = self
             .bridge
             .get_all_lights()
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?
             .into_iter()
             .map(|l| l.into())
             .collect();
@@ -244,6 +244,7 @@ pub mod fake {
     }
 
     impl FakeStatusTool {
+        #[tracing::instrument(skip(self))]
         async fn invoke_typed(
             &self,
             input: &StatusToolInput,

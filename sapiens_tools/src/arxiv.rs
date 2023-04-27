@@ -125,7 +125,7 @@ impl From<&ArxivToolInput> for ArxivQuery {
 /// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct ArxivToolOutput {
-    // TODO(ssoudan) proc_macro_derive to generate this
+    // FUTURE(ssoudan) proc_macro_derive to generate this
     /// query result. `ArxivResult` is an object containing the following
     /// fields:
     /// - `id`: <str> arXiv ID
@@ -188,19 +188,19 @@ impl ArxivTool {
         ArxivTool {}
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(&self, input: &ArxivToolInput) -> Result<ArxivToolOutput, ToolUseError> {
         let query = ArxivQuery::from(input);
 
         if query.max_results.unwrap_or(0) > 100 {
-            return Err(ToolUseError::ToolInvocationFailed(
+            return Err(ToolUseError::InvocationFailed(
                 "max_results cannot be greater than 100".to_string(),
             ));
         }
 
         let result = arxiv::fetch_arxivs(query)
             .await
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         let vec = result
             .into_iter()

@@ -112,8 +112,8 @@ impl Handler {
         let max_steps = 12;
         let task = new_message.content[4..].to_string();
 
-        // TODO(ssoudan) option to hide the warmup prompts
-        // TODO(ssoudan) ask to continue after max_steps
+        // FUTURE(ssoudan) option to hide the warmup prompts
+        // FUTURE(ssoudan) ask to continue after max_steps
 
         if task.is_empty() {
             warn!("Empty task, ignoring");
@@ -174,7 +174,7 @@ impl Handler {
             .await
             .unwrap();
 
-        // TODO(ssoudan) how to display tipping animation?
+        // FUTURE(ssoudan) how to display typing animation?
 
         // wait for job updates and post
         while let Some(job_update) = rx.next().await {
@@ -220,8 +220,8 @@ impl Handler {
 async fn main() -> PyResult<()> {
     let _ = dotenv_override();
 
-    // TODO(ssoudan) graceful shutdown
-    // TODO(ssoudan) build the chat history from the channel history
+    // FUTURE(ssoudan) graceful shutdown
+    // FUTURE(ssoudan) build the chat history from the channel history
 
     // install global subscriber configured based on RUST_LOG envvar.
     tracing_subscriber::fmt()

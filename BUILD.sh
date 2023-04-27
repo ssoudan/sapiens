@@ -16,9 +16,9 @@ NORMAL='\033[0m'
 GREEN='\033[0;32m'
 
 # comma separated list of features to use for the container build
-EXTRA_FEATURES="${EXTRA_FEATURES:-}"
+FEATURES="${FEATURES:-}"
 
-echo -e "${YELLOW}EXTRA_FEATURES: ${EXTRA_FEATURES}${NORMAL}\n"
+echo -e "${YELLOW}FEATURES: ${FEATURES}${NORMAL}\n"
 
 # test if tools are installed
 if ! command -v cargo > /dev/null 2>&1; then
@@ -32,22 +32,22 @@ if ! command -v docker > /dev/null 2>&1; then
 fi
 
 echo -e "${BLUE}Testing...${NORMAL}"
-cargo test --all --all-features || (echo -e "$RED [Tests failed] $NORMAL" && exit 1)
+cargo test --all --all-features --workspace || (echo -e "$RED [Tests failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Building...${NORMAL}"
-cargo build --all --all-features || (echo -e "$RED [Build failed] $NORMAL" && exit 1)
+cargo build --all --all-features --workspace || (echo -e "$RED [Build failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Testing...${NORMAL}"
-cargo test --all --no-default-features || (echo -e "$RED [Tests (no default) failed] $NORMAL" && exit 1)
+cargo test --all --no-default-features --workspace || (echo -e "$RED [Tests (no default) failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Building...${NORMAL}"
-cargo build --all --no-default-features || (echo -e "$RED [Build (no default) failed] $NORMAL" && exit 1)
+cargo build --all --no-default-features --workspace || (echo -e "$RED [Build (no default) failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Checking...${NORMAL}"
-cargo check --all --all-features --tests --benches --examples || (echo -e "$RED [Check failed] $NORMAL" && exit 1)
+cargo check --all --all-features --tests --benches --examples --workspace || (echo -e "$RED [Check failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Clippying...${NORMAL}"
-cargo clippy --all --all-features --tests --benches --examples -- -D clippy::all || (echo -e "$RED [Clippy failed] $NORMAL" && exit 1)
+cargo clippy --all --all-features --tests --benches --examples --workspace -- -D clippy::all || (echo -e "$RED [Clippy failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Formatting...${NORMAL}"
 cargo +nightly fmt --all -- --check || (echo -e "$RED [Format failed] $NORMAL" && exit 1)
@@ -65,7 +65,7 @@ cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Build containers...${NORMAL}"
 
-docker build --target sapiens_cli -t sapiens_cli --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
-docker build --target sapiens_bot -t sapiens_bot --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_cli -t sapiens_cli --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_bot -t sapiens_bot --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
 
 echo -e "$GREEN === OK === $NORMAL"

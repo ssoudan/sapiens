@@ -58,7 +58,7 @@ impl Default for Config {
         Self {
             model: "gpt-3.5-turbo".to_string(),
             max_steps: 10,
-            min_token_for_completion: 256,
+            min_token_for_completion: 512,
         }
     }
 }
@@ -238,7 +238,7 @@ impl<T: TaskProgressUpdateHandler> StepOrStop<T> {
 ///
 /// See ['StepOrStop::new'], [`StepOrStop::step`] and ['StepOrStop::run] for
 /// more flexible ways to run a task
-#[tracing::instrument(skip(toolbox, openai_client, handler))]
+#[tracing::instrument(skip(toolbox, openai_client, handler, config))]
 pub async fn run_to_the_end(
     toolbox: tools::Toolbox,
     openai_client: Client,

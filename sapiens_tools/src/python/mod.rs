@@ -21,16 +21,18 @@ const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
 ///
-/// - To use another Tool:
+/// - To use another Tool with input format `input_field_1` and `input_field_2`
+///   and output format with fields `output_field_1` and `output_field_2` use:
 /// ```python
-/// output = tools.ToolName(input_field_1=..., input_field_2=...)
-/// print(output['output_field_1'])
+/// result = tools.ToolName(input_field_1=..., input_field_2=...)
+/// print(result['output_field_1'])
+/// print(result['output_field_2'])
 /// ```
 /// - Only stdout and stderr are captured and made available (limited to 512B
 ///   total). If the output is larger, use `tools.Conclude` directly from the
 ///   code.
 /// - List available tools with `tools.list()`. And returns a list of
-///   `{'name':.., 'description':.., 'input':.., 'output':.., }`.
+///   `{'name':.., 'description':.., 'input_format':.., 'output_format':.., }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser, arxiv.
@@ -167,6 +169,7 @@ impl ToolsWrapper {
 }
 
 impl PythonTool {
+    #[tracing::instrument(skip(self, toolbox))]
     async fn invoke_typed(
         &self,
         toolbox: Toolbox,
@@ -215,7 +218,7 @@ impl PythonTool {
         });
 
         let (stdout, stderr) = res.map_err(|e| {
-            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
+            ToolUseError::InvocationFailed(format!("Python code execution failed: {}", e))
         })?;
 
         Ok(PythonToolOutput { stdout, stderr })
@@ -232,11 +235,11 @@ impl PythonTool {
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
 
-        // TODO(ssoudan) use PyModule::from_code ?
+        // FUTURE(ssoudan) use PyModule::from_code ?
 
         // check for forbidden keywords - with capture
         if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
-            return Err(ToolUseError::ToolInvocationFailed(format!(
+            return Err(ToolUseError::InvocationFailed(format!(
                 "Python code contains forbidden keywords such as {}",
                 caps.get(0).unwrap().as_str()
             )));
@@ -345,14 +348,14 @@ impl PythonTool {
         Ok(code)
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
         let code = input.code.clone();
 
         // check for forbidden keywords - with capture
         let re = regex::Regex::new(r"(exec|pip)").unwrap();
         if let Some(caps) = re.captures(&code) {
-            return Err(ToolUseError::ToolInvocationFailed(format!(
+            return Err(ToolUseError::InvocationFailed(format!(
                 "Python code contains forbidden keywords such as {}",
                 caps.get(0).unwrap().as_str()
             )));
@@ -386,7 +389,7 @@ impl PythonTool {
         });
 
         let (stdout, stderr) = res.map_err(|e| {
-            ToolUseError::ToolInvocationFailed(format!("Python code execution failed: {}", e))
+            ToolUseError::InvocationFailed(format!("Python code execution failed: {}", e))
         })?;
 
         Ok(PythonToolOutput { stdout, stderr })
@@ -403,7 +406,7 @@ impl ProtoToolInvoke for PythonTool {
         // check the size of the output (stdout and stderr)
         let l = output.stdout.len() + output.stderr.len();
         if l > MAX_OUTPUT_SIZE {
-            return Err(ToolUseError::ToolInvocationFailed(format!(
+            return Err(ToolUseError::InvocationFailed(format!(
                 "Python code produced too much output on stdout and stderr
         combined ({} bytes) - max is {}",
                 l, MAX_OUTPUT_SIZE

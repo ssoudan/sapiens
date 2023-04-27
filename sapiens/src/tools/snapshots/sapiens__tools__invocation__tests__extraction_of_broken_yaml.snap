@@ -1,0 +1,5 @@
+---
+source: sapiens/src/tools/invocation.rs
+expression: tool_invocations.err().unwrap()
+---
+Invalid yaml: mapping values are not allowed in this context at line 14 column 11

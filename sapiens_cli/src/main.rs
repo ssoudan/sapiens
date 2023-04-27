@@ -9,34 +9,33 @@ use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 // Usability:
-// TODO(ssoudan) Richer interaction
-// TODO(ssoudan) More tools: wx, negotiate
-// TODO(ssoudan) Discord bot with long-lived conversations
-// TODO(ssoudan) Settings
-// TODO(ssoudan) Token budget management and completion termination reason
-// TODO(ssoudan) Model parameters
-// TODO(ssoudan) allow the bot to share its doubt and ask for help
-// TODO(ssoudan) Crontab-like scheduling: get a summary of the news daily at 8am
-// TODO(ssoudan) better errors for python code
+// FUTURE(ssoudan) Richer interaction
+// FUTURE(ssoudan) More tools: wx, negotiate
+// FUTURE(ssoudan) Discord bot with long-lived conversations
+// FUTURE(ssoudan) Settings
+// FUTURE(ssoudan) Token budget management and completion termination reason
+// FUTURE(ssoudan) Model parameters
+// FUTURE(ssoudan) allow the bot to share its doubt and ask for help
+// FUTURE(ssoudan) Crontab-like scheduling: get a summary of the news daily
+// FUTURE(ssoudan) better errors for python code
 //
 // Deployability:
-// TODO(ssoudan) Limit how long a tool can run
-// TODO(ssoudan) more tests
-// TODO(ssoudan) monitoring
+// FUTURE(ssoudan) Limit how long a tool can run
+// FUTURE(ssoudan) monitoring
 //
 // Adoption:
-// TODO(ssoudan) More documentation and examples
-// TODO(ssoudan) A site?
+// FUTURE(ssoudan) More documentation and examples
+// FUTURE(ssoudan) A site?
 //
 // Explore:
-// TODO(ssoudan) other models?
-// TODO(ssoudan) memory?
-// TODO(ssoudan) vector stores?
-// TODO(ssoudan) prompt optimization
-// TODO(ssoudan) multiple models - critic?
-// TODO(ssoudan) multi-stage evaluation
-// TODO(ssoudan) log the conversation to build a dataset
-// TODO(ssoudan) categorize the outcomes - count the number of steps
+// FUTURE(ssoudan) other models?
+// FUTURE(ssoudan) memory?
+// FUTURE(ssoudan) vector stores?
+// FUTURE(ssoudan) prompt optimization
+// FUTURE(ssoudan) multiple models - critic?
+// FUTURE(ssoudan) multi-stage evaluation
+// FUTURE(ssoudan) log the conversation to build a dataset
+// FUTURE(ssoudan) categorize the outcomes - count the number of steps
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
