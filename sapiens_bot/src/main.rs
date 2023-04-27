@@ -64,6 +64,12 @@ impl EventHandler for Handler {
             return;
         }
 
+        // if messages is from a bot, ignore
+        if new_message.author.bot {
+            trace!("Message is from a bot, ignoring");
+            return;
+        }
+
         if new_message.content.starts_with("DO: ") {
             self.do_task(&ctx, &new_message).await;
             return;
