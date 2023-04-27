@@ -15,7 +15,7 @@ mod hue_test {
         let data = indoc! {r#"
     # Action
     ```yaml
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
       code: |
         room_name = "Bedroom"
@@ -78,7 +78,7 @@ mod arxiv {
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
-   command: SandboxedPython
+   tool_name: SandboxedPython
    input:
      code: |           
            import datetime               
@@ -113,7 +113,7 @@ mod arxiv {
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
-   command: SandboxedPython
+   tool_name: SandboxedPython
    input:
      code: |           
            import datetime               
@@ -141,7 +141,7 @@ mod arxiv {
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
-   command: SandboxedPython
+   tool_name: SandboxedPython
    input:
      code: |
         latest_papers = tools.Arxiv(
@@ -171,7 +171,7 @@ mod arxiv {
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
       code: |
         latest_papers = tools.Arxiv(
@@ -230,7 +230,7 @@ mod search {
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
-   command: SandboxedPython
+   tool_name: SandboxedPython
    input:
      code: |                
          input = {"q": "rust" }     

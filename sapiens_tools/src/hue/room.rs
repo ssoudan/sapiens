@@ -81,7 +81,7 @@ impl RoomTool {
                 }
                 Ok(RoomToolOutput { rooms })
             })
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?
     }
 }
 
@@ -97,6 +97,7 @@ pub mod fake {
     pub struct FakeRoomTool {}
 
     impl FakeRoomTool {
+        #[tracing::instrument(skip(self))]
         async fn invoke_typed(
             &self,
             input: &RoomToolInput,

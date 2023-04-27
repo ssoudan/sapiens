@@ -55,6 +55,7 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 
 `.env` file with: 
 ```
+FEATURES=wiki,search,arxiv,hue,summarize
 OPENAI_API_KEY=...
 DISCORD_TOKEN=...
 GUILD_ID=...
@@ -70,6 +71,7 @@ Once the bot is running, you can interact with it on Discord with: `DO: Tell me 
 
 `.env` file with: 
 ```
+FEATURES=wiki,search,arxiv,hue,summarize
 OPENAI_API_KEY=...
 HUE_USERNAME=...
 HUE_BRIDGE_IP=...
@@ -122,7 +124,7 @@ Observations, Orientation, Decision, The ONLY Action?
 - I will demonstrate how to solve the equation "x^2 - 5x + 6 = 0" using Sympy and present the solution to the Conclude tool.
 ## The ONLY Action:
 ```yaml
-command: SandboxedPython
+tool_name: SandboxedPython
 input:
   code: |
     from sympy import symbols, solve
@@ -155,7 +157,7 @@ Observations, Orientation, Decision, The ONLY Action?
 - Use the Conclude Tool to terminate the task when I have presented the solution in plain text.
 ## The ONLY Action:
 ```yaml
-command: Conclude
+tool_name: Conclude
 input:
   original_question: Show me an example of how to use Sympy to solve a math problem.
   conclusion: |
@@ -196,7 +198,7 @@ The solution is the roots of the equation: [2, 3].
 - We will use the SandboxedPython tool to extract the temperature and other relevant info of San Jose from the HTML data.
 ## The ONLY Action:
 ```yaml
-command: SandboxedPython
+tool_name: SandboxedPython
 input:
   code: |
     import requests
@@ -243,7 +245,7 @@ Observations, Orientation, Decision, The ONLY Action?
 - We will use the Conclude Tool to terminate the task with the information extracted.
 ## The ONLY Action:
 ```yaml
-command: Conclude
+tool_name: Conclude
 input:
   original_question: "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
   conclusion: "The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ..."
@@ -296,7 +298,7 @@ Please use the following format for your response - no need to be verbose:
 - ...
 ## The ONLY Action: <Do not give multiple command. Only one per response.>
 ```yaml
-command: <ToolName>
+tool_name: <ToolName>
 input:
   <... using the `input_format` for the Tool ...>
 ```
@@ -349,7 +351,7 @@ Bot:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:
 ```yaml
-command: SandboxedPythonTool
+tool_name: SandboxedPythonTool
 input:
   code: |
     lst = [2, 3, 1, 4, 5]
@@ -384,7 +386,7 @@ Bot:
 - Use the ConcludeTool to terminate the task with the sorted list.
 # The ONLY Action:
 ```yaml
-command: ConcludeTool
+tool_name: ConcludeTool
 input:
   conclusion: |
     The ascending sorted list is [1, 2, 3, 4, 5].
@@ -411,7 +413,7 @@ Bot:
 - Use the LightStatusTool to find the status of the lights in the room.
 # The ONLY Action:
 ```yaml
-command: RoomTool
+tool_name: RoomTool
 input:
   room_filter: ["office"]
 ```
@@ -441,7 +443,7 @@ Bot:
 - Use the RoomTool to fetch the list of all rooms and their details.
 # The ONLY Action:
 ```yaml
-command: RoomTool
+tool_name: RoomTool
 input:
   room_filter: []
 ```
@@ -509,7 +511,7 @@ Bot:
 - Use the LightStatusTool to get the status of lights in all rooms.
 # The ONLY Action:
 ```yaml
-command: LightStatusTool
+tool_name: LightStatusTool
 input:
   light_filter: []
 ```
@@ -760,7 +762,7 @@ Bot:
 - Use the LightStatusTool to query the status of lights in that room.
 # The ONLY Action:
 ```yaml
-command: RoomTool
+tool_name: RoomTool
 input:
   room_filter: []
 ```
@@ -826,7 +828,7 @@ Bot:
 - Use the LightStatusTool to find the status of the lights in the Office room.
 # The ONLY Action:
 ```yaml
-command: LightStatusTool
+tool_name: LightStatusTool
 input:
   light_filter: ["13", "27", "2", "16", "26", "25", "24", "15", "17", "18", "20"]
 ```
@@ -940,7 +942,7 @@ Bot:
 - Inform the user.
 # The ONLY Action:
 ```yaml
-command: ConcludeTool
+tool_name: ConcludeTool
 input:
   conclusion: |
     All the lights in the user's most likely work place are currently off.

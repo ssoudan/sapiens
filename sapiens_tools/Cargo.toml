@@ -22,7 +22,7 @@ arxiv = ["dep:arxiv-rs"]
 # Summarization
 summarize = ["dep:async-openai"]
 # Search
-search = ["dep:reqwest"]
+search = ["dep:reqwest", "dep:serde_json"]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.4.1" }

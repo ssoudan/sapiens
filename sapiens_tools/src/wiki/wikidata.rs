@@ -53,7 +53,7 @@ impl WikidataTool {
         Self { client }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &WikidataToolInput,
@@ -62,7 +62,7 @@ impl WikidataTool {
             .client
             .sparql_query(&input.query)
             .await
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         Ok(WikidataToolOutput {
             result: serde_json::to_string(&result).unwrap(),

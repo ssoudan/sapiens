@@ -7,8 +7,11 @@ use crate::tools::{ToolDescription, ToolUseError, Toolbox};
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed iteratively using an OODA loop.
 
-Action result will be provided to you. The loop will repeated until you have the answer to the original question. No task is complete until the Conclude Tool is used to provide the answer.
-You cannot use jinja2 templating in your response. Be concise. 
+- Action result will be provided to you. 
+- Never produce the result of an Action. 
+- The loop will repeated until you have the answer to the original question. 
+- No task is complete until the Conclude Tool is used to provide the answer.
+- You cannot use jinja2 templating in your response. Be concise. 
 ";
 
 const TOOL_PREFIX: &str = r"
@@ -18,7 +21,7 @@ const TOOL_PREFIX: &str = r"
 const FORMAT: &str = r"
 # Format of your response
 
-Please use the following format for your response - no need to be verbose. Comments are in bold and should be removed from your response.
+You must use the following format for your response. Comments are in bold and should be removed from your response.
 ====================
 ## Observations: 
 **What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**
@@ -30,14 +33,19 @@ Please use the following format for your response - no need to be verbose. Comme
 **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
 - ...
 ## The ONLY Action: 
-**Take a single Action consisting of exactly one tool invocation (`command` and `input`). The available Tools listed below. Use Conclude Tool when you have the final answer to the original question.**
-Never give more than one `command` and one `input` fields. Never give more than one YAML.  
+**Take a single Action consisting of exactly one pair of `tool_name` and `input`. Never give more than one YAML. **
 ```yaml
-command: <ToolName>
+tool_name: <ToolName>
 input:
-  <... using the `input_format` for the Tool ...>
+    ...  
 ```
 ====================
+
+Notes: 
+- Action has the following fields: `tool_name` and `input` ONLY.
+- `input` uses the `input_format` for the Tool.
+- `output_format` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
+- One Action at a time. No more. No less.
 ";
 
 const PROTO_EXCHANGE_2: &str = r#"
@@ -46,14 +54,15 @@ const PROTO_EXCHANGE_2: &str = r#"
 - I need to sort this list in ascending order.
 ## Orientation:
 - SandboxedPython can be used to sort the list.
-- I need to provide only the `command` and `input` fields for the SandboxedPython Tool.
+- I need to provide only the `tool_name` and `input` fields for the SandboxedPython Tool.
+- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list
 - I need to provide the conclusion in plain text to the Conclude Tool.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:
 ```yaml
-command: SandboxedPython
+tool_name: SandboxedPython
 input:
   code: |
     lst = [2, 3, 1, 4, 5]
@@ -78,12 +87,12 @@ const PROTO_EXCHANGE_4: &str = r"
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
-- I need to provide the `command` and `input` fields for the Conclude Tool.
+- I need to provide the `tool_name` and `input` fields for the Conclude Tool.
 ## Decision:
 - Use the Conclude Tool to terminate the task with the sorted list.
 ## The ONLY Action:
 ```yaml
-command: Conclude
+tool_name: Conclude
 input:
   original_question: |
     Sort in ascending order: [2, 3, 1, 4, 5]

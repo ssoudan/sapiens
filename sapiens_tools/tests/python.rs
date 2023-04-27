@@ -11,7 +11,7 @@ async fn test_tool_invocation() -> PyResult<()> {
     let data = indoc! {r#"
     # Action
     ```yaml        
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
         code: |
             print("Hello world!")          
@@ -34,7 +34,7 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
     let data = indoc! {r#"
     # Action
     ```yaml        
-    command: Conclude
+    tool_name: Conclude
     input:
         original_question: |
             print("Hello world!")
@@ -61,7 +61,7 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
     let data = indoc! {r#"
     # Action
     ```yaml        
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
         code: |
             print("Hello world!")
@@ -89,7 +89,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     let data = indoc! {r#"
     # Action
     ```yaml        
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
         code: |
             print("Hello world 1!")          
@@ -97,7 +97,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     
     # And another action
     ```yaml        
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
         code: |
             print("Hello world 2!")          
@@ -105,7 +105,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     
     # And yet another action
     ```        
-    command: SandboxedPython
+    tool_name: SandboxedPython
     input:
         code: |
             print("Hello world 3!")          
@@ -131,7 +131,7 @@ async fn test_python() -> PyResult<()> {
     toolbox.add_advanced_tool(PythonTool::default()).await;
 
     let data = indoc! {r#"```yaml
-   command: SandboxedPython
+   tool_name: SandboxedPython
    input:
      code: |           
        args = {

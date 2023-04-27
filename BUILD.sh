@@ -16,9 +16,9 @@ NORMAL='\033[0m'
 GREEN='\033[0;32m'
 
 # comma separated list of features to use for the container build
-EXTRA_FEATURES="${EXTRA_FEATURES:-}"
+FEATURES="${FEATURES:-}"
 
-echo -e "${YELLOW}EXTRA_FEATURES: ${EXTRA_FEATURES}${NORMAL}\n"
+echo -e "${YELLOW}FEATURES: ${FEATURES}${NORMAL}\n"
 
 # test if tools are installed
 if ! command -v cargo > /dev/null 2>&1; then
@@ -65,7 +65,7 @@ cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
 
 echo -e "${BLUE}Build containers...${NORMAL}"
 
-docker build --target sapiens_cli -t sapiens_cli --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
-docker build --target sapiens_bot -t sapiens_bot --build-arg EXTRA_FEATURES="${EXTRA_FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_cli -t sapiens_cli --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_bot -t sapiens_bot --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
 
 echo -e "$GREEN === OK === $NORMAL"

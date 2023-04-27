@@ -2,10 +2,15 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-pub use llm_chain::parsing::{find_yaml, ExtractionError};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use tokio::sync::RwLock;
+use tracing::{debug, info, warn};
+
+use crate::tools::invocation::InvocationError;
+
+/// Tools to extract Tool invocations from a messages
+pub mod invocation;
 
 /// Part of a [`Format`]
 #[derive(Debug, Clone)]
@@ -88,19 +93,28 @@ pub enum ToolUseError {
     ToolNotFound(String),
     /// Tool invocation failed
     #[error("Tool invocation failed: {0}")]
-    ToolInvocationFailed(String),
-    /// Invalid YAML
-    #[error("Invalid YAML: {0}")]
-    InvalidYaml(#[from] serde_yaml::Error),
+    InvocationFailed(String),
+    /// Failed to serialize the output
+    #[error("Failed to serialize the output: {0}")]
+    InvalidOutput(#[from] serde_yaml::Error),
     /// Invalid input
     #[error("Invalid input: {0}")]
-    InvalidInput(#[from] ExtractionError),
+    InvalidInput(#[from] InvocationError),
+    /// No action found
+    #[error("No action found")]
+    NoActionFound,
 }
 
+/// A tool invocation input
 #[derive(Serialize, Deserialize, Debug)]
-struct ToolInvocationInput {
-    command: String,
+pub(crate) struct ToolInvocationInput {
+    /// The tool to invoke
+    tool_name: String,
+    // TODO(ssoudan) should this be flattened?
+    // TODO(ssoudan) should this be called `spec`?
+    /// The input to the tool
     input: serde_yaml::Value,
+    /// The junk
     #[serde(skip_serializing_if = "HashMap::is_empty", flatten)]
     junk: HashMap<String, serde_yaml::Value>,
 }
@@ -322,55 +336,71 @@ pub async fn invoke_simple_from_toolbox(
 /// corresponding tool.
 ///
 /// If multiple tool invocations are found, only the first one is used.
-#[tracing::instrument]
+#[tracing::instrument(skip(toolbox, data))]
 pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String, ToolUseError>) {
-    let tool_invocations = find_yaml::<ToolInvocationInput>(data);
+    let invocation = choose_invocation(data).await;
 
-    match tool_invocations {
-        Ok(tool_invocations) => {
-            if tool_invocations.is_empty() {
-                return (
-                    "unknown".to_string(),
-                    Err(ToolUseError::ToolInvocationFailed(
-                        "No Action found".to_string(),
-                    )),
-                );
-            }
+    match invocation {
+        Ok(invocation) => {
+            debug!(tool_name = invocation.tool_name, "Invocation found");
 
-            // if any tool_invocations have an 'output' field, we return an error
-            for invocation in tool_invocations.iter() {
-                if !invocation.junk.is_empty() {
-                    let junk_keys = invocation
-                        .junk
-                        .keys()
-                        .cloned()
-                        .collect::<Vec<String>>()
-                        .join(", ");
+            let tool_name = invocation.tool_name.clone();
+            let input = invocation.input;
+            let result = invoke_from_toolbox(toolbox, &tool_name, input).await;
 
-                    // TODO(ssoudan) they should not reach the ChatHistory
-
-                    return (
-                        "unknown".to_string(),
-                        Err(ToolUseError::ToolInvocationFailed(
-                            format!("The Action cannot have fields: {}. Only `command` and `input` are allowed.", junk_keys),
-                        )),
-                    );
-                }
-            }
-
-            // Take the first invocation - the list is reversed
-            let invocation_input = &tool_invocations.last().unwrap();
-
-            let tool_name = invocation_input.command.clone();
-
-            let input = invocation_input.input.clone();
-
-            match invoke_from_toolbox(toolbox, &invocation_input.command, input).await {
-                Ok(o) => (tool_name, Ok(serde_yaml::to_string(&o).unwrap())),
+            match result {
+                Ok(output) => (
+                    tool_name,
+                    serde_yaml::to_string(&output).map_err(ToolUseError::InvalidOutput),
+                ),
                 Err(e) => (tool_name, Err(e)),
             }
         }
-        Err(e) => ("unknown".to_string(), Err(ToolUseError::InvalidInput(e))),
+        Err(e) => ("unknown".to_string(), Err(e)),
+    }
+}
+
+async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseError> {
+    match invocation::find_all(data) {
+        Ok(tool_invocations) => {
+            info!("{} Tool invocations found", tool_invocations.len());
+
+            // if no tool_invocations are found, we return an error
+            if tool_invocations.is_empty() {
+                return Err(ToolUseError::NoActionFound);
+            }
+
+            // We just take the first one
+            let mut invocation = tool_invocations.into_iter().next().unwrap();
+
+            // TODO(ssoudan) clean up the object and return this one instead
+            // if any tool_invocations have an 'output' field, we return an error
+            if !invocation.junk.is_empty() {
+                let junk_keys = invocation
+                    .junk
+                    .keys()
+                    .cloned()
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                // TODO(ssoudan) they should not reach the ChatHistory
+                warn!(
+                    ?junk_keys,
+                    "The Action should not have fields: {}.", junk_keys
+                );
+
+                // We just remove them for now
+                invocation.junk.clear();
+
+                // return Err(ToolUseError::InvocationFailed(format!(
+                //     "The Action cannot have fields: {}. Only `command` and
+                // `input` are allowed.",     junk_keys
+                // )));
+            }
+
+            Ok(invocation)
+        }
+        Err(e) => Err(ToolUseError::InvalidInput(e)),
     }
 }
 
@@ -378,114 +408,8 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String
 mod tests {
     use std::collections::HashMap;
 
-    use indoc::indoc;
     use insta::assert_display_snapshot;
     use serde::{Deserialize, Serialize};
-    use serde_yaml::Number;
-
-    #[tokio::test]
-    async fn test_extraction_of_one_yaml() {
-        let data = indoc! {r#"# Some text
-        ```yaml
-        command: Search
-        input:
-          q: Marcel Deneuve
-          excluded_terms: Resident Evil
-          num_results: 10
-        ```        
-        Some other text
-        "#};
-
-        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
-
-        assert_eq!(tool_invocations.len(), 1);
-
-        let invocation = &tool_invocations[0];
-
-        assert_eq!(invocation.command, "Search");
-    }
-
-    #[tokio::test]
-    async fn test_extraction_of_one_yaml_with_output() {
-        let data = indoc! {r#"# Some text
-        ```yaml
-        command: Search
-        input:
-          q: Marcel Deneuve
-          excluded_terms: Resident Evil
-          num_results: 10
-        output: 
-          something: | 
-            Marcel Deneuve is a character in the Resident Evil film series, playing a minor role in Resident Evil: Apocalypse and a much larger role in Resident Evil: Extinction. Explore historical records and family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
-        ```        
-        Some other text
-        "#};
-
-        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
-
-        assert_eq!(tool_invocations.len(), 1);
-
-        let invocation = &tool_invocations[0];
-
-        assert_eq!(invocation.command, "Search");
-        assert_eq!(invocation.input.get("q").unwrap(), "Marcel Deneuve");
-        assert_eq!(
-            invocation.input.get("excluded_terms").unwrap(),
-            "Resident Evil"
-        );
-        assert_eq!(
-            invocation.input.get("num_results").unwrap(),
-            &serde_yaml::Value::Number(Number::from(10))
-        );
-        assert!(!invocation.junk.is_empty());
-        assert!(invocation.junk.get("output").is_some());
-    }
-
-    #[tokio::test]
-    async fn test_extraction_of_three_yaml_with_output() {
-        let data = indoc! {r#"# Some text
-        ```yaml
-        command: Search
-        input:
-          q: Marcel Deneuve
-          excluded_terms: Resident Evil
-          num_results: 10
-        output: 
-          something: | 
-            Marcel Deneuve is a character in the Resident Evil film series, playing a minor role in Resident Evil: Apocalypse and a much larger role in Resident Evil: Extinction. Explore historical records and family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
-        ```        
-        Some other text
-        ```yaml
-        command: Erf
-        input:
-          q: Marcel Prouse
-          excluded_terms: La Recherche du Temps Perdu
-          num_results: 10
-        ```        
-        Some other other text
-        ```yaml
-        command: Plaff
-        input:
-          q: Marcel et son Orchestre
-          excluded_terms: Les Vaches
-          num_results: 10
-        ```
-        That's all folks!          
-        "#};
-
-        let tool_invocations = super::find_yaml::<super::ToolInvocationInput>(data).unwrap();
-
-        assert_eq!(tool_invocations.len(), 3);
-
-        let invocation = &tool_invocations[0];
-        assert_eq!(invocation.command, "Plaff");
-
-        let invocation = &tool_invocations[1];
-        assert_eq!(invocation.command, "Erf");
-
-        let invocation = &tool_invocations[2];
-        assert_eq!(invocation.command, "Search");
-    }
 
     #[derive(Debug, Serialize, Deserialize)]
     struct FakeToolInput {
@@ -508,18 +432,19 @@ mod tests {
         };
 
         let output = FakeToolOutput {
-            items: vec![
-                "Marcel Deneuve is a character in the Resident Evil film series,".to_string(), 
-                "playing a minor role in Resident Evil: Apocalypse and a much larger".to_string(),
-                " role in Resident Evil: Extinction. Explore historical records and ".to_string(),
-                "family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.".to_string()
-            ]
+        items: vec![
+            "Marcel Deneuve is a character in the Resident Evil film series,".to_string(), 
+            "playing a minor role in Resident Evil: Apocalypse and a much larger".to_string(),
+            " role in Resident Evil: Extinction. Explore historical records and ".to_string(),
+            "family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.".to_string()
+        ]
+
         };
 
         let junk = vec![("output".to_string(), serde_yaml::to_value(output).unwrap())];
 
         let invocation = super::ToolInvocationInput {
-            command: "Search".to_string(),
+            tool_name: "Search".to_string(),
             input: serde_yaml::to_value(input).unwrap(),
             junk: HashMap::from_iter(junk.into_iter()),
         };

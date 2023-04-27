@@ -127,7 +127,7 @@ impl SearchTool {
         }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &SearchToolInput,
@@ -136,20 +136,20 @@ impl SearchTool {
 
         let resp = self.do_query(query_params).await;
 
-        let resp = resp.map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+        let resp = resp.map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         if resp.status().is_success() {
             let body = resp
                 .text()
                 .await
-                .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+                .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
             let resp = match serde_json::from_str::<SearchResults>(&body) {
                 Ok(resp) => resp,
                 Err(e) => {
                     error!(body = body, "Error parsing response: {}", e);
 
-                    return Err(ToolUseError::ToolInvocationFailed(e.to_string()));
+                    return Err(ToolUseError::InvocationFailed(e.to_string()));
                 }
             };
 
@@ -170,9 +170,9 @@ impl SearchTool {
             let body = resp
                 .json::<ErrorBody>()
                 .await
-                .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+                .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
-            Err(ToolUseError::ToolInvocationFailed(format!(
+            Err(ToolUseError::InvocationFailed(format!(
                 "Error code {}: {}",
                 code, body.error.message
             )))
@@ -181,7 +181,7 @@ impl SearchTool {
 
     async fn do_query(&self, mut query_params: QueryParameters) -> Result<Response, ToolUseError> {
         let url =
-            Url::parse(gce::URL).map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+            Url::parse(gce::URL).map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         let query_params = query_params.key(&self.api_key).cx(&self.cse_id);
 
@@ -196,7 +196,7 @@ impl SearchTool {
                 .await
         };
 
-        resp.map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))
+        resp.map_err(|e| ToolUseError::InvocationFailed(e.to_string()))
     }
 }
 

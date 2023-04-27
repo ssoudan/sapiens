@@ -24,7 +24,7 @@ pub struct DummyToolOutput {
 }
 
 impl DummyTool {
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(&self, input: &DummyToolInput) -> Result<DummyToolOutput, ToolUseError> {
         Ok(DummyToolOutput {
             something: input.blah.clone() + " and something else",

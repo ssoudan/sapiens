@@ -1,8 +1,8 @@
 ---
-source: sapiens/src/tools.rs
+source: sapiens/src/tools/mod.rs
 expression: serialized
 ---
-command: Search
+tool_name: Search
 input:
   q: Marcel Deneuve
   excluded_terms: Resident Evil

@@ -42,7 +42,7 @@ pub struct WikipediaToolInput {
     ///     titles: Albert Einstein
     /// ```
     /// - Values can be either strings or numbers. Or lists of them.
-    /// - The output size is limited. Be specific and use limits where possible.
+    /// - The result size is limited. Be specific and use limits where possible.
     parameters: HashMap<String, Value>,
     /// maximum number of results to return - if not specified, all results are
     /// returned.
@@ -66,7 +66,7 @@ impl WikipediaTool {
         WikipediaTool { client }
     }
 
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &WikipediaToolInput,
@@ -82,7 +82,7 @@ impl WikipediaTool {
                         .map(|v| match v {
                             Value::String(s) => Ok(s),
                             Value::Number(n) => Ok(n.to_string()),
-                            _ => Err(ToolUseError::ToolInvocationFailed(format!(
+                            _ => Err(ToolUseError::InvocationFailed(format!(
                                 "Unsupported value type for parameter: {:?}. Only <str> or <number>
         and list of them supported.",
                                 k
@@ -93,7 +93,7 @@ impl WikipediaTool {
                 )),
                 Value::String(s) => Ok((k, s)),
                 Value::Number(n) => Ok((k, n.to_string())),
-                _ => Err(ToolUseError::ToolInvocationFailed(format!(
+                _ => Err(ToolUseError::InvocationFailed(format!(
                     "Unsupported value type for parameter: {:?}. Only <str>
         or <number> and list of them supported.",
                     k
@@ -105,7 +105,7 @@ impl WikipediaTool {
             .client
             .get_query_api_json_limit(&query, input.limit)
             .await
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         Ok(WikipediaToolOutput {
             result: serde_json::to_string(&result).unwrap(),

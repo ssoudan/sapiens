@@ -63,7 +63,7 @@ pub struct SummarizeToolOutput {
 }
 
 impl SummarizeTool {
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     async fn invoke_typed(
         &self,
         input: &SummarizeToolInput,
@@ -77,7 +77,7 @@ impl SummarizeTool {
         }
 
         if input.text.len() > 2000 {
-            return Err(ToolUseError::ToolInvocationFailed(
+            return Err(ToolUseError::InvocationFailed(
                 "Text too long - limit is 2000.".to_string(),
             ));
         }
@@ -91,7 +91,7 @@ impl SummarizeTool {
                 ..Default::default()
             })
             .await
-            .map_err(|e| ToolUseError::ToolInvocationFailed(e.to_string()))?;
+            .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
 
         let summary = response.choices[0].text.clone();
         Ok(SummarizeToolOutput { summary })

@@ -9,7 +9,7 @@ COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 FROM chef AS builder
-ARG EXTRA_FEATURES=""
+ARG FEATURES=""
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install -y \
 COPY rust-toolchain.toml .
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
-RUN cargo chef cook --release --recipe-path recipe.json --features="$EXTRA_FEATURES"
+RUN cargo chef cook --release --recipe-path recipe.json --no-default-features --features="$FEATURES"
 # Build application
 COPY . .
-RUN cargo build --release --bin sapiens_cli --features="$EXTRA_FEATURES"
-RUN cargo build --release --bin sapiens_bot --features="$EXTRA_FEATURES"
+RUN cargo build --release --bin sapiens_cli --no-default-features --features="$FEATURES"
+RUN cargo build --release --bin sapiens_bot --no-default-features --features="$FEATURES"
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS base-runtime

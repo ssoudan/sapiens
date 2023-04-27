@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use tracing::debug;
+
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use crate::prompt::Task;
@@ -84,11 +86,13 @@ impl Debug for TaskChain {
 
 impl TaskChain {
     /// Query the model
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self))]
     pub async fn query_model(&mut self) -> Result<ChatEntry, Error> {
         let input = self.prepare_chat_completion_request();
 
+        debug!("Sending request to OpenAI");
         let res = self.chain.openai_client.chat().create(input).await?;
+        debug!(usage = ?res.usage, "Got a response from OpenAI");
 
         let first = res.choices.first().ok_or(Error::NoResponseFromModel)?;
 
@@ -133,7 +137,7 @@ impl TaskChain {
     /// corresponding tool.
     ///
     /// See [`crate::invoke_tool`] for more details.
-    #[tracing::instrument]
+    #[tracing::instrument(skip(self, data))]
     pub async fn invoke_tool(&self, data: &str) -> (String, Result<String, ToolUseError>) {
         let toolbox = self.chain.toolbox.clone();
         crate::tools::invoke_tool(toolbox, data).await
@@ -154,7 +158,7 @@ impl TaskChain {
         // instead
         const MAX_RESPONSE_CHAR: usize = 2048;
         if msg.len() > MAX_RESPONSE_CHAR {
-            let e = ToolUseError::ToolInvocationFailed(format!(
+            let e = ToolUseError::InvocationFailed(format!(
                 "The response is too long ({}B). Max allowed is {}B. Ask for a shorter response or use SandboxedPython Tool to process the response the data.",
                 msg.len(),
                 MAX_RESPONSE_CHAR
