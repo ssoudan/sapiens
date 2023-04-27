@@ -24,14 +24,6 @@ jobs:
         components: rustfmt, clippy
     - name: Install protoc and protoc-gen-rust
       uses: arduino/setup-protoc@v1
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Check
-      uses: actions-rs/cargo@v1
-      with:
-        command: check
-    - name: Clippy
-      run: cargo clippy -- -D warnings
     - name: Build
       uses: actions-rs/cargo@v1
       with:
@@ -43,3 +35,25 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
+
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Install latest nightly
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: nightly
+        override: true
+        components: rustfmt, clippy
+    - name: Install cargo-all-features
+      run: cargo install cargo-all-features
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Check (all-features)
+      uses: actions-rs/cargo@v1
+      with:
+        command: check-all-features
+    - name: Clippy
+      run: cargo clippy -- -D warnings
+
