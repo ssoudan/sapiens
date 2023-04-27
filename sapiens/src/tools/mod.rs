@@ -110,8 +110,8 @@ pub enum ToolUseError {
 pub(crate) struct ToolInvocationInput {
     /// The tool to invoke
     tool_name: String,
-    // TODO(ssoudan) should this be flattened?
-    // TODO(ssoudan) should this be called `spec`?
+    // FUTURE(ssoudan) should this be flattened?
+    // FUTURE(ssoudan) should this be called `spec` or `argumens` or `parameters`?
     /// The input to the tool
     input: serde_yaml::Value,
     /// The junk
@@ -373,7 +373,7 @@ async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseErr
             // We just take the first one
             let mut invocation = tool_invocations.into_iter().next().unwrap();
 
-            // TODO(ssoudan) clean up the object and return this one instead
+            // FUTURE(ssoudan) clean up the object and return this one instead
             // if any tool_invocations have an 'output' field, we return an error
             if !invocation.junk.is_empty() {
                 let junk_keys = invocation
@@ -383,7 +383,7 @@ async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseErr
                     .collect::<Vec<String>>()
                     .join(", ");
 
-                // TODO(ssoudan) they should not reach the ChatHistory
+                // FUTURE(ssoudan) they should not reach the ChatHistory
                 warn!(
                     ?junk_keys,
                     "The Action should not have fields: {}.", junk_keys

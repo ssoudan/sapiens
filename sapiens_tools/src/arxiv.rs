@@ -125,7 +125,7 @@ impl From<&ArxivToolInput> for ArxivQuery {
 /// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
 pub struct ArxivToolOutput {
-    // TODO(ssoudan) proc_macro_derive to generate this
+    // FUTURE(ssoudan) proc_macro_derive to generate this
     /// query result. `ArxivResult` is an object containing the following
     /// fields:
     /// - `id`: <str> arXiv ID

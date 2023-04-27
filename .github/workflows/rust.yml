@@ -55,7 +55,7 @@ jobs:
     - name: Check (all-features)
       uses: actions-rs/cargo@v1
       with:
-        command: check-all-features
+        command: check-all-features --workspace
     - name: Clippy
-      run: cargo clippy -- -D warnings
+      run: cargo clippy --all-targets --all-features --workspace -- -D warnings
 

@@ -235,7 +235,7 @@ impl PythonTool {
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
 
-        // TODO(ssoudan) use PyModule::from_code ?
+        // FUTURE(ssoudan) use PyModule::from_code ?
 
         // check for forbidden keywords - with capture
         if let Some(caps) = EXEC_RE.captures(code.as_ref()) {
