@@ -4,7 +4,7 @@ use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::openai::Role;
-use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
+use sapiens::{run_to_the_end, Config, Error, StepObserver};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -62,13 +62,13 @@ impl ChatEntryFormatter for ColorFormatter {
 }
 
 #[derive(Debug)]
-struct Handler {
+struct Observer {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
 }
 
 #[async_trait::async_trait]
-impl TaskProgressUpdateHandler for Handler {
+impl StepObserver for Observer {
     async fn on_start(&mut self, chat_history: &ChatHistory) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
@@ -93,19 +93,31 @@ impl TaskProgressUpdateHandler for Handler {
         println!("=============");
     }
 
-    async fn on_tool_update(&mut self, tool_output: ChatEntry, success: bool) {
-        if success {
-            let msg = ColorFormatter.format(&tool_output);
-            println!("{}", msg);
-        } else {
-            let msg = tool_output.msg.yellow();
-            println!("{}", msg);
+    async fn on_invocation_success(&mut self, res: Result<ChatEntry, Error>) {
+        match res {
+            Ok(tool_output) => {
+                let msg = ColorFormatter.format(&tool_output);
+                println!("{}", msg);
+            }
+            Err(e) => {
+                println!("{}", e.to_string().red());
+            }
         }
+
         println!("=============");
     }
 
-    async fn on_tool_error(&mut self, error: Error) {
-        println!("{}", error.to_string().red());
+    async fn on_invocation_failure(&mut self, res: Result<ChatEntry, Error>) {
+        match res {
+            Ok(tool_output) => {
+                let msg = tool_output.msg.yellow();
+                println!("{}", msg);
+            }
+            Err(e) => {
+                println!("{}", e.to_string().red());
+            }
+        }
+
         println!("=============");
     }
 }
@@ -145,7 +157,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
         openai_client,
         (&args).into(),
         task,
-        Handler {
+        Observer {
             show_warmup_prompt: args.show_warmup_prompt,
         },
     )

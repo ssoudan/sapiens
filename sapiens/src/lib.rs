@@ -15,6 +15,7 @@ pub mod openai;
 
 use std::fmt::Debug;
 
+use async_openai::types::Role;
 use runner::Chain;
 
 use crate::context::{ChatEntry, ChatHistory};
@@ -63,38 +64,44 @@ impl Default for Config {
     }
 }
 
-/// Handler for the task progress updates
+/// Observer for the step progresses
 #[async_trait::async_trait]
-pub trait TaskProgressUpdateHandler: Send {
+pub trait StepObserver: Send {
     /// Called when the task starts
     async fn on_start(&mut self, _chat_history: &ChatHistory) {}
 
     /// Called when the model updates the chat history
     async fn on_model_update(&mut self, _model_message: ChatEntry) {}
 
-    /// Called when the tool updates the chat history
-    async fn on_tool_update(&mut self, _tool_output: ChatEntry, _success: bool) {}
+    /// Called when the tool invocation was successful
+    async fn on_invocation_success(&mut self, _res: Result<ChatEntry, Error>) {}
 
-    /// Called when the tool returns an error
-    async fn on_tool_error(&mut self, _error: Error) {}
+    /// Called when the tool invocation failed
+    async fn on_invocation_failure(&mut self, _res: Result<ChatEntry, Error>) {}
 }
 
 /// A step in the task
-pub struct Step<T: TaskProgressUpdateHandler> {
+pub struct Step<T: StepObserver> {
     task_chain: TaskChain,
-    handler: T,
+    observer: T,
 }
 
-impl<T: TaskProgressUpdateHandler> Step<T> {
+impl<T: StepObserver> Step<T> {
     /// Run the task for a single step
     async fn step(mut self) -> Result<StepOrStop<T>, Error> {
         let model_message = self.task_chain.query_model().await?;
 
-        // show the message from the assistant
-        self.handler.on_model_update(model_message.clone()).await;
+        // Wrap the response as the chat history entry
+        let query = ChatEntry {
+            role: Role::Assistant,
+            msg: model_message.clone(),
+        };
+
+        // Show the message from the assistant
+        self.observer.on_model_update(query.clone()).await;
 
         // pass the message to the tools and get the response
-        let (tool_name, resp) = self.task_chain.invoke_tool(&model_message.msg).await;
+        let (tool_name, resp) = self.task_chain.invoke_tool(&model_message).await;
         match resp {
             Ok(response) => {
                 // check if the task is done
@@ -107,14 +114,8 @@ impl<T: TaskProgressUpdateHandler> Step<T> {
                 }
 
                 // Got a response from the tool but the task is not done yet
-                match self.task_chain.on_tool_success(tool_name, response) {
-                    Ok(tool_output) => {
-                        self.handler.on_tool_update(tool_output, true).await;
-                    }
-                    Err(e) => {
-                        self.handler.on_tool_error(e).await;
-                    }
-                }
+                let res = self.task_chain.on_tool_success(tool_name, query, response);
+                self.observer.on_invocation_success(res).await;
             }
             Err(e) => {
                 // check if the task is done
@@ -126,14 +127,8 @@ impl<T: TaskProgressUpdateHandler> Step<T> {
                     });
                 }
 
-                match self.task_chain.on_tool_failure(tool_name, e) {
-                    Ok(tool_output) => {
-                        self.handler.on_tool_update(tool_output, false).await;
-                    }
-                    Err(e) => {
-                        self.handler.on_tool_error(e).await;
-                    }
-                }
+                let res = self.task_chain.on_tool_failure(tool_name, query, e);
+                self.observer.on_invocation_failure(res).await;
             }
         }
 
@@ -148,7 +143,7 @@ pub struct Stop {
 }
 
 /// A step or the task is done
-pub enum StepOrStop<T: TaskProgressUpdateHandler> {
+pub enum StepOrStop<T: StepObserver> {
     /// The task is not done yet
     Step {
         /// The actual step task
@@ -165,7 +160,7 @@ pub enum StepOrStop<T: TaskProgressUpdateHandler> {
 pub struct VoidTaskProgressUpdateHandler;
 
 #[async_trait::async_trait]
-impl TaskProgressUpdateHandler for VoidTaskProgressUpdateHandler {}
+impl StepObserver for VoidTaskProgressUpdateHandler {}
 
 impl StepOrStop<VoidTaskProgressUpdateHandler> {
     /// Create a new [`StepOrStop`] for a `task`.
@@ -175,13 +170,13 @@ impl StepOrStop<VoidTaskProgressUpdateHandler> {
         Ok(StepOrStop::Step {
             step: Step {
                 task_chain,
-                handler: VoidTaskProgressUpdateHandler {},
+                observer: VoidTaskProgressUpdateHandler {},
             },
         })
     }
 }
 
-impl<T: TaskProgressUpdateHandler> StepOrStop<T> {
+impl<T: StepObserver> StepOrStop<T> {
     /// Create a new [`StepOrStop`] for a `task`.
     ///
     /// The `handler` will be called when the task starts and when a step is
@@ -196,7 +191,7 @@ impl<T: TaskProgressUpdateHandler> StepOrStop<T> {
         Ok(StepOrStop::Step {
             step: Step {
                 task_chain,
-                handler,
+                observer: handler,
             },
         })
     }
@@ -244,7 +239,7 @@ pub async fn run_to_the_end(
     openai_client: Client,
     config: Config,
     task: String,
-    handler: impl TaskProgressUpdateHandler + 'static + Debug,
+    handler: impl StepObserver + 'static + Debug,
 ) -> Result<Vec<TerminationMessage>, Error> {
     let chain = Chain::new(toolbox, config.clone(), openai_client).await;
 

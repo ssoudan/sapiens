@@ -50,7 +50,7 @@ mod hue_test {
         assert_eq!(tool_name, "SandboxedPython");
         let output = res.unwrap();
 
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         // collect the conclusion
         let termination_messages = toolbox.termination_messages().await;
@@ -101,7 +101,7 @@ mod arxiv {
         assert_eq!(tool_name, "SandboxedPython");
 
         let output = res.unwrap();
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         Ok(())
     }
@@ -129,7 +129,7 @@ mod arxiv {
         assert_eq!(tool_name, "SandboxedPython");
 
         let output = res.unwrap();
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         Ok(())
     }
@@ -158,7 +158,7 @@ mod arxiv {
         assert_eq!(tool_name, "SandboxedPython");
 
         let output = res.unwrap();
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         Ok(())
     }
@@ -200,7 +200,7 @@ mod arxiv {
         assert_eq!(tool_name, "SandboxedPython");
 
         let output = res.unwrap();
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         let termination_messages = toolbox.termination_messages().await;
         let done = !termination_messages.is_empty();
@@ -244,7 +244,7 @@ mod search {
 
         let output = res.unwrap();
 
-        assert_display_snapshot!(output);
+        assert_display_snapshot!(output.result);
 
         Ok(())
     }

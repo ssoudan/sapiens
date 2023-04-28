@@ -24,7 +24,7 @@ async fn test_tool_invocation() -> PyResult<()> {
     let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
-    assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
+    assert_eq!(output.result, "stdout: |\n  Hello world!\nstderr: ''\n");
 
     Ok(())
 }
@@ -51,7 +51,7 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
     assert_eq!(tool_name, "Conclude");
 
     let output = res.unwrap();
-    assert_display_snapshot!(output);
+    assert_display_snapshot!(output.result);
 
     Ok(())
 }
@@ -79,7 +79,7 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
     let (tool_name, res) = invoke_tool(toolbox, data).await;
     assert_eq!(tool_name, "SandboxedPython");
     let output = res.unwrap();
-    assert_display_snapshot!(output);
+    assert_display_snapshot!(output.result);
 
     Ok(())
 }
@@ -119,7 +119,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     assert_eq!(tool_name, "SandboxedPython");
 
     let output = res.unwrap();
-    assert_display_snapshot!(output);
+    assert_display_snapshot!(output.result);
 
     Ok(())
 }
@@ -149,7 +149,7 @@ async fn test_python() -> PyResult<()> {
     assert_eq!(tool_name, "SandboxedPython");
 
     let output = res.unwrap();
-    assert_display_snapshot!(output);
+    assert_display_snapshot!(output.result);
 
     Ok(())
 }

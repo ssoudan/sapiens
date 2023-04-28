@@ -332,12 +332,23 @@ pub async fn invoke_simple_from_toolbox(
     tool.invoke(input).await
 }
 
+/// A tool invocation summary
+#[derive(Debug, Clone)]
+pub struct Summary {
+    /// The input that was extracted from the chat message and that was used to
+    /// invoke the tool
+    pub extracted_input: String,
+
+    /// The result of the tool invocation
+    pub result: String,
+}
+
 /// Try to find the tool invocation from the chat message and invoke the
 /// corresponding tool.
 ///
 /// If multiple tool invocations are found, only the first one is used.
 #[tracing::instrument(skip(toolbox, data))]
-pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String, ToolUseError>) {
+pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<Summary, ToolUseError>) {
     let invocation = choose_invocation(data).await;
 
     match invocation {
@@ -346,13 +357,31 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String
 
             let tool_name = invocation.tool_name.clone();
             let input = invocation.input;
-            let result = invoke_from_toolbox(toolbox, &tool_name, input).await;
+            let result = invoke_from_toolbox(toolbox, &tool_name, input.clone()).await;
 
             match result {
-                Ok(output) => (
-                    tool_name,
-                    serde_yaml::to_string(&output).map_err(ToolUseError::InvalidOutput),
-                ),
+                Ok(output) => {
+                    let extracted_input = serde_yaml::to_string(&input).unwrap_or_else(|_| {
+                        format!(
+                            "Failed to serialize input for tool {}",
+                            invocation.tool_name
+                        )
+                    });
+
+                    let result = serde_yaml::to_string(&output).unwrap_or_else(|_| {
+                        format!(
+                            "Failed to serialize output for tool {}",
+                            invocation.tool_name
+                        )
+                    });
+
+                    let summary = Summary {
+                        extracted_input,
+                        result,
+                    };
+
+                    (tool_name, Ok(summary))
+                }
                 Err(e) => (tool_name, Err(e)),
             }
         }

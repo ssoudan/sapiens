@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::runner::Chain;
 use sapiens::tools::TerminationMessage;
-use sapiens::{Config, Error, StepOrStop, TaskProgressUpdateHandler};
+use sapiens::{Config, Error, StepObserver, StepOrStop};
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
 use tracing::{debug, error, info, warn};
@@ -36,21 +36,21 @@ impl SapiensBot {
     /// Start a new task
     pub async fn start_task<T>(&mut self, task: String, handler: T) -> Result<StepOrStop<T>, Error>
     where
-        T: TaskProgressUpdateHandler,
+        T: StepObserver,
     {
         StepOrStop::with_handler(self.chain.clone(), task, handler).await
     }
 }
 
 /// Handler for task progress updates
-pub struct ProgressHandler {
+pub struct ProgressObserver {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
     pub job_tx: mpsc::Sender<JobUpdate>,
     entry_format: Box<dyn ChatEntryFormatter + 'static + Send + Sync>,
 }
 
-impl Debug for ProgressHandler {
+impl Debug for ProgressObserver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProgressHandler")
             .field("show_warmup_prompt", &self.show_warmup_prompt)
@@ -61,7 +61,7 @@ impl Debug for ProgressHandler {
 }
 
 #[async_trait::async_trait]
-impl TaskProgressUpdateHandler for ProgressHandler {
+impl StepObserver for ProgressObserver {
     async fn on_start(&mut self, chat_history: &ChatHistory) {
         let format = self.entry_format.as_ref();
         let msgs = chat_history.format(format);
@@ -90,24 +90,46 @@ impl TaskProgressUpdateHandler for ProgressHandler {
         self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    async fn on_tool_update(&mut self, tool_output: ChatEntry, _success: bool) {
-        debug!(msg = ?tool_output, "on_tool_update");
+    async fn on_invocation_success(&mut self, res: Result<ChatEntry, Error>) {
+        debug!(res = ?res, "on_invocation_success");
 
-        let msg = self.entry_format.format(&tool_output);
+        match res {
+            Ok(tool_output) => {
+                let msg = self.entry_format.format(&tool_output);
 
-        let msgs = sanitize_msgs_for_discord(vec![msg]);
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
 
-        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+            }
+            Err(error) => {
+                let msg = format!("*Error*: {}", error);
+
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+            }
+        }
     }
 
-    async fn on_tool_error(&mut self, error: Error) {
-        debug!(error = ?error, "on_tool_error");
+    async fn on_invocation_failure(&mut self, res: Result<ChatEntry, Error>) {
+        debug!(res = ?res, "on_invocation_failure");
 
-        let msg = format!("*Error*: {}", error);
+        match res {
+            Ok(tool_output) => {
+                let msg = self.entry_format.format(&tool_output);
 
-        let msgs = sanitize_msgs_for_discord(vec![msg]);
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
 
-        self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+            }
+            Err(error) => {
+                let msg = format!("*Error*: {}", error);
+
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+            }
+        }
     }
 }
 
@@ -164,7 +186,7 @@ impl Runner {
 
             let mut tx = job.tx.clone();
 
-            let handler = ProgressHandler {
+            let handler = ProgressObserver {
                 show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
