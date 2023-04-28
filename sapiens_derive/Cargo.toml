@@ -15,7 +15,7 @@ categories.workspace = true
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "1.0" }
-darling = "0.14.4"
+darling = "0.20.0"
 darling_macro = "0.14.4"
 
 [lib]
