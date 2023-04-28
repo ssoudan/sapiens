@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use convert_case::{Case, Casing};
+use pyo3::indoc::{formatdoc, indoc};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
 use sapiens::tools::{
@@ -11,6 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
+use tracing::debug;
 
 /// Conversion tools
 pub(crate) mod utils;
@@ -183,7 +185,7 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        // print!("{}", code);
+        debug!(code, "Running code");
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             // println!("Python version: {}", py.version());
@@ -259,13 +261,23 @@ impl PythonTool {
         let mut tool_class_code = String::new();
 
         tool_class_code.push_str("class Tools:\n");
-        tool_class_code.push_str("    def __init__(self, toolbox):\n");
-        tool_class_code.push_str("        self.toolbox = toolbox\n");
-
-        let mut binding_code = String::new();
+        tool_class_code.push_str(
+            &indoc! {r#"
+            """Wrapper for the tools."""
+            def __init__(self, toolbox):
+                self.toolbox = toolbox
+            "#}
+            .lines()
+            .map(|s| format!("    {}", s))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        );
+        tool_class_code.push('\n');
 
         for (name, description) in tools {
             let inputs_parts = description.input_format.fields;
+            let output_parts = description.output_format.fields;
+
             // FUTURE(ssoudan) might want to add None only for optional inputs
             let mut inputs = inputs_parts.clone();
 
@@ -298,6 +310,54 @@ impl PythonTool {
                 format!("(self, {})", inputs)
             };
 
+            // Build the docstring
+            // start got to be 4-spaces aligned
+            //
+            // Several descriptions are multi-line:
+            // - description.description
+            // - description.input_format.fields.description
+            // - description.output_format.fields.description
+            let mut docstring = String::new();
+            // Description
+            description.description.lines().for_each(|l| {
+                docstring.push_str(&format!("    {}\n", l));
+            });
+            // Arguments
+            docstring.push_str("    Args:\n");
+            inputs_parts.iter().for_each(|f| {
+                docstring.push_str(&format!("        {}: <{}> ", f.name, f.r#type));
+                // first line goes with the name, the rest is indented
+                f.description.lines().enumerate().for_each(|(i, l)| {
+                    if i == 0 {
+                        docstring.push_str(&format!("{}\n", l));
+                    } else {
+                        docstring.push_str(&format!("            {}\n", l));
+                    }
+                });
+            });
+            if !output_parts.is_empty() {
+                // Return
+                docstring.push_str("    Returns:\n");
+                docstring.push_str("           A dictionary with the following keys:\n");
+                output_parts.iter().for_each(|f| {
+                    if f.optional {
+                        docstring
+                            .push_str(&format!("        {}: <{}> (Optional) ", f.name, f.r#type));
+                    } else {
+                        docstring.push_str(&format!("        {}: <{}> ", f.name, f.r#type));
+                    }
+
+                    // first line goes with the name, the rest is indented
+                    f.description.lines().enumerate().for_each(|(i, l)| {
+                        if i == 0 {
+                            docstring.push_str(&format!("{}\n", l));
+                        } else {
+                            docstring.push_str(&format!("            {}\n", l));
+                        }
+                    });
+                });
+            }
+
             let dict = inputs_parts
                 .iter()
                 .map(|f| {
@@ -307,40 +367,43 @@ impl PythonTool {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            // in snake case
-            // tool_class_code.push_str(&format!(
-            //     "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-            //     name.to_case(Case::Snake),
-            //     inputs,
-            //     name,
-            //     dict
-            // ));
-
-            // in Pascal case
-            tool_class_code.push_str(&format!(
-                "    def {}{}:\n        return self.toolbox.invoke(\"{}\", {{{}}})\n",
-                name.to_case(Case::Pascal),
-                inputs,
-                name,
-                dict
-            ));
-
-            // add ToolName(..) to the binding code
-            binding_code.push_str(&format!(
-                "def {}{}:\n        return tools.toolbox.invoke(\"{}\", {{{}}})\n",
-                name, inputs, name, dict
-            ));
+            for cased_name in vec![name.to_case(Case::Snake), name.to_case(Case::Pascal)] {
+                // in Pascal case
+                tool_class_code.push_str(&indent(
+                    4,
+                    &formatdoc! {r#"
+            def {}{}:
+                """{}    """
+                return self.toolbox.invoke("{}", {{{}}})
+            "#, 
+                        cased_name,
+                        inputs,
+                        docstring,
+                        name,
+                        dict
+                    },
+                ));
+                tool_class_code.push('\n');
+            }
 
             // FUTURE(ssoudan) set input_format and output_format
         }
 
         // add list function
-        tool_class_code.push_str("    def list(self):\n");
-        tool_class_code.push_str("        return self.toolbox.list()\n");
+        tool_class_code.push_str(&indent(
+            4,
+            indoc! {r#"
+            def list(self):
+                """List the tools."""
+                return self.toolbox.list()
+            "#},
+        ));
+        tool_class_code.push('\n');
 
+        // instantiate the class
         tool_class_code.push_str("tools = Tools(toolbox)\n");
 
-        let code_to_prepend = format!("{}{}", tool_class_code, binding_code);
+        let code_to_prepend = tool_class_code;
 
         // prepend the code to the user code
         let code = format!("{}\n# ======== user code\n{}", code_to_prepend, code);
@@ -394,6 +457,18 @@ impl PythonTool {
 
         Ok(PythonToolOutput { stdout, stderr })
     }
+}
+
+fn indent(offset: u32, s: &str) -> String {
+    let mut indented = String::new();
+    for _ in 0..offset {
+        indented.push(' ');
+    }
+
+    s.lines()
+        .map(|l| format!("{}{}", indented, l))
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[async_trait::async_trait]

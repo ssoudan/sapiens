@@ -1,0 +1,18 @@
+---
+source: sapiens_tools/tests/python.rs
+expression: output.result
+---
+stdout: |
+  Help on method Dummy:
+
+  Dummy(blah) method of builtins.Tools instance
+      A tool that is called to test stuffs
+      Args:
+          blah: <str> Well. MANDATORY.
+      Returns:
+             A dictionary with the following keys:
+          something: <str> Not much.
+
+  And the docstring is: None
+stderr: ''
+

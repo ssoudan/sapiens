@@ -153,3 +153,27 @@ async fn test_python() -> PyResult<()> {
 
     Ok(())
 }
+
+#[pyo3_asyncio::tokio::test]
+async fn test_python_docstring() -> PyResult<()> {
+    let mut toolbox = Toolbox::default();
+    toolbox.add_tool(DummyTool::default()).await;
+    toolbox.add_advanced_tool(PythonTool::default()).await;
+
+    let data = indoc! {r#"```yaml
+   tool_name: SandboxedPython
+   input:
+     code: |                  
+       output = help(tools.Dummy)           
+       print(f"And the docstring is: {output}")
+   ```
+"#};
+
+    let (tool_name, res) = invoke_tool(toolbox, data).await;
+    assert_eq!(tool_name, "SandboxedPython");
+
+    let output = res.unwrap();
+    assert_display_snapshot!(output.result);
+
+    Ok(())
+}
