@@ -1,9 +1,9 @@
 [package]
-name = "sapiens_cli"
-version= "0.3.1"
+name = "sapiens_exp"
+version= "0.0.1"
 edition.workspace = true
 authors.workspace = true
-description = "The cli - Sapiens"
+description = "Experiments - Sapiens"
 repository.workspace = true
 license.workspace = true
 publish.workspace = true
@@ -12,18 +12,7 @@ keywords.workspace = true
 categories.workspace = true
 
 [features]
-default = ["wiki", "arxiv", "summarize", "search" ]
-# Hue lights related tools
-hue = [ "dep:huelib2", "sapiens_tools/hue" ]
-# MediaWiki related tools
-wiki = [ "sapiens_tools/wiki" ]
-# Arxiv related tools
-arxiv = [ "sapiens_tools/arxiv" ]
-# Summarization
-summarize = ["sapiens_tools/summarize"]
-# Search
-search = ["sapiens_tools/search"]
-
+default = [ ]
 
 [dependencies]
 sapiens = { path = "../sapiens", version = "^0.4.1" }

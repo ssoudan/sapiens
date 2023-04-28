@@ -47,7 +47,8 @@ impl Default for RoomTool {
 #[derive(Debug, Serialize, Deserialize, Describe)]
 pub struct RoomToolInput {
     /// The list of Room names (<string>) to get the lights for, e.g.
-    /// `room_filter: ["Bedroom"]`. If unsure, use `[]` to get all Rooms.
+    /// `room_filter: ["Bedroom"]`. If unsure, use `[]` as `room_filter` to get
+    /// all Rooms.
     pub room_filter: Vec<String>,
 }
 

@@ -1,4 +1,4 @@
-//! Main for sapiens_cli
+//! Main for sapiens_exp
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
@@ -8,34 +8,13 @@ use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-// Usability:
-// FUTURE(ssoudan) Richer interaction
-// FUTURE(ssoudan) More tools: wx, negotiate
-// FUTURE(ssoudan) Discord bot with long-lived conversations
-// FUTURE(ssoudan) Settings
-// FUTURE(ssoudan) Token budget management and completion termination reason
-// FUTURE(ssoudan) Model parameters
-// FUTURE(ssoudan) allow the bot to share its doubt and ask for help
-// FUTURE(ssoudan) Crontab-like scheduling: get a summary of the news daily
-// FUTURE(ssoudan) better errors for python code
-//
-// Deployability:
-// FUTURE(ssoudan) Limit how long a tool can run
-// FUTURE(ssoudan) monitoring
-//
-// Adoption:
-// FUTURE(ssoudan) More documentation and examples
-// FUTURE(ssoudan) A site?
-//
-// Explore:
-// FUTURE(ssoudan) other models?
-// FUTURE(ssoudan) memory?
-// FUTURE(ssoudan) vector stores?
-// TODO(ssoudan) prompt optimization
-// FUTURE(ssoudan) multiple models - critic?
-// FUTURE(ssoudan) multi-stage evaluation
-// TODO(ssoudan) log the conversation to build a dataset
-// TODO(ssoudan) categorize the outcomes - count the number of steps
+// TODO(ssoudan) build tools with various kind of inputs and outputs
+// TODO(ssoudan) generate tasks - with acceptance criteria
+// TODO(ssoudan) collect traces
+// TODO(ssoudan) tools measure performance from the traces
+// TODO(ssoudan) benchmarking harness
+// TODO(ssoudan) feature flags
+// FUTURE(ssoudan) BO
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]

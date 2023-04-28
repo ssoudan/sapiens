@@ -124,6 +124,8 @@ impl ChatHistory {
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
     pub fn purge(&mut self) -> Result<usize, Error> {
+        // FIXME(ssoudan) preserve the alternance of roles
+
         let token_budget = self.max_token.saturating_sub(self.prompt_num_tokens);
 
         if token_budget == 0 {
