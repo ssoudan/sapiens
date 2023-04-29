@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_exp"
-version= "0.0.1"
+version= "0.4.1"
 edition.workspace = true
 authors.workspace = true
 description = "Experiments - Sapiens"
