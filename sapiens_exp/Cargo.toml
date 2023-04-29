@@ -15,8 +15,8 @@ categories.workspace = true
 default = [ ]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.4.1" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.4.1", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.5.0" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.5.0", default-features = false }
 
 tracing = "0.1.38"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
