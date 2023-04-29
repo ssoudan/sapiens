@@ -1,5 +1,7 @@
 //! Sapiens CLI library
 
+use serde::{Deserialize, Serialize};
+
 /// Tools related to experimentation.
 ///
 /// They are intended to be used for experimentation around the language models
@@ -11,6 +13,9 @@ pub mod traces;
 
 /// Setup toolboxes and stuffs.
 pub mod setup;
+
+/// Evaluate a trial.
+pub mod evaluate;
 
 // Factors we want to be able to explore:
 // ----------------------------
@@ -122,3 +127,22 @@ pub mod setup;
 // - Pan
 // - Pot
 // - Squeezer
+
+/// Configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    /// Model to use
+    pub model: String,
+    /// Maximum number of steps to execute
+    pub max_steps: usize,
+}
+
+impl From<&Config> for sapiens::Config {
+    fn from(config: &Config) -> Self {
+        Self {
+            model: config.model.clone(),
+            max_steps: config.max_steps,
+            ..Default::default()
+        }
+    }
+}

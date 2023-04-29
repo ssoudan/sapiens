@@ -5,9 +5,9 @@ use convert_case::{Case, Casing};
 use pyo3::indoc::{formatdoc, indoc};
 use pyo3::prelude::*;
 use pyo3::types::{IntoPyDict, PyDict};
+use sapiens::tools::toolbox::{invoke_simple_from_toolbox, Toolbox};
 use sapiens::tools::{
-    invoke_simple_from_toolbox, AdvancedTool, Describe, ProtoToolDescribe, ProtoToolInvoke,
-    ToolDescription, ToolUseError, Toolbox,
+    AdvancedTool, Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
 };
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
@@ -509,7 +509,7 @@ impl AdvancedTool for PythonTool {
 mod tests {
     use indoc::indoc;
     use insta::assert_display_snapshot;
-    use sapiens::tools::Toolbox;
+    use sapiens::tools::toolbox::Toolbox;
 
     use crate::conclude::ConcludeTool;
     use crate::python::{PythonTool, PythonToolInput};

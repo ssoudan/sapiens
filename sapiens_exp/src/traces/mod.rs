@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Formatter};
+use std::ops::Add;
 
 use sapiens::{
     InvocationFailureNotification, InvocationSuccessNotification, ModelUpdateNotification,
@@ -7,7 +8,7 @@ use sapiens::{
 use serde::{Deserialize, Serialize};
 
 /// Token usage
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
     /// The number of tokens used for the prompt
     pub prompt_tokens: u32,
@@ -15,6 +16,18 @@ pub struct Usage {
     pub completion_tokens: u32,
     /// The total number of tokens used
     pub total_tokens: u32,
+}
+
+impl Add for Usage {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self {
+            prompt_tokens: self.prompt_tokens + rhs.prompt_tokens,
+            completion_tokens: self.completion_tokens + rhs.completion_tokens,
+            total_tokens: self.total_tokens + rhs.total_tokens,
+        }
+    }
 }
 
 impl From<sapiens::runner::Usage> for Usage {
@@ -31,7 +44,7 @@ impl From<sapiens::runner::Usage> for Usage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trace {
     /// The events in the trace
-    events: Vec<Event>,
+    pub(crate) events: Vec<Event>,
 }
 
 /// The status of a completed task
@@ -93,8 +106,8 @@ pub(crate) enum Event {
         /// Token usage
         token_usage: Option<Usage>,
     },
-    /// The task chain failed
-    TaskChainFailed {
+    /// The chat was not updated after a tool invocation failed
+    ToolInvocationFailedAndChatNotUpdated {
         /// The name of the tool
         tool_name: String,
         /// The input of the tool
@@ -106,6 +119,19 @@ pub(crate) enum Event {
     },
     /// The task chain succeeded
     End(CompletionStatus),
+}
+
+impl Event {
+    /// Get the token usage
+    pub fn tokens(&self) -> Option<Usage> {
+        match &self {
+            Event::Start { .. } => None,
+            Event::ToolInvocationSucceeded { token_usage, .. } => token_usage.clone(),
+            Event::ToolInvocationFailed { token_usage, .. } => token_usage.clone(),
+            Event::ToolInvocationFailedAndChatNotUpdated { token_usage, .. } => token_usage.clone(),
+            Event::End(_) => None,
+        }
+    }
 }
 
 /// Trace collecting observer
@@ -191,12 +217,15 @@ impl From<InvocationSuccessNotification> for Event {
         } = notification;
 
         match res {
+            // The invocation was successful
             Ok(res) => Event::ToolInvocationSucceeded {
                 tool_name,
                 tool_input: input.msg,
                 result: InvocationResult::Success { output: res.msg },
                 token_usage: usage.map(Into::into),
             },
+            // The invocation was successful, but the output could not be
+            // passed to the chat history
             Err(err) => Event::ToolInvocationSucceeded {
                 tool_name,
                 tool_input: input.msg,
@@ -219,13 +248,16 @@ impl From<InvocationFailureNotification> for Event {
         } = notification;
 
         match res {
+            // The invocation was unsuccessful
             Ok(res) => Event::ToolInvocationFailed {
                 tool_name,
                 tool_input: input.msg,
                 error: res.msg,
                 token_usage: usage.map(Into::into),
             },
-            Err(err) => Event::TaskChainFailed {
+            // The invocation was unsuccessful, and the error message could
+            // not be passed to the chat history
+            Err(err) => Event::ToolInvocationFailedAndChatNotUpdated {
                 tool_name,
                 tool_input: input.msg,
                 error: format!("{}", err),

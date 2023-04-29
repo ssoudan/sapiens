@@ -4,7 +4,7 @@ mod hue_test {
     use indoc::indoc;
     use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, Toolbox};
     use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::hue::room::fake::FakeRoomTool;
     use sapiens_tools::hue::status::fake::FakeStatusTool;
@@ -66,7 +66,7 @@ mod arxiv {
     use indoc::indoc;
     use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, Toolbox};
     use sapiens_tools::arxiv::ArxivTool;
     use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::python::PythonTool;
@@ -219,7 +219,7 @@ mod search {
     use indoc::indoc;
     use insta::assert_display_snapshot;
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, Toolbox};
     use sapiens_tools::python::PythonTool;
     use sapiens_tools::search::SearchTool;
 

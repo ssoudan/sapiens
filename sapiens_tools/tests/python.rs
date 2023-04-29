@@ -1,7 +1,7 @@
 use indoc::indoc;
 use insta::assert_display_snapshot;
 use pyo3::PyResult;
-use sapiens::tools::{invoke_tool, Toolbox};
+use sapiens::tools::toolbox::{invoke_tool, Toolbox};
 use sapiens_tools::conclude::ConcludeTool;
 use sapiens_tools::dummy::DummyTool;
 use sapiens_tools::python::PythonTool;

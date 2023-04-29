@@ -5,7 +5,8 @@ use tracing::debug;
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use crate::prompt::Task;
-use crate::tools::{Summary, TerminationMessage, ToolUseError, Toolbox};
+use crate::tools::toolbox::Toolbox;
+use crate::tools::{Summary, TerminationMessage, ToolUseError};
 use crate::{prompt, Client, Config, Error};
 
 /// A chain - not yet specialized to a task
@@ -167,7 +168,7 @@ impl TaskChain {
     #[tracing::instrument(skip(self, data))]
     pub async fn invoke_tool(&self, data: &str) -> (String, Result<Summary, ToolUseError>) {
         let toolbox = self.chain.toolbox.clone();
-        crate::tools::invoke_tool(toolbox, data).await
+        crate::tools::toolbox::invoke_tool(toolbox, data).await
     }
 
     /// Generate a new prompt for the assistant based on the response from the

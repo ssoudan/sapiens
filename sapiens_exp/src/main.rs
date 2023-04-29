@@ -7,15 +7,14 @@ use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter};
 use sapiens::openai::Role;
-use sapiens::{run_to_the_end, wrap_observer, Config};
-use sapiens_exp::setup;
+use sapiens::{run_to_the_end, wrap_observer};
+use sapiens_exp::evaluate::Trial;
 use sapiens_exp::traces::TraceObserver;
+use sapiens_exp::{setup, Config};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-// TODO(ssoudan) build tools with various kind of inputs and outputs
 // TODO(ssoudan) generate tasks - with acceptance criteria
-// TODO(ssoudan) tools measure performance from the traces
 // TODO(ssoudan) benchmarking harness
 // TODO(ssoudan) feature flags
 // FUTURE(ssoudan) BO
@@ -36,9 +35,9 @@ struct Args {
     #[arg(short, long, default_value = "Tell me a joke.")]
     task: String,
 
-    /// Show the warmup prompt
-    #[arg(long)]
-    show_warmup_prompt: bool,
+    /// Experiments folder
+    #[arg(long, default_value = "experiments")]
+    experiments_folder: String,
 }
 
 impl From<&Args> for Config {
@@ -46,7 +45,6 @@ impl From<&Args> for Config {
         Self {
             model: args.model.clone(),
             max_steps: args.max_steps,
-            ..Default::default()
         }
     }
 }
@@ -75,10 +73,15 @@ async fn main() -> Result<(), pyo3::PyErr> {
         .compact()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
+    // Prepare config
+    let config = Config::from(&args);
 
     info!("Starting sapiens_cli");
 
     let toolbox = setup::toolbox().await;
+
+    // reset stats
+    toolbox.reset_stats().await;
 
     let openai_client = sapiens::openai::Client::new().with_api_key(
         std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
@@ -100,18 +103,27 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let task = args.task.clone();
     let _ = run_to_the_end(
-        toolbox,
+        toolbox.clone(),
         openai_client,
-        (&args).into(),
-        task,
+        (&config).into(),
+        task.clone(),
         w_trace_observer,
     )
     .await;
 
     let trace = { trace_observer.lock().await.trace() };
-    // TODO(ssoudan) record config with the trace
 
-    println!("Trace: {:#?}", trace);
+    // Collect tool utilization stats
+    let stats = toolbox.stats().await;
+
+    // Build trial
+    let trial = Trial::build(config, task, trace, stats);
+
+    // TODO(ssoudan) save trial to file
+    // Save to {experiments_folder}/{task_hash}/{config_hash}/{trial_hash}_{nonce}.
+    // json
+
+    println!("Trial: {:#?}", trial);
 
     Ok(())
 }

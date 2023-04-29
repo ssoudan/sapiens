@@ -19,6 +19,7 @@ use std::sync::{Arc, Weak};
 use async_openai::types::Role;
 use runner::Chain;
 use tokio::sync::Mutex;
+use tools::toolbox;
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{Client, OpenAIError};
@@ -380,7 +381,7 @@ impl StepOrStop {
 /// more flexible ways to run a task
 #[tracing::instrument(skip(toolbox, openai_client, observer, config))]
 pub async fn run_to_the_end(
-    toolbox: tools::Toolbox,
+    toolbox: toolbox::Toolbox,
     openai_client: Client,
     config: Config,
     task: String,

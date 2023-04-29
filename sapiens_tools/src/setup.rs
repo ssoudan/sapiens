@@ -1,5 +1,5 @@
 //! Sapiens CLI library
-use sapiens::tools::Toolbox;
+use sapiens::tools::toolbox::Toolbox;
 
 use crate::conclude::ConcludeTool;
 use crate::python::PythonTool;
