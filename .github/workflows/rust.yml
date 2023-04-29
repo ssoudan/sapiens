@@ -24,16 +24,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build --workspace
+      run: cargo build --workspace
     - name: 'Create env file'
       run: |
         echo "${{ secrets.ENV_FILE }}" > .env
     - name: Test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test --workspace
+      run: cargo test --workspace
 
   check:
     runs-on: ubuntu-latest
