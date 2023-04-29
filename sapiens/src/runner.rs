@@ -84,12 +84,42 @@ impl Debug for TaskChain {
     }
 }
 
+/// Token usage
+#[derive(Debug, Clone)]
+pub struct Usage {
+    /// The number of tokens used for the prompt
+    pub prompt_tokens: u32,
+    /// The number of tokens used for the completion
+    pub completion_tokens: u32,
+    /// The total number of tokens used
+    pub total_tokens: u32,
+}
+
+impl From<async_openai::types::Usage> for Usage {
+    fn from(usage: async_openai::types::Usage) -> Self {
+        Self {
+            prompt_tokens: usage.prompt_tokens,
+            completion_tokens: usage.completion_tokens,
+            total_tokens: usage.total_tokens,
+        }
+    }
+}
+
+/// Response from a language model
+#[derive(Debug, Clone)]
+pub struct ModelResponse {
+    /// The message
+    pub msg: String,
+    /// The usage
+    pub usage: Option<Usage>,
+}
+
 impl TaskChain {
     /// Query the model
     ///
     /// Does not update the chat history
     #[tracing::instrument(skip(self))]
-    pub async fn query_model(&mut self) -> Result<String, Error> {
+    pub async fn query_model(&mut self) -> Result<ModelResponse, Error> {
         let input = self.prepare_chat_completion_request();
 
         debug!("Sending request to OpenAI");
@@ -100,7 +130,10 @@ impl TaskChain {
 
         let msg = first.message.content.clone();
 
-        Ok(msg)
+        Ok(ModelResponse {
+            msg,
+            usage: res.usage.map(Into::into),
+        })
     }
 
     /// prepare the [`ChatCompletionRequest`] to be passed to OpenAI
@@ -143,7 +176,7 @@ impl TaskChain {
     /// If the response is too long, we add an error message to the chat history
     pub fn on_tool_success(
         &mut self,
-        tool_name: String,
+        tool_name: &str,
         query: ChatEntry,
         response: Summary,
     ) -> Result<ChatEntry, Error> {
@@ -151,7 +184,7 @@ impl TaskChain {
         self.add_to_chat_history(query)?;
 
         // add the response to the chat history
-        let msg = self.task.action_success_prompt(&tool_name, response.result);
+        let msg = self.task.action_success_prompt(tool_name, response.result);
 
         // if the response is too long, we add an error message to the chat history
         // instead
@@ -162,7 +195,7 @@ impl TaskChain {
                 msg.len(),
                 MAX_RESPONSE_CHAR
             ));
-            let msg = self.task.action_failed_prompt(&tool_name, &e);
+            let msg = self.task.action_failed_prompt(tool_name, &e);
 
             // add an error message to the chat history
             self.add_to_chat_history(ChatEntry {
@@ -186,7 +219,7 @@ impl TaskChain {
     /// Tool invocation.
     pub fn on_tool_failure(
         &mut self,
-        tool_name: String,
+        tool_name: &String,
         query: ChatEntry,
         e: ToolUseError,
     ) -> Result<ChatEntry, Error> {

@@ -1,9 +1,13 @@
 use std::fmt::Debug;
+use std::sync::Arc;
 
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
+use sapiens::context::{ChatEntryFormatter, ChatHistory};
 use sapiens::runner::Chain;
 use sapiens::tools::TerminationMessage;
-use sapiens::{Config, Error, StepObserver, StepOrStop};
+use sapiens::{
+    wrap_observer, Config, Error, InvocationFailureNotification, InvocationSuccessNotification,
+    ModelUpdateNotification, StepObserver, StepOrStop, WeakStepObserver,
+};
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
 use tracing::{debug, error, info, warn};
@@ -34,11 +38,13 @@ impl SapiensBot {
     }
 
     /// Start a new task
-    pub async fn start_task<T>(&mut self, task: String, handler: T) -> Result<StepOrStop<T>, Error>
-    where
-        T: StepObserver,
-    {
-        StepOrStop::with_handler(self.chain.clone(), task, handler).await
+    pub async fn start_task(
+        &mut self,
+        task: String,
+        observer: WeakStepObserver,
+    ) -> Result<StepOrStop, Error>
+where {
+        StepOrStop::with_observer(self.chain.clone(), task, observer).await
     }
 }
 
@@ -82,16 +88,19 @@ impl StepObserver for ProgressObserver {
         }
     }
 
-    async fn on_model_update(&mut self, model_message: ChatEntry) {
-        let msg = self.entry_format.format(&model_message);
-        debug!(msg = ?model_message, "on_model_update");
+    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
+        let msg = self.entry_format.format(&event.chat_entry);
+        debug!(msg = ?event.chat_entry, "on_model_update");
 
         let msgs = sanitize_msgs_for_discord(vec![msg]);
         self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    async fn on_invocation_success(&mut self, res: Result<ChatEntry, Error>) {
-        debug!(res = ?res, "on_invocation_success");
+    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
+        let res = event.res;
+        let tool_name = event.tool_name;
+
+        debug!(res = ?res, tool_name, "on_invocation_success");
 
         match res {
             Ok(tool_output) => {
@@ -111,8 +120,11 @@ impl StepObserver for ProgressObserver {
         }
     }
 
-    async fn on_invocation_failure(&mut self, res: Result<ChatEntry, Error>) {
-        debug!(res = ?res, "on_invocation_failure");
+    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
+        let res = event.res;
+        let tool_name = event.tool_name;
+
+        debug!(res = ?res, tool_name, "on_invocation_failure");
 
         match res {
             Ok(tool_output) => {
@@ -186,17 +198,21 @@ impl Runner {
 
             let mut tx = job.tx.clone();
 
-            let handler = ProgressObserver {
+            let observer = ProgressObserver {
                 show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
             };
 
+            let observer = wrap_observer(observer);
+
+            let w_observer = Arc::downgrade(&observer);
+
             let max_steps = job.max_steps;
 
             let mut current_step = 0;
 
-            match self.sapiens.start_task(job.task, handler).await {
+            match self.sapiens.start_task(job.task, w_observer).await {
                 Ok(step) => {
                     let mut step = step;
                     loop {

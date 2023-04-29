@@ -6,6 +6,12 @@
 /// abilities, chaining and prompting only.
 pub(crate) mod tools;
 
+/// Execution traces.
+pub mod traces;
+
+/// Setup toolboxes and stuffs.
+pub mod setup;
+
 // Factors we want to be able to explore:
 // ----------------------------
 // Tooling:

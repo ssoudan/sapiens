@@ -12,7 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use tracing::debug;
+use tracing::trace;
 
 /// Conversion tools
 pub(crate) mod utils;
@@ -185,7 +185,7 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        debug!(code, "Running code");
+        trace!(code, "Running code");
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             // println!("Python version: {}", py.version());

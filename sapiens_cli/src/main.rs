@@ -1,10 +1,15 @@
 //! Main for sapiens_cli
+use std::sync::Arc;
+
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::openai::Role;
-use sapiens::{run_to_the_end, Config, Error, StepObserver};
+use sapiens::{
+    run_to_the_end, wrap_observer, Config, InvocationFailureNotification,
+    InvocationSuccessNotification, ModelUpdateNotification, StepObserver,
+};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
@@ -108,14 +113,14 @@ impl StepObserver for Observer {
         }
     }
 
-    async fn on_model_update(&mut self, model_message: ChatEntry) {
-        let msg = ColorFormatter.format(&model_message);
+    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
+        let msg = ColorFormatter.format(&event.chat_entry);
         println!("{}", msg);
         println!("=============");
     }
 
-    async fn on_invocation_success(&mut self, res: Result<ChatEntry, Error>) {
-        match res {
+    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
+        match event.res {
             Ok(tool_output) => {
                 let msg = ColorFormatter.format(&tool_output);
                 println!("{}", msg);
@@ -128,8 +133,8 @@ impl StepObserver for Observer {
         println!("=============");
     }
 
-    async fn on_invocation_failure(&mut self, res: Result<ChatEntry, Error>) {
-        match res {
+    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
+        match event.res {
             Ok(tool_output) => {
                 let msg = tool_output.msg.yellow();
                 println!("{}", msg);
@@ -172,17 +177,17 @@ async fn main() -> Result<(), pyo3::PyErr> {
         "Environment is not empty"
     );
 
+    let observer = Observer {
+        show_warmup_prompt: args.show_warmup_prompt,
+    };
+
+    let observer = wrap_observer(observer);
+
+    let w_observer = Arc::downgrade(&observer);
+
     let task = args.task.clone();
-    let termination_messages = run_to_the_end(
-        toolbox,
-        openai_client,
-        (&args).into(),
-        task,
-        Observer {
-            show_warmup_prompt: args.show_warmup_prompt,
-        },
-    )
-    .await;
+    let termination_messages =
+        run_to_the_end(toolbox, openai_client, (&args).into(), task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());
