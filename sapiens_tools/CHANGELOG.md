@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.5.0 (2023-04-27)
+
+### Chore
+
+ - <csr-id-8f039921a3bed1d976fd04c3d2ca6b99b1142411/> cleanup
+
+### New Features (BREAKING)
+
+ - <csr-id-5d785d779955f5a4c2f54b1ff60e2262e85bfa05/> more flexible parsing
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #10 from ssoudan/parsing ([`568d536`](https://github.com/ssoudan/sapiens/commit/568d5368896f758ae16d84ba35d0a382eec6ef11))
+    - Cleanup ([`8f03992`](https://github.com/ssoudan/sapiens/commit/8f039921a3bed1d976fd04c3d2ca6b99b1142411))
+    - More flexible parsing ([`5d785d7`](https://github.com/ssoudan/sapiens/commit/5d785d779955f5a4c2f54b1ff60e2262e85bfa05))
+</details>
+
 ## 0.4.1 (2023-04-26)
 
 ### New Features
@@ -23,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release.
+ - 8 commits contributed to the release.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -34,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.4.1, sapiens_tools v0.4.1, sapiens_bot v0.2.3, sapiens_cli v0.3.1 ([`16160fc`](https://github.com/ssoudan/sapiens/commit/16160fc0d369b76a08ffcc1cd5085d7387178656))
     - Merge pull request #9 from ssoudan/search ([`8976be2`](https://github.com/ssoudan/sapiens/commit/8976be2e7e056ed5a976a37a5723abc9f531d238))
     - More dotenvy ([`27059b5`](https://github.com/ssoudan/sapiens/commit/27059b5520a417af8eda46880c9c9bf5e27757c9))
     - Dotenvy in tests ([`acb725e`](https://github.com/ssoudan/sapiens/commit/acb725e1d421844815e2f2a8f8156ed4aa523849))
