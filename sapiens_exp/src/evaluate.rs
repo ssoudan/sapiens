@@ -39,7 +39,18 @@ pub struct Trial {
 impl Trial {
     /// Create a new trial
     pub fn build(config: Config, task: String, trace: Trace, tool_stats: Stats) -> Self {
-        let steps = trace
+        let analysis = Self::analyze(&trace, tool_stats);
+
+        Self {
+            trace,
+            task,
+            config,
+            analysis,
+        }
+    }
+
+    fn analyze(trace: &Trace, tool_stats: Stats) -> Analysis {
+        let attempted_invocations = trace
             .events
             .iter()
             .filter(|event| {
@@ -52,7 +63,7 @@ impl Trial {
             })
             .count() as u32;
 
-        let successful_steps = trace
+        let successful_invocations = trace
             .events
             .iter()
             .filter(|event| matches!(event, Event::ToolInvocationSucceeded { .. }))
@@ -72,20 +83,13 @@ impl Trial {
 
         let completed = termination_message.is_some();
 
-        let analysis = Analysis {
-            attempted_invocations: steps,
-            successful_invocations: successful_steps,
+        Analysis {
+            attempted_invocations,
+            successful_invocations,
             tokens,
             completed,
             termination_message,
             tool_stats,
-        };
-
-        Self {
-            trace,
-            task,
-            config,
-            analysis,
         }
     }
 }

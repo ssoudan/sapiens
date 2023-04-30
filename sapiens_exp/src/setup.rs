@@ -10,7 +10,6 @@ pub async fn toolbox() -> toolbox::Toolbox {
     toolbox.add_terminal_tool(ConcludeTool::default()).await;
 
     // TODO(ssoudan) add the other tools
-    // TODO(ssoudan) build tools with various kind of inputs and outputs
 
     toolbox
 }

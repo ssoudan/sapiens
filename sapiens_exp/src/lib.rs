@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// They are intended to be used for experimentation around the language models
 /// abilities, chaining and prompting only.
-pub(crate) mod tools;
+pub mod tools;
 
 /// Execution traces.
 pub mod traces;
@@ -87,10 +87,10 @@ pub mod evaluate;
 
 // Example of Task:
 // ----------------
+// - Make an omelette
 // - Make a cake for 8 people
 // - Make a cake for 8 people with chocolate
 // - Make a sandwich
-// - Make an omelette
 // - Make an omelette with no eggs
 // - Make a sandwich with ham
 // - Make a sandwich with ham and cheese
@@ -98,6 +98,10 @@ pub mod evaluate;
 // - Make a lime pie
 // - Make a meal with no electricity
 // - Make a vegetarian sandwich
+// - Guess the number
+// - Explore a labyrinth
+// - Tic-tac-toe
+// - Write a word character by character
 
 // Type of tools:
 // --------------
