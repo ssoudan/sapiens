@@ -22,7 +22,7 @@ jobs:
     - name: Install protoc and protoc-gen-rust
       uses: arduino/setup-protoc@v1
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build
       run: cargo build --workspace
     - name: 'Create env file'
@@ -42,7 +42,7 @@ jobs:
     - name: Install cargo-all-features
       run: cargo install cargo-all-features
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Check (all-features)
       run: cargo check-all-features --workspace
     - name: Clippy
