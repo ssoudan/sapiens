@@ -1,0 +1,24 @@
+---
+source: sapiens_exp/src/tools/scenario_0.rs
+expression: description
+---
+- name: closet
+  description: place where to find stuffs
+  input_format:
+    get: "<ClosetObject> what to get: Bowl, Cereal, Milk"
+  output_format:
+    found: "<bool> was the object found?"
+- name: mixing
+  description: when you need to mix things in a container
+  input_format:
+    container: "<Container> what to pour in. Value can be: Bowl."
+    pourable: "<Pourable> what to pour. Value can be: Cereal or Milk."
+  output_format:
+    added: "<bool> was it poured?"
+- name: serving
+  description: when the meal is ready to be served
+  input_format:
+    serveable: "<Serveable> what to serve. Value can be: bowl."
+  output_format:
+    served: "<bool> was it served?"
+

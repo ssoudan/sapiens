@@ -17,6 +17,8 @@ pub struct Analysis {
     tokens: Usage,
     /// Completion status
     completed: bool,
+    /// Reached accepting state
+    reached_accepting_state: bool,
     /// Termination message
     termination_message: Option<String>,
     /// Tool utilization statistics
@@ -38,8 +40,14 @@ pub struct Trial {
 
 impl Trial {
     /// Create a new trial
-    pub fn build(config: Config, task: String, trace: Trace, tool_stats: Stats) -> Self {
-        let analysis = Self::analyze(&trace, tool_stats);
+    pub fn build(
+        config: Config,
+        task: String,
+        trace: Trace,
+        tool_stats: Stats,
+        reached_accepting_state: bool,
+    ) -> Self {
+        let analysis = Self::analyze(&trace, tool_stats, reached_accepting_state);
 
         Self {
             trace,
@@ -49,7 +57,7 @@ impl Trial {
         }
     }
 
-    fn analyze(trace: &Trace, tool_stats: Stats) -> Analysis {
+    fn analyze(trace: &Trace, tool_stats: Stats, reached_accepting_state: bool) -> Analysis {
         let attempted_invocations = trace
             .events
             .iter()
@@ -88,6 +96,7 @@ impl Trial {
             successful_invocations,
             tokens,
             completed,
+            reached_accepting_state,
             termination_message,
             tool_stats,
         }

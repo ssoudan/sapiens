@@ -2240,6 +2240,7 @@ dependencies = [
  "colored",
  "dotenvy",
  "huelib2",
+ "insta",
  "pyo3",
  "pyo3-asyncio",
  "rust-fsm",

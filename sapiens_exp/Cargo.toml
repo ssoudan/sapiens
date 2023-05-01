@@ -39,3 +39,6 @@ colored = "2.0.0"
 dotenvy = "0.15.7"
 
 huelib2 = { version = "0.13.3", optional = true }
+
+[dev-dependencies]
+insta = { version = "1.29.0", features = ["yaml"] }

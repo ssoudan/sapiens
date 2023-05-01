@@ -9,14 +9,12 @@ use sapiens::context::{ChatEntry, ChatEntryFormatter};
 use sapiens::openai::Role;
 use sapiens::{run_to_the_end, wrap_observer};
 use sapiens_exp::evaluate::Trial;
+use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
 use sapiens_exp::{setup, Config};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
-// TODO(ssoudan) generate tasks - with acceptance criteria
-// TODO(ssoudan) benchmarking harness
-// TODO(ssoudan) feature flags
 // FUTURE(ssoudan) BO
 
 /// A bot that can do things - or at least try to.
@@ -32,7 +30,7 @@ struct Args {
     max_steps: usize,
 
     /// Task to execute
-    #[arg(short, long, default_value = "Tell me a joke.")]
+    #[arg(short, long, default_value = "Make me a cereal bowl with milk")]
     task: String,
 
     /// Experiments folder
@@ -80,6 +78,9 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let toolbox = setup::toolbox().await;
 
+    // prepare scenario 0
+    let (toolbox, shared_state) = scenario_0::build(toolbox).await;
+
     // reset stats
     toolbox.reset_stats().await;
 
@@ -114,10 +115,16 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let trace = { trace_observer.lock().await.trace() };
 
     // Collect tool utilization stats
-    let stats = toolbox.stats().await;
+    let tool_stats = toolbox.stats().await;
+
+    // Has the task been completed?
+    let reached_accepting_state = {
+        let guard = shared_state.lock().await;
+        guard.has_reached_accepting_state()
+    };
 
     // Build trial
-    let trial = Trial::build(config, task, trace, stats);
+    let trial = Trial::build(config, task, trace, tool_stats, reached_accepting_state);
 
     // TODO(ssoudan) save trial to file
     // Save to {experiments_folder}/{task_hash}/{config_hash}/{trial_hash}_{nonce}.

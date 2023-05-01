@@ -13,22 +13,23 @@
 //! evaluate::Trial::build: (Trace, State, Acceptance results, Task, Analysis)
 //! -> Trial
 
-// TODO(ssoudan) build tools with various kind of inputs and outputs
-
 use std::marker::PhantomData;
 use std::ops::DerefMut;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
-mod scenario_0;
+/// Scenario 0: Preparing a cereal bowl
+pub mod scenario_0;
+
 mod scenario_1;
 
 /// Something that updates the state of the system and produces an output
 pub trait StateUpdater<S, O> {
     /// Update the state of the system and produce an output
-    fn update(&self, state: &mut S) -> O;
+    fn update(&self, state: &mut S) -> Result<O, ToolUseError>;
 }
 
 /// A generic tool that can be used to update the state of the system
@@ -83,18 +84,18 @@ impl<I, S, O> ProtoToolDescribe for GenericTool<I, S, O> {
 #[async_trait::async_trait]
 impl<I, S, O> ProtoToolInvoke for GenericTool<I, S, O>
 where
-    I: Sync + for<'a> Deserialize<'a> + StateUpdater<S, O>,
+    I: Sync + for<'a> Deserialize<'a> + StateUpdater<S, O> + Send,
     S: Sync + Send,
-    O: Sync + Serialize,
+    O: Sync + Serialize + Send,
 {
     async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
         let input: I = serde_yaml::from_value(input)?;
 
         let output = {
             // Lock
-            let mut guard = self.state.lock().unwrap();
+            let mut guard = self.state.lock().await;
 
-            input.update(guard.deref_mut())
+            input.update(guard.deref_mut())?
         };
 
         Ok(serde_yaml::to_value(output)?)
@@ -147,9 +148,9 @@ mod tests {
     }
 
     impl StateUpdater<u32, Output> for Input {
-        fn update(&self, state: &mut u32) -> Output {
+        fn update(&self, state: &mut u32) -> Result<Output, ToolUseError> {
             *state += self.increment;
-            Output { counter: *state }
+            Ok(Output { counter: *state })
         }
     }
 
@@ -160,12 +161,13 @@ mod tests {
         let output = {
             let c = &mut state.counter;
             input.update(c)
-        };
+        }
+        .unwrap();
         assert_eq!(output.counter, 1);
         assert_eq!(state.counter, 1);
 
         let input = Input { increment: 2 };
-        let output = input.update(&mut state.counter);
+        let output = input.update(&mut state.counter).unwrap();
         assert_eq!(output.counter, 3);
         assert_eq!(state.counter, 3);
     }

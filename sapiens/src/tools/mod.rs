@@ -142,7 +142,7 @@ pub trait Tool: Sync + Send {
     fn description(&self) -> ToolDescription;
 
     /// Invoke the tool
-    // TODO(ssoudan) Box<Deserialize>?
+    // FUTURE(ssoudan) Box<Deserialize>?
     async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
 }
 

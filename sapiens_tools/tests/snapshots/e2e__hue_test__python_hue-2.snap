@@ -1,5 +1,5 @@
 ---
-source: sapiens_tools/tests/hue_test.rs
+source: sapiens_tools/tests/e2e.rs
 expression: termination_messages
 ---
 - conclusion: "The light(s) status in Bedroom is [{\"id\": \"1\", \"name\": \"Bed\", \"on\": true, \"brightness\": 126, \"hue\": 2456, \"saturation\": 55, \"color_temperature\": 2500}, {\"id\": \"2\", \"name\": \"Closet\", \"on\": false, \"brightness\": 0, \"hue\": 0, \"saturation\": 0, \"color_temperature\": 0}]"
