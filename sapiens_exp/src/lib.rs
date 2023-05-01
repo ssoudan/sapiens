@@ -133,13 +133,18 @@ pub mod evaluate;
 // - Squeezer
 
 /// Configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    // TODO(ssoudan) feature flags
+    // TODO(ssoudan) more feature flags
     /// Model to use
     pub model: String,
     /// Maximum number of steps to execute
     pub max_steps: usize,
+    /// Chat completion sampling temperature
+    /// min: 0, max: 2, default: 1,
+    pub temperature: Option<f32>,
+    /// Scenario to use
+    pub scenario: String,
 }
 
 impl From<&Config> for sapiens::Config {

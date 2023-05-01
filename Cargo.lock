@@ -2243,6 +2243,7 @@ dependencies = [
  "insta",
  "pyo3",
  "pyo3-asyncio",
+ "rand",
  "rust-fsm",
  "sapiens",
  "sapiens_derive",

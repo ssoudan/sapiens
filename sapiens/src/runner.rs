@@ -140,10 +140,11 @@ impl TaskChain {
     /// prepare the [`ChatCompletionRequest`] to be passed to OpenAI
     fn prepare_chat_completion_request(&self) -> CreateChatCompletionRequest {
         let messages: Vec<ChatCompletionRequestMessage> = (&self.chain.chat_history).into();
+        let temperature = self.chain.config.temperature;
         CreateChatCompletionRequest {
             model: self.chain.config.model.clone(),
             messages,
-            temperature: None,
+            temperature,
             top_p: None,
             n: Some(1),
             stream: None,

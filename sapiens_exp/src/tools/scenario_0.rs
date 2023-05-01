@@ -15,6 +15,8 @@
 //! - Add <x> to <y>
 //! - Serve <x>
 //!
+//! See [`build`].
+//!
 //! ## With tools
 //! - Get <bowl>
 //! - Get <cereal>
@@ -28,16 +30,10 @@
 //! - The bowl contains the milk &&
 //! - The bowl is served
 //!
-//! State machine:
-//! - (no_bowl,no_cereal,no_milk)
-//! - (no_bowl,cereal,no_milk)
-//! - (no_bowl,cereal,milk)
-//! - (bowl,no_cereal,milk)
-//! - (bowl,cereal,no_milk)
-//! - (bowl,no_cereal,no_milk)
-//! - (bowl,cereal,no_milk)
-//! - (bowl,cereal,milk)
-//! - (served)
+//! See [`InternalState::has_reached_accepting_state`]
+//!
+//! ### State machine:
+//! See [`CerealBowlRecipe`]
 
 use std::sync::Arc;
 
@@ -48,6 +44,7 @@ use sapiens_derive::Describe;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
+use crate::tools;
 use crate::tools::{GenericTool, StateUpdater};
 
 state_machine! {
@@ -65,37 +62,37 @@ state_machine! {
     BowlNoCerealNoMilk => {
         GetCereal => BowlCerealNoMilk [Found],
         GetMilk => BowlNoCerealMilk [Found],
-        GetBowl => BowlNoCerealNoMilk,
+        GetBowl => BowlNoCerealNoMilk [Found],
     },
 
     NoBowlCerealNoMilk => {
         GetBowl => BowlCerealNoMilk [Found],
         GetMilk => NoBowlCerealMilk [Found],
-        GetCereal => NoBowlCerealNoMilk,
+        GetCereal => NoBowlCerealNoMilk [Found],
     },
 
     NoBowlNoCerealMilk => {
         GetBowl => BowlNoCerealMilk [Found],
         GetCereal => NoBowlNoCerealMilk [Found],
-        GetMilk => NoBowlNoCerealMilk,
+        GetMilk => NoBowlNoCerealMilk [Found],
     },
 
     BowlCerealNoMilk => {
-        GetBowl => BowlCerealNoMilk,
-        GetCereal => BowlCerealNoMilk,
+        GetBowl => BowlCerealNoMilk [Found],
+        GetCereal => BowlCerealNoMilk [Found],
         GetMilk => BowlCerealMilk [Found],
     },
 
     BowlNoCerealMilk => {
-        GetBowl => BowlNoCerealMilk,
+        GetBowl => BowlNoCerealMilk [Found],
         GetCereal => BowlCerealMilk [Found],
-        GetMilk => BowlNoCerealMilk,
+        GetMilk => BowlNoCerealMilk [Found],
     },
 
     NoBowlCerealMilk => {
         GetBowl => BowlCerealMilk [Found],
-        GetCereal => NoBowlCerealMilk,
-        GetMilk => NoBowlCerealMilk,
+        GetCereal => NoBowlCerealMilk [Found],
+        GetMilk => NoBowlCerealMilk [Found],
     },
 
     // mixing
@@ -111,25 +108,15 @@ state_machine! {
 }
 
 /// The state of the scenario 0
-pub struct State {
+struct InternalState {
     fsm: StateMachine<CerealBowlRecipe>,
 }
 
-impl State {
+impl InternalState {
     fn new() -> Self {
         Self {
             fsm: StateMachine::new(),
         }
-    }
-
-    /// is the scenario finished?
-    pub fn has_reached_accepting_state(&self) -> bool {
-        matches!(self.fsm.state(), CerealBowlRecipeState::Served)
-    }
-
-    /// Reset the state machine
-    pub fn reset(&mut self) {
-        self.fsm = StateMachine::new();
     }
 
     /// Get the current state
@@ -139,7 +126,17 @@ impl State {
     }
 }
 
-impl Default for State {
+impl tools::State for InternalState {
+    fn reset(&mut self) {
+        self.fsm = StateMachine::new();
+    }
+
+    fn has_reached_accepting_state(&self) -> bool {
+        matches!(self.fsm.state(), CerealBowlRecipeState::Served)
+    }
+}
+
+impl Default for InternalState {
     fn default() -> Self {
         Self::new()
     }
@@ -163,8 +160,8 @@ struct ClosetInput {
     get: ClosetObject,
 }
 
-impl StateUpdater<State, ClosetOutput> for ClosetInput {
-    fn update(&self, state: &mut State) -> Result<ClosetOutput, ToolUseError> {
+impl StateUpdater<InternalState, ClosetOutput> for ClosetInput {
+    fn update(&self, state: &mut InternalState) -> Result<ClosetOutput, ToolUseError> {
         match &self.get {
             ClosetObject::Bowl => {
                 let x = state
@@ -232,8 +229,8 @@ struct MixingInput {
     pourable: Pourable,
 }
 
-impl StateUpdater<State, MixingOutput> for MixingInput {
-    fn update(&self, state: &mut State) -> Result<MixingOutput, ToolUseError> {
+impl StateUpdater<InternalState, MixingOutput> for MixingInput {
+    fn update(&self, state: &mut InternalState) -> Result<MixingOutput, ToolUseError> {
         match (&self.container, &self.pourable) {
             (Container::Bowl, Pourable::Cereal) => {
                 let x = state
@@ -279,12 +276,12 @@ enum Serveable {
 #[derive(Debug, Describe, Serialize, Deserialize, Clone)]
 /// The input of a serving action
 struct ServingInput {
-    /// what to serve. Value can be: bowl.
+    /// what to serve. Value can be: Bowl.
     serveable: Serveable,
 }
 
-impl StateUpdater<State, ServingOutput> for ServingInput {
-    fn update(&self, state: &mut State) -> Result<ServingOutput, ToolUseError> {
+impl StateUpdater<InternalState, ServingOutput> for ServingInput {
+    fn update(&self, state: &mut InternalState) -> Result<ServingOutput, ToolUseError> {
         match &self.serveable {
             Serveable::Bowl => {
                 let x = state
@@ -314,23 +311,33 @@ impl From<Option<CerealBowlRecipeOutput>> for ServingOutput {
 }
 
 /// Scenario 0
-pub async fn build(mut toolbox: Toolbox) -> (Toolbox, Arc<Mutex<State>>) {
-    let state = State::new();
+///
+/// This scenario is a simple one. It is about making a bowl of cereal.
+///
+/// There are 3 tools: closet, mixing and serving.
+/// The closet is where you can find the bowl, the cereal and the milk.
+/// The mixing is where you can mix the cereal and the milk in the bowl.
+/// The serving is where you can serve the bowl.
+/// The goal is to make a bowl of cereal and serve it.
+pub async fn build(mut toolbox: Toolbox) -> (Toolbox, Arc<Mutex<dyn tools::State>>) {
+    let state = InternalState::new();
     let shared_state = Arc::new(Mutex::new(state));
 
-    let closet: GenericTool<ClosetInput, State, ClosetOutput> = GenericTool::new_with_descriptions(
-        "closet".to_string(),
-        "place where to find stuffs".to_string(),
-        shared_state.clone(),
-    );
+    let closet: GenericTool<ClosetInput, InternalState, ClosetOutput> =
+        GenericTool::new_with_descriptions(
+            "closet".to_string(),
+            "place where to find stuffs".to_string(),
+            shared_state.clone(),
+        );
 
-    let mixing: GenericTool<MixingInput, State, MixingOutput> = GenericTool::new_with_descriptions(
-        "mixing".to_string(),
-        "when you need to mix things in a container".to_string(),
-        shared_state.clone(),
-    );
+    let mixing: GenericTool<MixingInput, InternalState, MixingOutput> =
+        GenericTool::new_with_descriptions(
+            "mixing".to_string(),
+            "when you need to mix things in a container".to_string(),
+            shared_state.clone(),
+        );
 
-    let serving: GenericTool<ServingInput, State, ServingOutput> =
+    let serving: GenericTool<ServingInput, InternalState, ServingOutput> =
         GenericTool::new_with_descriptions(
             "serving".to_string(),
             "when the meal is ready to be served".to_string(),
@@ -350,6 +357,7 @@ mod tests {
     use sapiens::tools::{ProtoToolInvoke, ToolDescription};
 
     use super::*;
+    use crate::tools::State;
 
     #[test]
     fn cereal_bowl() {
@@ -378,11 +386,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_with_tools() {
-        let shared_state = State::default();
+        let shared_state = InternalState::default();
 
         let shared_state = Arc::new(Mutex::new(shared_state));
 
-        let closet: GenericTool<ClosetInput, State, ClosetOutput> =
+        let closet: GenericTool<ClosetInput, InternalState, ClosetOutput> =
             GenericTool::new_with_descriptions(
                 "closet".to_string(),
                 "place where to find stuffs".to_string(),
@@ -441,7 +449,7 @@ mod tests {
         }
 
         // add a mixing tool
-        let mixing: GenericTool<MixingInput, State, MixingOutput> =
+        let mixing: GenericTool<MixingInput, InternalState, MixingOutput> =
             GenericTool::new_with_descriptions(
                 "mixing".to_string(),
                 "mixing stuffs".to_string(),
@@ -485,7 +493,7 @@ mod tests {
         }
 
         // add a serving tool
-        let serving: GenericTool<ServingInput, State, ServingOutput> =
+        let serving: GenericTool<ServingInput, InternalState, ServingOutput> =
             GenericTool::new_with_descriptions(
                 "serving".to_string(),
                 "serving stuffs".to_string(),
@@ -534,8 +542,7 @@ mod tests {
 
         {
             let guard = shared_state.lock().await;
-            let state = guard.state();
-            assert!(matches!(state, CerealBowlRecipeState::NoBowlNoCerealNoMilk));
+            assert!(!guard.has_reached_accepting_state());
         }
 
         let description = toolbox.describe().await;

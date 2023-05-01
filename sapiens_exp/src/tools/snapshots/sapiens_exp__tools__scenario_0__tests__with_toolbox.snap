@@ -18,7 +18,7 @@ expression: description
 - name: serving
   description: when the meal is ready to be served
   input_format:
-    serveable: "<Serveable> what to serve. Value can be: bowl."
+    serveable: "<Serveable> what to serve. Value can be: Bowl."
   output_format:
     served: "<bool> was it served?"
 

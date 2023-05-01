@@ -26,6 +26,15 @@ pub mod scenario_0;
 
 mod scenario_1;
 
+/// The state of a scenario
+pub trait State: Send + Sync {
+    /// Reset the state to its initial state
+    fn reset(&mut self);
+
+    /// Check if the state has reached an accepting state
+    fn has_reached_accepting_state(&self) -> bool;
+}
+
 /// Something that updates the state of the system and produces an output
 pub trait StateUpdater<S, O> {
     /// Update the state of the system and produce an output

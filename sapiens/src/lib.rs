@@ -55,6 +55,10 @@ pub struct Config {
     pub max_steps: usize,
     /// The minimum number of tokens that need to be available for completion
     pub min_token_for_completion: usize,
+    /// The OpenAI chat completion request temperature
+    /// min: 0, max: 2, default: 1,
+    /// The higher the temperature, the crazier the text.
+    pub temperature: Option<f32>,
 }
 
 impl Default for Config {
@@ -63,6 +67,7 @@ impl Default for Config {
             model: "gpt-3.5-turbo".to_string(),
             max_steps: 10,
             min_token_for_completion: 512,
+            temperature: None,
         }
     }
 }

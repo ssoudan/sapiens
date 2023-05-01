@@ -1,0 +1,15 @@
+name: sapiens
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+    - seaborn
+    - pandas
+    - matplotlib
+    - numpy
+    - scipy
+    - scikit-learn
+    

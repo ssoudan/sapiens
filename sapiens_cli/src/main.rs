@@ -36,11 +36,10 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) other models?
 // FUTURE(ssoudan) memory?
 // FUTURE(ssoudan) vector stores?
-// TODO(ssoudan) prompt optimization
+// FUTURE(ssoudan) prompt optimization
 // FUTURE(ssoudan) multiple models - critic?
 // FUTURE(ssoudan) multi-stage evaluation
-// TODO(ssoudan) log the conversation to build a dataset
-// TODO(ssoudan) categorize the outcomes - count the number of steps
+// FUTURE(ssoudan) log the conversation to build a dataset
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]

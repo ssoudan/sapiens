@@ -3,8 +3,11 @@
 set -e
 
 IMAGE_NAME="sapiens_exp"
+OUTPUT_DIR="experiments/data"
 
 test -e .env || (echo "Please create a .env file with the required environment variables" && exit 1)
+
+test -d $OUTPUT_DIR || mkdir $OUTPUT_DIR
 
 ARGS=("$@")
 
@@ -27,5 +30,6 @@ fi
 
 # Run the application
 docker run -it --rm --read-only --name ${IMAGE_NAME} \
+    -v "$(pwd)"/${OUTPUT_DIR}:/app/experiments/data \
     --env-file .env \
     $IMAGE_NAME "${ARGS[@]}"

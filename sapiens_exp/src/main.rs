@@ -1,8 +1,9 @@
 //! Main for sapiens_exp
 
+use std::fmt::Display;
 use std::sync::Arc;
 
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter};
@@ -12,10 +13,26 @@ use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
 use sapiens_exp::{setup, Config};
-use tracing::info;
+use tracing::{info, trace};
 use tracing_subscriber::EnvFilter;
 
 // FUTURE(ssoudan) BO
+
+/// A scenario to execute
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug, Default)]
+enum Scenario {
+    /// Scenario 0 - make a cereal bowl with milk
+    #[default]
+    Scenario0,
+}
+
+impl Display for Scenario {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Scenario::Scenario0 => write!(f, "Scenario0"),
+        }
+    }
+}
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
@@ -33,9 +50,23 @@ struct Args {
     #[arg(short, long, default_value = "Make me a cereal bowl with milk")]
     task: String,
 
+    /// Scenario to execute
+    #[arg(short, long, value_enum, default_value_t = Scenario::Scenario0)]
+    scenario: Scenario,
+
     /// Experiments folder
-    #[arg(long, default_value = "experiments")]
+    #[arg(long, default_value = "experiments/data/")]
     experiments_folder: String,
+
+    /// File to save the trial record. Default to trial_<random>.json
+    #[arg(long)]
+    trial_file: Option<String>,
+
+    /// Temperature for the model sampling
+    /// min: 0, max: 2
+    /// The higher the temperature, the crazier the text.
+    #[arg(long, default_value_t = 0.)]
+    temperature: f32,
 }
 
 impl From<&Args> for Config {
@@ -43,6 +74,8 @@ impl From<&Args> for Config {
         Self {
             model: args.model.clone(),
             max_steps: args.max_steps,
+            temperature: Some(args.temperature),
+            scenario: args.scenario.to_string(),
         }
     }
 }
@@ -74,12 +107,24 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // Prepare config
     let config = Config::from(&args);
 
-    info!("Starting sapiens_cli");
+    info!(config = ?config, "Starting sapiens_exp");
 
-    let toolbox = setup::toolbox().await;
+    let trial_file = args
+        .trial_file
+        .clone()
+        .unwrap_or_else(|| format!("trial_{}.json", rand::random::<u64>()));
 
-    // prepare scenario 0
-    let (toolbox, shared_state) = scenario_0::build(toolbox).await;
+    info!(
+        "Going to save trials in {}/{} ",
+        args.experiments_folder, trial_file
+    );
+
+    let toolbox = setup::basic_toolbox().await;
+
+    // prepare scenario
+    let (toolbox, shared_state) = match args.scenario {
+        Scenario::Scenario0 => scenario_0::build(toolbox).await,
+    };
 
     // reset stats
     toolbox.reset_stats().await;
@@ -126,11 +171,15 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // Build trial
     let trial = Trial::build(config, task, trace, tool_stats, reached_accepting_state);
 
-    // TODO(ssoudan) save trial to file
-    // Save to {experiments_folder}/{task_hash}/{config_hash}/{trial_hash}_{nonce}.
-    // json
+    trace!(trial = ?trial, "Trial");
 
-    println!("Trial: {:#?}", trial);
+    // Save to {experiments_folder}/trial.json
+    let experiments_folder = args.experiments_folder.clone();
+    let _ = std::fs::create_dir_all(&experiments_folder);
+    let trial_path = std::path::Path::new(&experiments_folder).join(&trial_file);
+    let _ = std::fs::write(&trial_path, serde_json::to_string_pretty(&trial).unwrap());
+
+    info!("Trial saved to {}", trial_path.to_str().unwrap());
 
     Ok(())
 }

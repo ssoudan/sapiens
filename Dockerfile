@@ -88,6 +88,8 @@ ARG USER_GID=$USER_UID
 
 COPY --from=builder-exp /app/target/release/sapiens_exp /usr/local/bin/sapiens
 
+VOLUME /app/experiments
+
 USER $USER_UID:$USER_GID
 
 ENTRYPOINT ["/usr/local/bin/sapiens"]
