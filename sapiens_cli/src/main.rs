@@ -16,7 +16,6 @@ use tracing_subscriber::EnvFilter;
 // Usability:
 // FUTURE(ssoudan) Richer interaction
 // FUTURE(ssoudan) More tools: wx, negotiate
-// FUTURE(ssoudan) Discord bot with long-lived conversations
 // FUTURE(ssoudan) Settings
 // FUTURE(ssoudan) Token budget management and completion termination reason
 // FUTURE(ssoudan) Model parameters
@@ -30,7 +29,7 @@ use tracing_subscriber::EnvFilter;
 //
 // Adoption:
 // FUTURE(ssoudan) More documentation and examples
-// FUTURE(ssoudan) A site?
+// FUTURE(ssoudan) GH Pages
 //
 // Explore:
 // FUTURE(ssoudan) other models?
@@ -39,7 +38,6 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) prompt optimization
 // FUTURE(ssoudan) multiple models - critic?
 // FUTURE(ssoudan) multi-stage evaluation
-// FUTURE(ssoudan) log the conversation to build a dataset
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]

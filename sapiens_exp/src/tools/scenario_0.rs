@@ -177,7 +177,7 @@ enum ClosetObject {
 #[derive(Debug, Describe, Serialize, Deserialize, Clone)]
 /// The input of a closet
 struct ClosetInput {
-    /// what to get: Bowl, Cereal, Milk
+    /// what to get. Value can be: Bowl, Cereal, or Milk. Only one at a time.
     get: ClosetObject,
 }
 
@@ -262,11 +262,11 @@ enum Pourable {
 }
 
 #[derive(Debug, Describe, Serialize, Deserialize, Clone)]
-/// The input of a mixing action
+/// The input of a Mixing action
 struct MixingInput {
-    /// what to pour in. Value can be: Bowl.
+    /// What to pour in. Value can be: Bowl. You must have it first.
     container: Container,
-    /// what to pour. Value can be: Cereal or Milk.
+    /// What to pour. Value can be: Cereal or Milk. You must have it first.
     pourable: Pourable,
 }
 
@@ -383,21 +383,21 @@ pub async fn build(mut toolbox: Toolbox) -> (Toolbox, Arc<Mutex<dyn tools::State
     let closet: GenericTool<ClosetInput, InternalState, ClosetOutput> =
         GenericTool::new_with_descriptions(
             "Closet".to_string(),
-            "place where to find stuffs".to_string(),
+            "Place where to find stuffs.".to_string(),
             shared_state.clone(),
         );
 
     let mixing: GenericTool<MixingInput, InternalState, MixingOutput> =
         GenericTool::new_with_descriptions(
             "Mixing".to_string(),
-            "when you need to mix things in a container".to_string(),
+            "When you need to mix things in a container. You have to have them before using this tool.".to_string(),
             shared_state.clone(),
         );
 
     let serving: GenericTool<ServingInput, InternalState, ServingOutput> =
         GenericTool::new_with_descriptions(
             "Serving".to_string(),
-            "when the meal is ready to be served".to_string(),
+            "When the meal is ready, use this to serve it.".to_string(),
             shared_state.clone(),
         );
 

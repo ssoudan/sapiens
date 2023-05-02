@@ -79,7 +79,7 @@ impl Trial {
             .iter()
             .filter(|event| {
                 matches!(
-                    event,
+                    event.event,
                     Event::ToolInvocationSucceeded { .. }
                         | Event::ToolInvocationFailed { .. }
                         | Event::ToolInvocationFailedAndChatNotUpdated { .. }
@@ -90,15 +90,15 @@ impl Trial {
         let successful_invocations = trace
             .events
             .iter()
-            .filter(|event| matches!(event, Event::ToolInvocationSucceeded { .. }))
+            .filter(|event| matches!(event.event, Event::ToolInvocationSucceeded { .. }))
             .count() as u32;
 
         let tokens = trace.events.iter().fold(Usage::default(), |acc, event| {
-            acc + event.tokens().unwrap_or_default()
+            acc + event.event.tokens().unwrap_or_default()
         });
 
         let termination_message = trace.events.iter().find_map(|event| {
-            if let Event::End(CompletionStatus::Concluded { conclusion, .. }) = event {
+            if let Event::End(CompletionStatus::Concluded { conclusion, .. }) = &event.event {
                 Some(conclusion.clone())
             } else {
                 None

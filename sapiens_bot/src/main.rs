@@ -228,6 +228,8 @@ async fn main() -> PyResult<()> {
 
     // FUTURE(ssoudan) graceful shutdown
     // FUTURE(ssoudan) build the chat history from the channel history
+    // FUTURE(ssoudan) Discord bot with long-lived conversations
+    // FUTURE(ssoudan) log the conversation to build a dataset
 
     // install global subscriber configured based on RUST_LOG envvar.
     tracing_subscriber::fmt()

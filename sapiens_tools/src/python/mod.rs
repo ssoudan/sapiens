@@ -208,7 +208,7 @@ impl PythonTool {
             let py_stderr = py_stderr_cell.borrow_mut();
             sys.setattr("stderr", py_stderr.into_py(py))?;
 
-            // FUTURE(ssoudan) pass something in
+            // NOFUTURE(ssoudan) pass something in
 
             // run code
             Python::run(py, &code, globals.into(), None)?;
@@ -387,8 +387,6 @@ impl PythonTool {
                 ));
                 tool_class_code.push('\n');
             }
-
-            // FUTURE(ssoudan) set input_format and output_format
         }
 
         // add list function

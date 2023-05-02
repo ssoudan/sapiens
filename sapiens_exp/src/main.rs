@@ -114,10 +114,10 @@ async fn main() -> Result<(), pyo3::PyErr> {
         .clone()
         .unwrap_or_else(|| format!("trial_{}.json", rand::random::<u64>()));
 
-    info!(
-        "Going to save trials in {}/{} ",
-        args.experiments_folder, trial_file
-    );
+    let experiments_folder = args.experiments_folder.clone();
+    let trial_path = std::path::Path::new(&experiments_folder).join(&trial_file);
+
+    info!("Going to save trials in {} ", trial_path.to_str().unwrap());
 
     let toolbox = setup::basic_toolbox().await;
 
@@ -143,10 +143,9 @@ async fn main() -> Result<(), pyo3::PyErr> {
         "Environment is not empty"
     );
 
-    let trace_observer = TraceObserver::new();
+    let trace_observer = TraceObserver::new(shared_state.clone());
     let trace_observer = wrap_observer(trace_observer);
     let w_trace_observer = Arc::downgrade(&trace_observer);
-    // TODO(ssoudan) log the current state in the traces
 
     let task = args.task.clone();
     let _ = run_to_the_end(
@@ -158,7 +157,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     )
     .await;
 
-    let trace = { trace_observer.lock().await.trace() };
+    let trace = { trace_observer.lock().await.trace().await };
 
     // Collect tool utilization stats
     let tool_stats = toolbox.stats().await;
@@ -188,9 +187,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     trace!(trial = ?trial, "Trial");
 
     // Save to {experiments_folder}/trial.json
-    let experiments_folder = args.experiments_folder.clone();
     let _ = std::fs::create_dir_all(&experiments_folder);
-    let trial_path = std::path::Path::new(&experiments_folder).join(&trial_file);
     let _ = std::fs::write(&trial_path, serde_json::to_string_pretty(&trial).unwrap());
 
     info!("Trial saved to {}", trial_path.to_str().unwrap());

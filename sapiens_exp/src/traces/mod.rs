@@ -1,11 +1,16 @@
 use std::fmt::{Debug, Formatter};
 use std::ops::Add;
+use std::sync::Arc;
 
 use sapiens::{
     InvalidInvocationNotification, InvocationFailureNotification, InvocationSuccessNotification,
     ModelUpdateNotification, StepObserver, TerminationNotification,
 };
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
+
+use crate::tools;
+use crate::tools::State;
 
 /// Token usage
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -48,7 +53,7 @@ impl From<sapiens::runner::Usage> for Usage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trace {
     /// The events in the trace
-    pub(crate) events: Vec<Event>,
+    pub(crate) events: Vec<EventAndState>,
 }
 
 /// The status of a completed task
@@ -163,6 +168,17 @@ pub enum Event {
     },
 }
 
+/// An event and the state after the event
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventAndState {
+    /// The event
+    #[serde(flatten)]
+    pub event: Event,
+    /// The state after the event
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+}
+
 impl Event {
     /// Get the token usage
     pub fn tokens(&self) -> Option<Usage> {
@@ -175,6 +191,11 @@ impl Event {
             Event::InvalidInvocationAndChatNotUpdated { token_usage, .. } => token_usage.clone(),
             Event::End(_) => None,
         }
+    }
+
+    /// Wrap the event in an [`EventAndState`] with the given `state`
+    fn into_event_and_state(self, state: Option<String>) -> EventAndState {
+        EventAndState { event: self, state }
     }
 }
 
@@ -189,6 +210,8 @@ pub struct TraceObserver {
     termination: Option<TerminationNotification>,
     /// Whether the trace is finalized
     finalized: bool,
+    /// The shared state
+    state: Option<Arc<Mutex<dyn State>>>,
 }
 
 impl Debug for TraceObserver {
@@ -203,26 +226,44 @@ impl Debug for TraceObserver {
 
 impl Default for TraceObserver {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl TraceObserver {
-    /// Create a new trace observer
-    pub fn new() -> Self {
         Self {
             trace: Trace { events: vec![] },
             tool_input: None,
             termination: None,
             finalized: false,
+            state: None,
+        }
+    }
+}
+
+impl TraceObserver {
+    /// Create a new trace observer
+    pub fn new(shared_state: Arc<Mutex<dyn tools::State>>) -> Self {
+        Self {
+            trace: Trace { events: vec![] },
+            tool_input: None,
+            termination: None,
+            finalized: false,
+            state: Some(shared_state),
+        }
+    }
+
+    async fn get_state(&self) -> Option<String> {
+        if let Some(state) = self.state.as_ref() {
+            let guard = state.lock().await;
+            Some(guard.state())
+        } else {
+            None
         }
     }
 
     /// Get the trace
-    pub fn trace(&mut self) -> Trace {
+    pub async fn trace(&mut self) -> Trace {
         if self.finalized {
             return self.trace.clone();
         }
+
+        let state = self.get_state().await;
 
         // Add the final event
         match self.termination.take() {
@@ -233,14 +274,15 @@ impl TraceObserver {
                     .map(|msg| msg.conclusion.clone())
                     .collect::<Vec<_>>()
                     .join("\n");
-                self.trace
-                    .events
-                    .push(Event::End(CompletionStatus::Concluded { conclusion }));
+                self.trace.events.push(
+                    Event::End(CompletionStatus::Concluded { conclusion })
+                        .into_event_and_state(state),
+                );
             }
             None => {
-                self.trace
-                    .events
-                    .push(Event::End(CompletionStatus::MaxStepsReached));
+                self.trace.events.push(
+                    Event::End(CompletionStatus::MaxStepsReached).into_event_and_state(state),
+                );
             }
         }
 
@@ -354,9 +396,14 @@ impl From<InvalidInvocationNotification> for Event {
 #[async_trait::async_trait]
 impl StepObserver for TraceObserver {
     async fn on_task(&mut self, task: &str) {
-        self.trace.events.push(Event::Start {
-            task: task.to_string(),
-        });
+        let state = self.get_state().await;
+
+        self.trace.events.push(
+            Event::Start {
+                task: task.to_string(),
+            }
+            .into_event_and_state(state),
+        );
     }
 
     async fn on_model_update(&mut self, model_update: ModelUpdateNotification) {
@@ -364,15 +411,27 @@ impl StepObserver for TraceObserver {
     }
 
     async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
-        self.trace.events.push(event.into());
+        let state = self.get_state().await;
+
+        self.trace
+            .events
+            .push(Event::from(event).into_event_and_state(state));
     }
 
     async fn on_invalid_invocation(&mut self, event: InvalidInvocationNotification) {
-        self.trace.events.push(event.into());
+        let state = self.get_state().await;
+
+        self.trace
+            .events
+            .push(Event::from(event).into_event_and_state(state));
     }
 
     async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
-        self.trace.events.push(event.into());
+        let state = self.get_state().await;
+
+        self.trace
+            .events
+            .push(Event::from(event).into_event_and_state(state));
     }
 
     async fn on_termination(&mut self, event: TerminationNotification) {

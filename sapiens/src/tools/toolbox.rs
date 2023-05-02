@@ -303,7 +303,7 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     let invocation_count = tool_invocations.len();
     info!("{} Tool invocations found", invocation_count);
 
-    // TODO(ssoudan) feature to control this
+    // FUTURE(ssoudan) feature to control this
     // if more than one tool_invocations are found, we return an error
     // if tool_invocations.len() > 1 {
     //     return Err(ToolUseError::TooManyInvocationFound);
