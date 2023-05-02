@@ -5,8 +5,9 @@ use tracing::debug;
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
 use crate::prompt::Task;
-use crate::tools::toolbox::Toolbox;
-use crate::tools::{Summary, TerminationMessage, ToolUseError};
+use crate::tools::invocation::InvocationError;
+use crate::tools::toolbox::{InvokeResult, Toolbox};
+use crate::tools::{TerminationMessage, ToolUseError};
 use crate::{prompt, Client, Config, Error};
 
 /// A chain - not yet specialized to a task
@@ -167,7 +168,7 @@ impl TaskChain {
     ///
     /// See [`crate::invoke_tool`] for more details.
     #[tracing::instrument(skip(self, data))]
-    pub async fn invoke_tool(&self, data: &str) -> (String, Result<Summary, ToolUseError>) {
+    pub async fn invoke_tool(&self, data: &str) -> InvokeResult {
         let toolbox = self.chain.toolbox.clone();
         crate::tools::toolbox::invoke_tool(toolbox, data).await
     }
@@ -180,13 +181,13 @@ impl TaskChain {
         &mut self,
         tool_name: &str,
         query: ChatEntry,
-        response: Summary,
+        result: String,
     ) -> Result<ChatEntry, Error> {
         // add the query to the chat history
         self.add_to_chat_history(query)?;
 
         // add the response to the chat history
-        let msg = self.task.action_success_prompt(tool_name, response.result);
+        let msg = self.task.action_success_prompt(tool_name, result);
 
         // if the response is too long, we add an error message to the chat history
         // instead
@@ -230,6 +231,28 @@ impl TaskChain {
 
         // add the error message to the chat history
         let msg = self.task.action_failed_prompt(tool_name, &e);
+
+        let entry = ChatEntry {
+            msg,
+            role: Role::User,
+        };
+
+        self.add_to_chat_history(entry.clone())?;
+
+        Ok(entry)
+    }
+
+    /// Generate a new prompt for the assistant based on the invocation parsing.
+    pub fn on_invocation_failure(
+        &mut self,
+        query: ChatEntry,
+        e: InvocationError,
+    ) -> Result<ChatEntry, Error> {
+        // add the query to the chat history
+        self.add_to_chat_history(query)?;
+
+        // add the error message to the chat history
+        let msg = self.task.invalid_action_prompt(&e);
 
         let entry = ChatEntry {
             msg,

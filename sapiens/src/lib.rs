@@ -24,6 +24,7 @@ use tools::toolbox;
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{Client, OpenAIError};
 use crate::runner::{ModelResponse, TaskChain, Usage};
+use crate::tools::toolbox::InvokeResult;
 use crate::tools::TerminationMessage;
 
 /// The error type for the bot
@@ -98,11 +99,15 @@ pub struct InvocationSuccessNotification {
     /// The tool name
     pub tool_name: String,
     /// The input
-    pub input: ChatEntry,
+    pub assistant_message: ChatEntry,
     /// The result
     pub res: Result<ChatEntry, Error>,
     /// The number of tokens used by the model
     pub usage: Option<Usage>,
+    /// Number of invocation blocks in the message
+    pub available_invocation_count: usize,
+    /// The input that was extracted from the message and passed to `tool_name`
+    pub extracted_input: String,
 }
 
 /// Invocation failure notification
@@ -110,19 +115,33 @@ pub struct InvocationFailureNotification {
     /// The tool name
     pub tool_name: String,
     /// The input
-    pub input: ChatEntry,
+    pub assistant_message: ChatEntry,
     /// The result
     pub res: Result<ChatEntry, Error>,
     /// The number of tokens used by the model
     pub usage: Option<Usage>,
+    /// Number of invocation blocks in the message
+    pub available_invocation_count: usize,
+    /// The input that was extracted from the message and passed to `tool_name`
+    pub extracted_input: String,
+}
+
+/// Invalid invocation notification
+pub struct InvalidInvocationNotification {
+    /// The input
+    pub assistant_message: ChatEntry,
+    /// The result
+    pub res: Result<ChatEntry, Error>,
+    /// The number of tokens used by the model
+    pub usage: Option<Usage>,
+    /// Number of invocation blocks in the message
+    pub available_invocation_count: usize,
 }
 
 /// Termination notification
 pub struct TerminationNotification {
     /// The messages
     pub messages: Vec<TerminationMessage>,
-    /// The number of tokens used by the model
-    pub usage: Option<Usage>,
 }
 
 /// Observer for the step progresses
@@ -139,6 +158,9 @@ pub trait StepObserver: Send {
 
     /// Called when the tool invocation was successful
     async fn on_invocation_success(&mut self, _event: InvocationSuccessNotification) {}
+
+    /// Called when no valid tool invocation was found
+    async fn on_invalid_invocation(&mut self, _event: InvalidInvocationNotification) {}
 
     /// Called when the tool invocation failed
     async fn on_invocation_failure(&mut self, _event: InvocationFailureNotification) {}
@@ -161,6 +183,8 @@ impl Step {
         // Wrap the response as the chat history entry
         let model_update = ModelUpdateNotification::from(model_response);
 
+        let usage = model_update.usage.clone();
+
         // Show the message from the assistant
         if let Some(observer) = self.observer.upgrade() {
             observer
@@ -171,84 +195,118 @@ impl Step {
         }
 
         // pass the message to the tools and get the response
-        let tool_input = model_update.chat_entry;
-        let (tool_name, resp) = self.task_chain.invoke_tool(&tool_input.msg).await;
+        let assistant_message = model_update.chat_entry;
+        let resp = self.task_chain.invoke_tool(&assistant_message.msg).await;
+
+        // report on the tool invocation
         match resp {
-            Ok(response) => {
-                // check if the task is done
-                if let Some(termination_messages) = self.task_chain.is_terminal().await {
-                    if let Some(observer) = self.observer.upgrade() {
-                        observer
-                            .lock()
-                            .await
-                            .on_termination(TerminationNotification {
-                                messages: termination_messages.clone(),
-                                usage: model_update.usage,
-                            })
-                            .await;
-                    }
-
-                    return Ok(StepOrStop::Stop {
-                        stop: Stop {
-                            termination_messages,
-                        },
-                    });
-                }
-
-                // Got a response from the tool but the task is not done yet
+            InvokeResult::NoInvocationsFound { e } => {
                 let res = self
                     .task_chain
-                    .on_tool_success(&tool_name, tool_input.clone(), response);
+                    .on_invocation_failure(assistant_message.clone(), e);
                 if let Some(observer) = self.observer.upgrade() {
                     observer
                         .lock()
                         .await
-                        .on_invocation_success(InvocationSuccessNotification {
-                            input: tool_input,
-                            tool_name,
+                        .on_invalid_invocation(InvalidInvocationNotification {
+                            assistant_message,
                             res,
-                            usage: model_update.usage,
+                            usage,
+                            available_invocation_count: 0,
                         })
                         .await;
                 }
             }
-            Err(e) => {
-                // check if the task is done
-                if let Some(termination_messages) = self.task_chain.is_terminal().await {
-                    if let Some(observer) = self.observer.upgrade() {
-                        observer
-                            .lock()
-                            .await
-                            .on_termination(TerminationNotification {
-                                messages: termination_messages.clone(),
-                                usage: model_update.usage,
-                            })
-                            .await;
-                    }
-
-                    return Ok(StepOrStop::Stop {
-                        stop: Stop {
-                            termination_messages,
-                        },
-                    });
-                }
-
+            InvokeResult::NoValidInvocationsFound {
+                e,
+                invocation_count: available_invocation_count,
+            } => {
                 let res = self
                     .task_chain
-                    .on_tool_failure(&tool_name, tool_input.clone(), e);
+                    .on_invocation_failure(assistant_message.clone(), e);
+                if let Some(observer) = self.observer.upgrade() {
+                    observer
+                        .lock()
+                        .await
+                        .on_invalid_invocation(InvalidInvocationNotification {
+                            assistant_message,
+                            res,
+                            usage,
+                            available_invocation_count,
+                        })
+                        .await;
+                }
+            }
+            InvokeResult::Error {
+                invocation_count: available_invocation_count,
+                tool_name,
+                extracted_input,
+                e,
+            } => {
+                let res = self
+                    .task_chain
+                    .on_tool_failure(&tool_name, assistant_message.clone(), e);
+
                 if let Some(observer) = self.observer.upgrade() {
                     observer
                         .lock()
                         .await
                         .on_invocation_failure(InvocationFailureNotification {
-                            input: tool_input,
+                            assistant_message,
                             tool_name,
                             res,
-                            usage: model_update.usage,
+                            usage,
+                            available_invocation_count,
+                            extracted_input,
                         })
                         .await;
                 }
             }
+            InvokeResult::Success {
+                available_invocation_count,
+                tool_name,
+                extracted_input,
+                result,
+            } => {
+                // Got a response from the tool but the task is not done yet
+                let res =
+                    self.task_chain
+                        .on_tool_success(&tool_name, assistant_message.clone(), result);
+
+                if let Some(observer) = self.observer.upgrade() {
+                    observer
+                        .lock()
+                        .await
+                        .on_invocation_success(InvocationSuccessNotification {
+                            assistant_message,
+                            tool_name,
+                            res,
+                            usage,
+                            available_invocation_count,
+                            extracted_input,
+                        })
+                        .await;
+                }
+            }
+        }
+
+        // check if the task is done
+        if let Some(termination_messages) = self.task_chain.is_terminal().await {
+            if let Some(observer) = self.observer.upgrade() {
+                observer
+                    .lock()
+                    .await
+                    .on_termination(TerminationNotification {
+                        messages: termination_messages.clone(),
+                    })
+                    .await;
+            }
+
+            return Ok(StepOrStop::Stop {
+                stop: Stop {
+                    termination_messages,
+                },
+            });
         }
 
         Ok(StepOrStop::Step { step: self })

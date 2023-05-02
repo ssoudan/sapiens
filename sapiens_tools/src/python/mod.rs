@@ -21,6 +21,8 @@ use crate::python::utils::SimpleToolDescription;
 
 const MAX_OUTPUT_SIZE: usize = 512;
 
+// FUTURE(ssoudan) install pySWIP
+
 /// A tool that runs sandboxed Python code. Use this to transform data.
 ///
 /// - To use another Tool with input format `input_field_1` and `input_field_2`
@@ -474,7 +476,8 @@ fn indent(offset: u32, s: &str) -> String {
 #[async_trait::async_trait]
 impl ProtoToolInvoke for PythonTool {
     async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
+        let input =
+            serde_yaml::from_value(input).map_err(|e| ToolUseError::InvalidInput(e.to_string()))?;
 
         let output = self.invoke_sync_typed(&input)?;
 
@@ -488,7 +491,7 @@ impl ProtoToolInvoke for PythonTool {
             )));
         }
 
-        Ok(serde_yaml::to_value(output)?)
+        Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)
     }
 }
 
@@ -499,9 +502,10 @@ impl AdvancedTool for PythonTool {
         toolbox: Toolbox,
         input: Value,
     ) -> Result<Value, ToolUseError> {
-        let input = serde_yaml::from_value(input)?;
+        let input =
+            serde_yaml::from_value(input).map_err(|e| ToolUseError::InvalidInput(e.to_string()))?;
         let output = self.invoke_typed(toolbox, &input).await?;
-        Ok(serde_yaml::to_value(output)?)
+        Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)
     }
 }
 

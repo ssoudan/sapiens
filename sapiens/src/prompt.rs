@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::context::ChatHistory;
 use crate::openai::Role;
+use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::Toolbox;
 use crate::tools::{ToolDescription, ToolUseError};
 
@@ -205,6 +206,15 @@ impl Task {
         format!(
             "# Action {} failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
             tool_name.as_ref(),
+            e,
+            self.to_prompt()
+        )
+    }
+
+    /// Create the prompt to react to invalid action specification
+    pub(crate) fn invalid_action_prompt(&self, e: &InvocationError) -> String {
+        format!(
+            "# No valid Action found:\n{:?}\nWhat was incorrect in previous response?\n{}",
             e,
             self.to_prompt()
         )

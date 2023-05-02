@@ -101,7 +101,8 @@ where
     O: Sync + Serialize + Send,
 {
     async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-        let input: I = serde_yaml::from_value(input)?;
+        let input: I =
+            serde_yaml::from_value(input).map_err(|e| ToolUseError::InvalidInput(e.to_string()))?;
 
         let output = {
             // Lock
@@ -110,7 +111,7 @@ where
             input.update(guard.deref_mut())?
         };
 
-        Ok(serde_yaml::to_value(output)?)
+        Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)
     }
 }
 

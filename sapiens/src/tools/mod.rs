@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use toolbox::Toolbox;
-use tracing::{info, warn};
+use tracing::warn;
 
 use crate::tools::invocation::InvocationError;
 
@@ -88,7 +88,7 @@ impl ToolDescription {
 }
 
 /// Error while using a tool
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub enum ToolUseError {
     /// Tool not found
     #[error("Tool not found: {0}")]
@@ -98,10 +98,13 @@ pub enum ToolUseError {
     InvocationFailed(String),
     /// Failed to serialize the output
     #[error("Failed to serialize the output: {0}")]
-    InvalidOutput(#[from] serde_yaml::Error),
+    InvalidOutput(String),
+    /// Failed to deserialize the input
+    #[error("Failed to deserialize the input: {0}")]
+    InvalidInput(String),
     /// Invalid input
-    #[error("Invalid input: {0}")]
-    InvalidInput(#[from] InvocationError),
+    #[error("Invalid invocation: {0}")]
+    InvalidInvocation(#[from] InvocationError),
     /// Too many invocation found
     #[error("Too many invocation found")]
     TooManyInvocationFound,
@@ -200,66 +203,43 @@ pub trait AdvancedTool: Tool {
     ) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
-/// A tool invocation summary
-#[derive(Debug, Clone)]
-pub struct Summary {
-    /// The input that was extracted from the chat message and that was used to
-    /// invoke the tool
-    pub extracted_input: String,
-
-    /// The result of the tool invocation
-    pub result: String,
-}
-
-async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseError> {
-    match invocation::find_all(data) {
-        Ok(tool_invocations) => {
-            info!("{} Tool invocations found", tool_invocations.len());
-            // TODO(ssoudan) report this to sapiens_exp
-
-            // if no tool_invocations are found, we return an error
-            if tool_invocations.is_empty() {
-                return Err(ToolUseError::NoActionFound);
-            }
-
-            // TODO(ssoudan) feature to control this
-            // if more than one tool_invocations are found, we return an error
-            // if tool_invocations.len() > 1 {
-            //     return Err(ToolUseError::TooManyInvocationFound);
-            // }
-
-            // We just take the first one
-            let mut invocation = tool_invocations.into_iter().next().unwrap();
-
-            // FUTURE(ssoudan) clean up the object and return this one instead
-            // if any tool_invocations have an 'output' field, we return an error
-            if !invocation.junk.is_empty() {
-                let junk_keys = invocation
-                    .junk
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
-                // FUTURE(ssoudan) they should not reach the ChatHistory
-                warn!(
-                    ?junk_keys,
-                    "The Action should not have fields: {}.", junk_keys
-                );
-
-                // We just remove them for now
-                invocation.junk.clear();
-
-                // return Err(ToolUseError::InvocationFailed(format!(
-                //     "The Action cannot have fields: {}. Only `command` and
-                // `input` are allowed.",     junk_keys
-                // )));
-            }
-
-            Ok(invocation)
-        }
-        Err(e) => Err(ToolUseError::InvalidInput(e)),
+async fn choose_invocation(
+    tool_invocations: Vec<ToolInvocationInput>,
+) -> Result<ToolInvocationInput, InvocationError> {
+    // if no tool_invocations are found, we return an error
+    if tool_invocations.is_empty() {
+        return Err(InvocationError::NoInvocationFound);
     }
+
+    // We just take the first one
+    let mut invocation = tool_invocations.into_iter().next().unwrap();
+
+    // FUTURE(ssoudan) clean up the object and return this one instead
+    // if any tool_invocations have an 'output' field, we return an error
+    if !invocation.junk.is_empty() {
+        let junk_keys = invocation
+            .junk
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        // FUTURE(ssoudan) they should not reach the ChatHistory
+        warn!(
+            ?junk_keys,
+            "The Action should not have fields: {}.", junk_keys
+        );
+
+        // We just remove them for now
+        invocation.junk.clear();
+
+        // return Err(InvocationError::NoValidInvocationFound(format!(
+        //     "The Action cannot have fields: {}. Only `command` and `input`
+        // are allowed.",     junk_keys
+        // )));
+    }
+
+    Ok(invocation)
 }
 
 #[cfg(test)]

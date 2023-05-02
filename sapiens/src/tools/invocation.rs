@@ -5,14 +5,17 @@ use tracing::debug;
 use crate::tools::ToolInvocationInput;
 
 /// Error while extracting tool invocations
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub enum InvocationError {
     /// Invalid yaml
     #[error("Invalid yaml: {0}")]
-    InvalidYaml(#[from] serde_yaml::Error),
+    InvalidYaml(String),
     /// No invocation found in the document
     #[error("No Action found")]
     NoInvocationFound,
+    /// No valid invocation found in the document
+    #[error("No valid Action found: {0}")]
+    NoValidInvocationFound(String),
 }
 
 /// One of several T
@@ -47,7 +50,7 @@ where
             },
             Err(e) => {
                 debug!(error = %e, "Failed to deserialize as a list of T or a single T");
-                return Err(InvocationError::InvalidYaml(e));
+                return Err(InvocationError::InvalidYaml(e.to_string()));
             }
         }
     }

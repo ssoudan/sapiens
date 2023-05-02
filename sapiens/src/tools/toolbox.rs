@@ -4,11 +4,12 @@ use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::tools;
+use crate::tools::invocation::InvocationError;
 use crate::tools::{
-    AdvancedTool, Summary, TerminalTool, TerminationMessage, Tool, ToolDescription, ToolUseError,
+    AdvancedTool, TerminalTool, TerminationMessage, Tool, ToolDescription, ToolUseError,
 };
 
 /// Tool usage statistics
@@ -250,48 +251,110 @@ pub async fn invoke_simple_from_toolbox(
     result
 }
 
+/// Result of invoking a tool with [`invoke_tool`].
+#[derive(Debug, Clone)]
+pub enum InvokeResult {
+    /// No invocation found in the message
+    NoInvocationsFound {
+        /// The error that occurred
+        e: InvocationError,
+    },
+    /// No valid invocation found in the message
+    NoValidInvocationsFound {
+        /// The error that occurred
+        e: InvocationError,
+        /// The number of invocations found in the message
+        invocation_count: usize,
+    },
+    /// Successful invocation
+    Success {
+        /// The number of invocations found in the message
+        available_invocation_count: usize,
+        /// The name of the tool that was invoked
+        tool_name: String,
+        /// The extracted input for the tool
+        extracted_input: String,
+        /// The result of the invocation
+        result: String,
+    },
+    /// Error during invocation
+    Error {
+        /// The number of invocations found in the message
+        invocation_count: usize,
+        /// The name of the tool that was invoked
+        tool_name: String,
+        /// The extracted input for the tool
+        extracted_input: String,
+        /// The error that occurred
+        e: ToolUseError,
+    },
+}
+
 /// Try to find the tool invocation from the chat message and invoke the
 /// corresponding tool.
 ///
 /// If multiple tool invocations are found, only the first one is used.
 #[tracing::instrument(skip(toolbox, data))]
-pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<Summary, ToolUseError>) {
-    let invocation = tools::choose_invocation(data).await;
+pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
+    let tool_invocations = match tools::invocation::find_all(data) {
+        Ok(invocations) => invocations,
+        Err(e) => return InvokeResult::NoInvocationsFound { e },
+    };
+    let invocation_count = tool_invocations.len();
+    info!("{} Tool invocations found", invocation_count);
 
-    match invocation {
-        Ok(invocation) => {
-            debug!(tool_name = invocation.tool_name, "Invocation found");
+    // TODO(ssoudan) feature to control this
+    // if more than one tool_invocations are found, we return an error
+    // if tool_invocations.len() > 1 {
+    //     return Err(ToolUseError::TooManyInvocationFound);
+    // }
 
-            let tool_name = invocation.tool_name.clone();
-            let input = invocation.input;
-            let result = invoke_from_toolbox(toolbox, &tool_name, input.clone()).await;
-
-            match result {
-                Ok(output) => {
-                    let extracted_input = serde_yaml::to_string(&input).unwrap_or_else(|_| {
-                        format!(
-                            "Failed to serialize input for tool {}",
-                            invocation.tool_name
-                        )
-                    });
-
-                    let result = serde_yaml::to_string(&output).unwrap_or_else(|_| {
-                        format!(
-                            "Failed to serialize output for tool {}",
-                            invocation.tool_name
-                        )
-                    });
-
-                    let summary = Summary {
-                        extracted_input,
-                        result,
-                    };
-
-                    (tool_name, Ok(summary))
-                }
-                Err(e) => (tool_name, Err(e)),
+    let invocation = match tools::choose_invocation(tool_invocations).await {
+        Ok(invocation) => invocation,
+        Err(e) => {
+            return InvokeResult::NoValidInvocationsFound {
+                e,
+                invocation_count,
             }
         }
-        Err(e) => ("unknown".to_string(), Err(e)),
+    };
+
+    // We found an invocation, let's invoke the tool
+    debug!(tool_name = invocation.tool_name, "Invocation found");
+
+    let tool_name = invocation.tool_name.clone();
+    let input = invocation.input;
+
+    let extracted_input = serde_yaml::to_string(&input).unwrap_or_else(|_| {
+        format!(
+            "Failed to serialize input for tool {}",
+            invocation.tool_name
+        )
+    });
+
+    let result = invoke_from_toolbox(toolbox, &tool_name, input.clone()).await;
+
+    match result {
+        Ok(output) => {
+            let result = serde_yaml::to_string(&output).unwrap_or_else(|_| {
+                format!(
+                    "Failed to serialize output for tool {}",
+                    invocation.tool_name
+                )
+            });
+
+            InvokeResult::Success {
+                tool_name,
+                extracted_input,
+                available_invocation_count: invocation_count,
+                result,
+            }
+        }
+        Err(e) => InvokeResult::Error {
+            tool_name,
+            extracted_input,
+            invocation_count,
+            e,
+        },
     }
 }

@@ -32,9 +32,9 @@ impl ToTokens for DeriveReceiver {
             #[async_trait::async_trait]
             impl #imp ProtoToolInvoke for #ident #ty #wher {
                 async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError> {
-                    let input = serde_yaml::from_value(input)?;
+                    let input = serde_yaml::from_value(input).map_err(|e| ToolUseError::InvalidInput(e.to_string()))?;
                     let output = self.#invoke_typed_name(&input).await?;
-                    Ok(serde_yaml::to_value(output)?)
+                    Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)
                 }
             }
         })
