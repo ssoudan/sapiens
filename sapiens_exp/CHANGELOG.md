@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## v0.4.1 (2023-05-02)
 
+<csr-id-cd0bd17051045dfaa1b821a2c83acad33634721a/>
+<csr-id-8d569ea760d79f70a6b99aa096db9185edc25fe8/>
+<csr-id-15d27552da86d0d95c5e1a81d3c26dec90a80e90/>
+<csr-id-e7eb8309c32d4bc174e4cb51b0f344f336fa8e37/>
+<csr-id-5e2e3e7cbd04b6473518790f48e0d1ce80656f72/>
+<csr-id-500eeba315a540ff769d6e0278dfdac62ef74761/>
+
 ### Chore
 
  - <csr-id-cd0bd17051045dfaa1b821a2c83acad33634721a/> updated
@@ -15,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
  - <csr-id-e7eb8309c32d4bc174e4cb51b0f344f336fa8e37/> versions
  - <csr-id-5e2e3e7cbd04b6473518790f48e0d1ce80656f72/> versions
  - <csr-id-500eeba315a540ff769d6e0278dfdac62ef74761/> updated
+
+### Chore
+
+ - <csr-id-cb65403daee612757dfa64c843a9b85a726f721d/> CHANGELOG
 
 ### New Features
 
@@ -38,8 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 19 commits contributed to the release over the course of 4 calendar days.
- - 17 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 21 commits contributed to the release over the course of 4 calendar days.
+ - 18 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
 ### Commit Details
@@ -49,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - CHANGELOG ([`cb65403`](https://github.com/ssoudan/sapiens/commit/cb65403daee612757dfa64c843a9b85a726f721d))
+    - Release sapiens v0.6.0, sapiens_derive v0.4.0, sapiens_tools v0.6.0, sapiens_bot v0.4.0, sapiens_cli v0.5.0, sapiens_exp v0.4.1, safety bump 4 crates ([`1b9dd43`](https://github.com/ssoudan/sapiens/commit/1b9dd43e9291f0aef2a83c1610cede57c897a56c))
     - Merge pull request #13 from ssoudan/getting_methodical ([`e0d97aa`](https://github.com/ssoudan/sapiens/commit/e0d97aae47b30bd97b37520a345c84b59523de9d))
     - Store the current state in Trace Events ([`4626deb`](https://github.com/ssoudan/sapiens/commit/4626deb7308ec642d0e937fc3b96af494538a027))
     - Updated ([`cd0bd17`](https://github.com/ssoudan/sapiens/commit/cd0bd17051045dfaa1b821a2c83acad33634721a))
