@@ -146,6 +146,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let trace_observer = TraceObserver::new();
     let trace_observer = wrap_observer(trace_observer);
     let w_trace_observer = Arc::downgrade(&trace_observer);
+    // TODO(ssoudan) log the current state in the traces
 
     let task = args.task.clone();
     let _ = run_to_the_end(
@@ -168,8 +169,21 @@ async fn main() -> Result<(), pyo3::PyErr> {
         guard.has_reached_accepting_state()
     };
 
+    // What is the final state name?
+    let final_state_name = {
+        let guard = shared_state.lock().await;
+        guard.state()
+    };
+
     // Build trial
-    let trial = Trial::build(config, task, trace, tool_stats, reached_accepting_state);
+    let trial = Trial::build(
+        config,
+        task,
+        trace,
+        tool_stats,
+        reached_accepting_state,
+        final_state_name,
+    );
 
     trace!(trial = ?trial, "Trial");
 

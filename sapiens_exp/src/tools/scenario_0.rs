@@ -54,57 +54,74 @@ state_machine! {
 
     // procurement
     NoBowlNoCerealNoMilk => {
-        GetBowl => BowlNoCerealNoMilk [Found],
-        GetCereal => NoBowlCerealNoMilk [Found],
-        GetMilk => NoBowlNoCerealMilk [Found],
+        GetBowl => BowlNoCerealNoMilk [BowlFound],
+        GetCereal => NoBowlCerealNoMilk [CerealFound],
+        GetMilk => NoBowlNoCerealMilk [MilkFound],
     },
 
     BowlNoCerealNoMilk => {
-        GetCereal => BowlCerealNoMilk [Found],
-        GetMilk => BowlNoCerealMilk [Found],
-        GetBowl => BowlNoCerealNoMilk [Found],
+        GetCereal => BowlCerealNoMilk [CerealFound],
+        GetMilk => BowlNoCerealMilk [MilkFound],
+        GetBowl => BowlNoCerealNoMilk [BowlFound],
     },
 
     NoBowlCerealNoMilk => {
-        GetBowl => BowlCerealNoMilk [Found],
-        GetMilk => NoBowlCerealMilk [Found],
-        GetCereal => NoBowlCerealNoMilk [Found],
+        GetBowl => BowlCerealNoMilk [BowlFound],
+        GetMilk => NoBowlCerealMilk [MilkFound],
+        GetCereal => NoBowlCerealNoMilk [CerealFound],
     },
 
     NoBowlNoCerealMilk => {
-        GetBowl => BowlNoCerealMilk [Found],
-        GetCereal => NoBowlNoCerealMilk [Found],
-        GetMilk => NoBowlNoCerealMilk [Found],
+        GetBowl => BowlNoCerealMilk [BowlFound],
+        GetCereal => NoBowlNoCerealMilk [CerealFound],
+        GetMilk => NoBowlNoCerealMilk [MilkFound],
     },
 
     BowlCerealNoMilk => {
-        GetBowl => BowlCerealNoMilk [Found],
-        GetCereal => BowlCerealNoMilk [Found],
-        GetMilk => BowlCerealMilk [Found],
+        GetBowl => BowlCerealNoMilk [BowlFound],
+        GetCereal => BowlCerealNoMilk [CerealFound],
+        GetMilk => BowlCerealMilk [MilkFound],
     },
 
     BowlNoCerealMilk => {
-        GetBowl => BowlNoCerealMilk [Found],
-        GetCereal => BowlCerealMilk [Found],
-        GetMilk => BowlNoCerealMilk [Found],
+        GetBowl => BowlNoCerealMilk [BowlFound],
+        GetCereal => BowlCerealMilk [CerealFound],
+        GetMilk => BowlNoCerealMilk [MilkFound],
     },
 
     NoBowlCerealMilk => {
-        GetBowl => BowlCerealMilk [Found],
-        GetCereal => NoBowlCerealMilk [Found],
-        GetMilk => NoBowlCerealMilk [Found],
+        GetBowl => BowlCerealMilk [BowlFound],
+        GetCereal => NoBowlCerealMilk [CerealFound],
+        GetMilk => NoBowlCerealMilk [MilkFound],
+    },
+
+    // half way
+    NoMilkBowlWithCereal => {
+        GetMilk => BowlWithCereal [MilkFound],
+    },
+
+    NoCerealBowlWithMilk => {
+        GetCereal => BowlWithMilk [CerealFound],
     },
 
     // mixing
-    BowlCerealMilk => {
-        AddCerealToBowl => BowlWithCereal [Success],
-        AddMilkToBowl => BowlWithMilk [Success],
+    BowlCerealNoMilk => {
+        AddCerealToBowl => NoMilkBowlWithCereal [CerealAdded],
     },
-    BowlWithCereal(AddMilkToBowl) => BowlWithCerealAndMilk [Success],
-    BowlWithMilk(AddCerealToBowl) => BowlWithCerealAndMilk [Success],
+
+    BowlNoCerealMilk => {
+        AddMilkToBowl => NoCerealBowlWithMilk [MilkAdded],
+    },
+
+    BowlCerealMilk => {
+        AddCerealToBowl => BowlWithCereal [CerealAdded],
+        AddMilkToBowl => BowlWithMilk [MilkAdded],
+    },
+    BowlWithCereal(AddMilkToBowl) => BowlWithCerealAndMilk [MilkAdded],
+    BowlWithMilk(AddCerealToBowl) => BowlWithCerealAndMilk [CerealAdded],
 
     // serving
-    BowlWithCerealAndMilk(ServeBowl) => Served [Success],
+    BowlWithCerealAndMilk(ServeBowl) => Served [Accepted],
 }
 
 /// The state of the scenario 0
@@ -133,6 +150,10 @@ impl tools::State for InternalState {
 
     fn has_reached_accepting_state(&self) -> bool {
         matches!(self.fsm.state(), CerealBowlRecipeState::Served)
+    }
+
+    fn state(&self) -> String {
+        format!("{:?}", self.fsm.state())
     }
 }
 
@@ -167,21 +188,24 @@ impl StateUpdater<InternalState, ClosetOutput> for ClosetInput {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::GetBowl)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
             ClosetObject::Cereal => {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::GetCereal)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
             ClosetObject::Milk => {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::GetMilk)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
         }
@@ -193,13 +217,30 @@ impl StateUpdater<InternalState, ClosetOutput> for ClosetInput {
 struct ClosetOutput {
     /// was the object found?
     found: bool,
+    /// what was found? (if any)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    object: Option<ClosetObject>,
 }
 
 impl From<Option<CerealBowlRecipeOutput>> for ClosetOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::Found) => ClosetOutput { found: true },
-            _ => ClosetOutput { found: false },
+            Some(CerealBowlRecipeOutput::CerealFound) => ClosetOutput {
+                found: true,
+                object: Some(ClosetObject::Cereal),
+            },
+            Some(CerealBowlRecipeOutput::MilkFound) => ClosetOutput {
+                found: true,
+                object: Some(ClosetObject::Milk),
+            },
+            Some(CerealBowlRecipeOutput::BowlFound) => ClosetOutput {
+                found: true,
+                object: Some(ClosetObject::Bowl),
+            },
+            _ => ClosetOutput {
+                found: false,
+                object: None,
+            },
         }
     }
 }
@@ -236,14 +277,16 @@ impl StateUpdater<InternalState, MixingOutput> for MixingInput {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::AddCerealToBowl)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
             (Container::Bowl, Pourable::Milk) => {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::AddMilkToBowl)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
         }
@@ -255,13 +298,26 @@ impl StateUpdater<InternalState, MixingOutput> for MixingInput {
 struct MixingOutput {
     /// was it poured?
     added: bool,
+    /// what was poured? (if any)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    object: Option<Pourable>,
 }
 
 impl From<Option<CerealBowlRecipeOutput>> for MixingOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::Success) => MixingOutput { added: true },
-            _ => MixingOutput { added: false },
+            Some(CerealBowlRecipeOutput::MilkAdded) => MixingOutput {
+                added: true,
+                object: Some(Pourable::Milk),
+            },
+            Some(CerealBowlRecipeOutput::CerealAdded) => MixingOutput {
+                added: true,
+                object: Some(Pourable::Cereal),
+            },
+            _ => MixingOutput {
+                added: false,
+                object: None,
+            },
         }
     }
 }
@@ -287,7 +343,8 @@ impl StateUpdater<InternalState, ServingOutput> for ServingInput {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::ServeBowl)
-                    .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?;
+                    .ok()
+                    .flatten();
                 Ok(x.into())
             }
         }
@@ -297,15 +354,15 @@ impl StateUpdater<InternalState, ServingOutput> for ServingInput {
 /// The output of a serving action
 #[derive(Debug, Serialize, Deserialize, Clone, Describe)]
 struct ServingOutput {
-    /// was it served?
-    served: bool,
+    /// was it accepted? if not, maybe the bowl was not ready to be served.
+    accepted: bool,
 }
 
 impl From<Option<CerealBowlRecipeOutput>> for ServingOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::Success) => ServingOutput { served: true },
-            _ => ServingOutput { served: false },
+            Some(CerealBowlRecipeOutput::Accepted) => ServingOutput { accepted: true },
+            _ => ServingOutput { accepted: false },
         }
     }
 }
@@ -325,21 +382,21 @@ pub async fn build(mut toolbox: Toolbox) -> (Toolbox, Arc<Mutex<dyn tools::State
 
     let closet: GenericTool<ClosetInput, InternalState, ClosetOutput> =
         GenericTool::new_with_descriptions(
-            "closet".to_string(),
+            "Closet".to_string(),
             "place where to find stuffs".to_string(),
             shared_state.clone(),
         );
 
     let mixing: GenericTool<MixingInput, InternalState, MixingOutput> =
         GenericTool::new_with_descriptions(
-            "mixing".to_string(),
+            "Mixing".to_string(),
             "when you need to mix things in a container".to_string(),
             shared_state.clone(),
         );
 
     let serving: GenericTool<ServingInput, InternalState, ServingOutput> =
         GenericTool::new_with_descriptions(
-            "serving".to_string(),
+            "Serving".to_string(),
             "when the meal is ready to be served".to_string(),
             shared_state.clone(),
         );
@@ -392,7 +449,7 @@ mod tests {
 
         let closet: GenericTool<ClosetInput, InternalState, ClosetOutput> =
             GenericTool::new_with_descriptions(
-                "closet".to_string(),
+                "Closet".to_string(),
                 "place where to find stuffs".to_string(),
                 shared_state.clone(),
             );
@@ -451,7 +508,7 @@ mod tests {
         // add a mixing tool
         let mixing: GenericTool<MixingInput, InternalState, MixingOutput> =
             GenericTool::new_with_descriptions(
-                "mixing".to_string(),
+                "Mixing".to_string(),
                 "mixing stuffs".to_string(),
                 shared_state.clone(),
             );
@@ -495,7 +552,7 @@ mod tests {
         // add a serving tool
         let serving: GenericTool<ServingInput, InternalState, ServingOutput> =
             GenericTool::new_with_descriptions(
-                "serving".to_string(),
+                "Serving".to_string(),
                 "serving stuffs".to_string(),
                 shared_state.clone(),
             );

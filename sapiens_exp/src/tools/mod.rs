@@ -33,6 +33,9 @@ pub trait State: Send + Sync {
 
     /// Check if the state has reached an accepting state
     fn has_reached_accepting_state(&self) -> bool;
+
+    /// State name
+    fn state(&self) -> String;
 }
 
 /// Something that updates the state of the system and produces an output

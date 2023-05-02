@@ -23,6 +23,8 @@ pub struct Analysis {
     termination_message: Option<String>,
     /// Tool utilization statistics
     tool_stats: Stats,
+    /// The final state name
+    final_state_name: String,
 }
 
 /// A trial is a task execution with a given configuration
@@ -36,6 +38,8 @@ pub struct Trial {
     config: Config,
     /// The Analysis of the run
     analysis: Analysis,
+    /// Date and time of the trial
+    date: String,
 }
 
 impl Trial {
@@ -46,18 +50,30 @@ impl Trial {
         trace: Trace,
         tool_stats: Stats,
         reached_accepting_state: bool,
+        final_state_name: String,
     ) -> Self {
-        let analysis = Self::analyze(&trace, tool_stats, reached_accepting_state);
+        let analysis = Self::analyze(
+            &trace,
+            tool_stats,
+            reached_accepting_state,
+            final_state_name,
+        );
 
         Self {
             trace,
             task,
             config,
             analysis,
+            date: chrono::Utc::now().to_rfc3339(),
         }
     }
 
-    fn analyze(trace: &Trace, tool_stats: Stats, reached_accepting_state: bool) -> Analysis {
+    fn analyze(
+        trace: &Trace,
+        tool_stats: Stats,
+        reached_accepting_state: bool,
+        final_state_name: String,
+    ) -> Analysis {
         let attempted_invocations = trace
             .events
             .iter()
@@ -97,6 +113,7 @@ impl Trial {
             tokens,
             completed,
             reached_accepting_state,
+            final_state_name,
             termination_message,
             tool_stats,
         }

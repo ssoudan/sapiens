@@ -135,7 +135,7 @@ pub mod evaluate;
 /// Configuration
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
-    // TODO(ssoudan) more feature flags
+    // FUTURE(ssoudan) more feature flags
     /// Model to use
     pub model: String,
     /// Maximum number of steps to execute

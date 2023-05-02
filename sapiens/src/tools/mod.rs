@@ -102,6 +102,9 @@ pub enum ToolUseError {
     /// Invalid input
     #[error("Invalid input: {0}")]
     InvalidInput(#[from] InvocationError),
+    /// Too many invocation found
+    #[error("Too many invocation found")]
+    TooManyInvocationFound,
     /// No action found
     #[error("No action found")]
     NoActionFound,
@@ -212,11 +215,18 @@ async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseErr
     match invocation::find_all(data) {
         Ok(tool_invocations) => {
             info!("{} Tool invocations found", tool_invocations.len());
+            // TODO(ssoudan) report this to sapiens_exp
 
             // if no tool_invocations are found, we return an error
             if tool_invocations.is_empty() {
                 return Err(ToolUseError::NoActionFound);
             }
+
+            // TODO(ssoudan) feature to control this
+            // if more than one tool_invocations are found, we return an error
+            // if tool_invocations.len() > 1 {
+            //     return Err(ToolUseError::TooManyInvocationFound);
+            // }
 
             // We just take the first one
             let mut invocation = tool_invocations.into_iter().next().unwrap();
