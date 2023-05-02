@@ -4,12 +4,13 @@ channels:
   - defaults
 dependencies:
   - python=3.10
+  - pymc>=4
+  - arviz[all]
+  - numpy  
+  - seaborn
+  - pandas
+  - matplotlib    
+  - scipy
+  - scikit-learn        
   - pip
-  - pip:
-    - seaborn
-    - pandas
-    - matplotlib
-    - numpy
-    - scipy
-    - scikit-learn
     
