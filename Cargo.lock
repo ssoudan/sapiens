@@ -2166,7 +2166,7 @@ checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
 
 [[package]]
 name = "sapiens"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "async-openai",
  "async-trait",
@@ -2183,7 +2183,7 @@ dependencies = [
 
 [[package]]
 name = "sapiens_bot"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "dotenvy",
@@ -2204,7 +2204,7 @@ dependencies = [
 
 [[package]]
 name = "sapiens_cli"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "async-trait",
  "clap 4.2.7",
@@ -2222,7 +2222,7 @@ dependencies = [
 
 [[package]]
 name = "sapiens_derive"
-version = "0.3.1"
+version = "0.4.0"
 dependencies = [
  "darling 0.20.0",
  "darling_macro 0.20.0",
@@ -2259,7 +2259,7 @@ dependencies = [
 
 [[package]]
 name = "sapiens_tools"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "arxiv-rs",
  "async-openai",

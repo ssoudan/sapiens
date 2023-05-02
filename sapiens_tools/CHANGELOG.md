@@ -5,7 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2023-05-02)
+
+### New Features
+
+ - <csr-id-4626deb7308ec642d0e937fc3b96af494538a027/> store the current state in Trace Events
+ - <csr-id-c6d00560865da9fff220eb0ae506a30672053a27/> added scenario_0
+ - <csr-id-404afb184a3fe0daedc3103ad9be0cefd4c4a890/> generate Python docstring so `help(tools.Something)` works.
+ - <csr-id-a35ed6028cdc335a3f2fa0159d71d334d24427c7/> refactoring of the observer for Step
+   BREAKING CHANGES: API changed.
+ - <csr-id-7c98fcb78fe6b76ce8a65a60b0f481d3d942fe52/> sapiens_exp
+
+### New Features (BREAKING)
+
+ - <csr-id-04e83c2a214212d045ef5a890a72c3dc5ab61076/> Richer errors while invoking tools
+ - <csr-id-6c30344483671b542e73e13f51228407f37da63e/> Collect information in a serializable struct with all that matters
+ - <csr-id-f93652f7c0886b47ce438a512bf2c13d978b3a6b/> collect execution traces
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 10 commits contributed to the release over the course of 4 calendar days.
+ - 5 days passed between releases.
+ - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #13 from ssoudan/getting_methodical ([`e0d97aa`](https://github.com/ssoudan/sapiens/commit/e0d97aae47b30bd97b37520a345c84b59523de9d))
+    - Store the current state in Trace Events ([`4626deb`](https://github.com/ssoudan/sapiens/commit/4626deb7308ec642d0e937fc3b96af494538a027))
+    - Richer errors while invoking tools ([`04e83c2`](https://github.com/ssoudan/sapiens/commit/04e83c2a214212d045ef5a890a72c3dc5ab61076))
+    - Added scenario_0 ([`c6d0056`](https://github.com/ssoudan/sapiens/commit/c6d00560865da9fff220eb0ae506a30672053a27))
+    - Merge remote-tracking branch 'origin/main' into getting_methodical ([`69ed1e8`](https://github.com/ssoudan/sapiens/commit/69ed1e8c1919d40c5b2362eb4fd8376ae2786e05))
+    - Collect information in a serializable struct with all that matters ([`6c30344`](https://github.com/ssoudan/sapiens/commit/6c30344483671b542e73e13f51228407f37da63e))
+    - Collect execution traces ([`f93652f`](https://github.com/ssoudan/sapiens/commit/f93652f7c0886b47ce438a512bf2c13d978b3a6b))
+    - Generate Python docstring so `help(tools.Something)` works. ([`404afb1`](https://github.com/ssoudan/sapiens/commit/404afb184a3fe0daedc3103ad9be0cefd4c4a890))
+    - Refactoring of the observer for Step ([`a35ed60`](https://github.com/ssoudan/sapiens/commit/a35ed6028cdc335a3f2fa0159d71d334d24427c7))
+    - Sapiens_exp ([`7c98fcb`](https://github.com/ssoudan/sapiens/commit/7c98fcb78fe6b76ce8a65a60b0f481d3d942fe52))
+</details>
+
 ## 0.5.0 (2023-04-27)
+
+<csr-id-8f039921a3bed1d976fd04c3d2ca6b99b1142411/>
 
 ### Chore
 
@@ -19,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
 
@@ -30,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.5.0, sapiens_tools v0.5.0, sapiens_bot v0.3.0, sapiens_cli v0.4.0, safety bump 3 crates ([`2fc037f`](https://github.com/ssoudan/sapiens/commit/2fc037fdc051a3cc68261fa89c5fd3b08c683441))
     - Merge pull request #10 from ssoudan/parsing ([`568d536`](https://github.com/ssoudan/sapiens/commit/568d5368896f758ae16d84ba35d0a382eec6ef11))
     - Cleanup ([`8f03992`](https://github.com/ssoudan/sapiens/commit/8f039921a3bed1d976fd04c3d2ca6b99b1142411))
     - More flexible parsing ([`5d785d7`](https://github.com/ssoudan/sapiens/commit/5d785d779955f5a4c2f54b1ff60e2262e85bfa05))
