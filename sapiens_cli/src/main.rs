@@ -1,17 +1,21 @@
 //! Main for sapiens_cli
+use std::sync::Arc;
+
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
 use sapiens::openai::Role;
-use sapiens::{run_to_the_end, Config, Error, TaskProgressUpdateHandler};
+use sapiens::{
+    run_to_the_end, wrap_observer, Config, InvocationFailureNotification,
+    InvocationSuccessNotification, ModelUpdateNotification, StepObserver,
+};
 use tracing::info;
 use tracing_subscriber::EnvFilter;
 
 // Usability:
 // FUTURE(ssoudan) Richer interaction
 // FUTURE(ssoudan) More tools: wx, negotiate
-// FUTURE(ssoudan) Discord bot with long-lived conversations
 // FUTURE(ssoudan) Settings
 // FUTURE(ssoudan) Token budget management and completion termination reason
 // FUTURE(ssoudan) Model parameters
@@ -25,7 +29,7 @@ use tracing_subscriber::EnvFilter;
 //
 // Adoption:
 // FUTURE(ssoudan) More documentation and examples
-// FUTURE(ssoudan) A site?
+// FUTURE(ssoudan) GH Pages
 //
 // Explore:
 // FUTURE(ssoudan) other models?
@@ -34,8 +38,6 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) prompt optimization
 // FUTURE(ssoudan) multiple models - critic?
 // FUTURE(ssoudan) multi-stage evaluation
-// FUTURE(ssoudan) log the conversation to build a dataset
-// FUTURE(ssoudan) categorize the outcomes - count the number of steps
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
@@ -83,13 +85,13 @@ impl ChatEntryFormatter for ColorFormatter {
 }
 
 #[derive(Debug)]
-struct Handler {
+struct Observer {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
 }
 
 #[async_trait::async_trait]
-impl TaskProgressUpdateHandler for Handler {
+impl StepObserver for Observer {
     async fn on_start(&mut self, chat_history: &ChatHistory) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
@@ -108,25 +110,37 @@ impl TaskProgressUpdateHandler for Handler {
         }
     }
 
-    async fn on_model_update(&mut self, model_message: ChatEntry) {
-        let msg = ColorFormatter.format(&model_message);
+    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
+        let msg = ColorFormatter.format(&event.chat_entry);
         println!("{}", msg);
         println!("=============");
     }
 
-    async fn on_tool_update(&mut self, tool_output: ChatEntry, success: bool) {
-        if success {
-            let msg = ColorFormatter.format(&tool_output);
-            println!("{}", msg);
-        } else {
-            let msg = tool_output.msg.yellow();
-            println!("{}", msg);
+    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
+        match event.res {
+            Ok(tool_output) => {
+                let msg = ColorFormatter.format(&tool_output);
+                println!("{}", msg);
+            }
+            Err(e) => {
+                println!("{}", e.to_string().red());
+            }
         }
+
         println!("=============");
     }
 
-    async fn on_tool_error(&mut self, error: Error) {
-        println!("{}", error.to_string().red());
+    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
+        match event.res {
+            Ok(tool_output) => {
+                let msg = tool_output.msg.yellow();
+                println!("{}", msg);
+            }
+            Err(e) => {
+                println!("{}", e.to_string().red());
+            }
+        }
+
         println!("=============");
     }
 }
@@ -160,17 +174,17 @@ async fn main() -> Result<(), pyo3::PyErr> {
         "Environment is not empty"
     );
 
+    let observer = Observer {
+        show_warmup_prompt: args.show_warmup_prompt,
+    };
+
+    let observer = wrap_observer(observer);
+
+    let w_observer = Arc::downgrade(&observer);
+
     let task = args.task.clone();
-    let termination_messages = run_to_the_end(
-        toolbox,
-        openai_client,
-        (&args).into(),
-        task,
-        Handler {
-            show_warmup_prompt: args.show_warmup_prompt,
-        },
-    )
-    .await;
+    let termination_messages =
+        run_to_the_end(toolbox, openai_client, (&args).into(), task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());

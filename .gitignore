@@ -4,4 +4,4 @@
 recipe.json
 .vscode/
 configuration.yaml
-Cargo.lock
+experiments/data/

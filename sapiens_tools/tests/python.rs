@@ -1,7 +1,7 @@
 use indoc::indoc;
 use insta::assert_display_snapshot;
 use pyo3::PyResult;
-use sapiens::tools::{invoke_tool, Toolbox};
+use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
 use sapiens_tools::conclude::ConcludeTool;
 use sapiens_tools::dummy::DummyTool;
 use sapiens_tools::python::PythonTool;
@@ -21,10 +21,17 @@ async fn test_tool_invocation() -> PyResult<()> {
     let mut toolbox = Toolbox::default();
     toolbox.add_advanced_tool(PythonTool::default()).await;
 
-    let (tool_name, res) = invoke_tool(toolbox, data).await;
-    assert_eq!(tool_name, "SandboxedPython");
-    let output = res.unwrap();
-    assert_eq!(output, "stdout: |\n  Hello world!\nstderr: ''\n");
+    let res = invoke_tool(toolbox, data).await;
+
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "SandboxedPython");
+            assert_eq!(result, "stdout: |\n  Hello world!\nstderr: ''\n");
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
 
     Ok(())
 }
@@ -47,11 +54,17 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
     toolbox.add_advanced_tool(PythonTool::default()).await;
     toolbox.add_tool(ConcludeTool::default()).await;
 
-    let (tool_name, res) = invoke_tool(toolbox, data).await;
-    assert_eq!(tool_name, "Conclude");
+    let res = invoke_tool(toolbox, data).await;
 
-    let output = res.unwrap();
-    assert_display_snapshot!(output);
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "Conclude");
+            assert_display_snapshot!(result);
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
 
     Ok(())
 }
@@ -76,10 +89,17 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
     toolbox.add_advanced_tool(PythonTool::default()).await;
     toolbox.add_tool(DummyTool::default()).await;
 
-    let (tool_name, res) = invoke_tool(toolbox, data).await;
-    assert_eq!(tool_name, "SandboxedPython");
-    let output = res.unwrap();
-    assert_display_snapshot!(output);
+    let res = invoke_tool(toolbox, data).await;
+
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "SandboxedPython");
+            assert_display_snapshot!(result);
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
 
     Ok(())
 }
@@ -115,11 +135,17 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     let mut toolbox = Toolbox::default();
     toolbox.add_advanced_tool(PythonTool::default()).await;
 
-    let (tool_name, res) = invoke_tool(toolbox, data).await;
-    assert_eq!(tool_name, "SandboxedPython");
+    let res = invoke_tool(toolbox, data).await;
 
-    let output = res.unwrap();
-    assert_display_snapshot!(output);
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "SandboxedPython");
+            assert_display_snapshot!(result);
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
 
     Ok(())
 }
@@ -145,11 +171,47 @@ async fn test_python() -> PyResult<()> {
    ```
 "#};
 
-    let (tool_name, res) = invoke_tool(toolbox, data).await;
-    assert_eq!(tool_name, "SandboxedPython");
+    let res = invoke_tool(toolbox, data).await;
 
-    let output = res.unwrap();
-    assert_display_snapshot!(output);
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "SandboxedPython");
+            assert_display_snapshot!(result);
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
+
+    Ok(())
+}
+
+#[pyo3_asyncio::tokio::test]
+async fn test_python_docstring() -> PyResult<()> {
+    let mut toolbox = Toolbox::default();
+    toolbox.add_tool(DummyTool::default()).await;
+    toolbox.add_advanced_tool(PythonTool::default()).await;
+
+    let data = indoc! {r#"```yaml
+   tool_name: SandboxedPython
+   input:
+     code: |                  
+       output = help(tools.Dummy)           
+       print(f"And the docstring is: {output}")
+   ```
+"#};
+
+    let res = invoke_tool(toolbox, data).await;
+
+    match res {
+        InvokeResult::Success {
+            tool_name, result, ..
+        } => {
+            assert_eq!(tool_name, "SandboxedPython");
+            assert_display_snapshot!(result);
+        }
+        _ => panic!("Unexpected result: {:?}", res),
+    }
 
     Ok(())
 }

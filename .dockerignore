@@ -4,3 +4,4 @@ Dockerfile
 .github/
 RUN.sh
 BUILD.sh
+experiments/

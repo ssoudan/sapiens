@@ -1,16 +1,18 @@
 use std::collections::HashMap;
 use std::fmt::Debug;
-use std::sync::Arc;
 
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
-use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use toolbox::Toolbox;
+use tracing::warn;
 
 use crate::tools::invocation::InvocationError;
 
 /// Tools to extract Tool invocations from a messages
 pub mod invocation;
+
+/// Collection of tools
+pub mod toolbox;
 
 /// Part of a [`Format`]
 #[derive(Debug, Clone)]
@@ -86,7 +88,7 @@ impl ToolDescription {
 }
 
 /// Error while using a tool
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone)]
 pub enum ToolUseError {
     /// Tool not found
     #[error("Tool not found: {0}")]
@@ -96,10 +98,16 @@ pub enum ToolUseError {
     InvocationFailed(String),
     /// Failed to serialize the output
     #[error("Failed to serialize the output: {0}")]
-    InvalidOutput(#[from] serde_yaml::Error),
+    InvalidOutput(String),
+    /// Failed to deserialize the input
+    #[error("Failed to deserialize the input: {0}")]
+    InvalidInput(String),
     /// Invalid input
-    #[error("Invalid input: {0}")]
-    InvalidInput(#[from] InvocationError),
+    #[error("Invalid invocation: {0}")]
+    InvalidInvocation(#[from] InvocationError),
+    /// Too many invocation found
+    #[error("Too many invocation found")]
+    TooManyInvocationFound,
     /// No action found
     #[error("No action found")]
     NoActionFound,
@@ -140,6 +148,7 @@ pub trait Tool: Sync + Send {
     fn description(&self) -> ToolDescription;
 
     /// Invoke the tool
+    // FUTURE(ssoudan) Box<Deserialize>?
     async fn invoke(&self, input: serde_yaml::Value) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
@@ -194,214 +203,43 @@ pub trait AdvancedTool: Tool {
     ) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
-/// Toolbox
-///
-/// a [`Toolbox`] is a collection of [`Tool`], [`TerminalTool`] and
-/// [`AdvancedTool`].
-#[derive(Default, Clone)]
-pub struct Toolbox {
-    /// The terminal tools - the one that can terminate a chain of exchanges
-    terminal_tools: Arc<RwLock<HashMap<String, Box<dyn TerminalTool>>>>,
-
-    /// The tools - the other tools
-    tools: Arc<RwLock<HashMap<String, Box<dyn Tool>>>>,
-
-    /// The advanced tools - the one that can invoke another tool (not an
-    /// advanced one)
-    advanced_tools: Arc<RwLock<HashMap<String, Box<dyn AdvancedTool>>>>,
-}
-
-impl Debug for Toolbox {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Toolbox").finish()
-    }
-}
-
-impl Toolbox {
-    /// Collect the termination messages
-    pub async fn termination_messages(&self) -> Vec<TerminationMessage> {
-        let mut messages = Vec::new();
-
-        for tool in self.terminal_tools.read().await.values() {
-            if let Some(message) = tool.take_done().await {
-                messages.push(message);
-            }
-        }
-
-        messages
+async fn choose_invocation(
+    tool_invocations: Vec<ToolInvocationInput>,
+) -> Result<ToolInvocationInput, InvocationError> {
+    // if no tool_invocations are found, we return an error
+    if tool_invocations.is_empty() {
+        return Err(InvocationError::NoInvocationFound);
     }
 
-    /// Add a terminal tool
-    ///
-    /// A [`TerminalTool`] can terminate a chain of exchanges.
-    pub async fn add_terminal_tool(&mut self, tool: impl TerminalTool + 'static) {
-        let name = tool.description().name;
-        self.terminal_tools
-            .write()
-            .await
-            .insert(name, Box::new(tool));
+    // We just take the first one
+    let mut invocation = tool_invocations.into_iter().next().unwrap();
+
+    // FUTURE(ssoudan) clean up the object and return this one instead
+    // if any tool_invocations have an 'output' field, we return an error
+    if !invocation.junk.is_empty() {
+        let junk_keys = invocation
+            .junk
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        // FUTURE(ssoudan) they should not reach the ChatHistory
+        warn!(
+            ?junk_keys,
+            "The Action should not have fields: {}.", junk_keys
+        );
+
+        // We just remove them for now
+        invocation.junk.clear();
+
+        // return Err(InvocationError::NoValidInvocationFound(format!(
+        //     "The Action cannot have fields: {}. Only `command` and `input`
+        // are allowed.",     junk_keys
+        // )));
     }
 
-    /// Add a tool
-    ///
-    /// A [`Tool`] can be invoked by an [`AdvancedTool`].
-    pub async fn add_tool(&mut self, tool: impl Tool + 'static) {
-        let name = tool.description().name;
-        self.tools.write().await.insert(name, Box::new(tool));
-    }
-
-    /// Add an advanced tool
-    ///
-    /// An [`AdvancedTool`] is a [`Tool`] that can invoke another tool.
-    pub async fn add_advanced_tool(&mut self, tool: impl AdvancedTool + 'static) {
-        let name = tool.description().name;
-        self.advanced_tools
-            .write()
-            .await
-            .insert(name, Box::new(tool));
-    }
-
-    /// Get the descriptions of the tools
-    pub async fn describe(&self) -> HashMap<String, ToolDescription> {
-        let mut descriptions = HashMap::new();
-
-        for (name, tool) in self.terminal_tools.read().await.iter() {
-            descriptions.insert(name.clone(), tool.description());
-        }
-
-        for (name, tool) in self.tools.read().await.iter() {
-            descriptions.insert(name.clone(), tool.description());
-        }
-
-        for (name, tool) in self.advanced_tools.read().await.iter() {
-            descriptions.insert(name.clone(), tool.description());
-        }
-
-        descriptions
-    }
-}
-
-/// Invoke a [`Tool`] or [`AdvancedTool`]  from a [`Toolbox`]
-pub async fn invoke_from_toolbox(
-    toolbox: Toolbox,
-    name: &str,
-    input: serde_yaml::Value,
-) -> Result<serde_yaml::Value, ToolUseError> {
-    // test if the tool is an advanced tool
-    if let Some(tool) = toolbox.clone().advanced_tools.read().await.get(name) {
-        return tool.invoke_with_toolbox(toolbox, input).await;
-    }
-
-    // if not, test if the tool is a terminal tool
-    {
-        let guard = toolbox.terminal_tools.read().await;
-        if let Some(tool) = guard.get(name) {
-            return tool.invoke(input).await;
-        }
-    }
-
-    // otherwise, use the normal tool
-    let guard = toolbox.tools.read().await;
-    let tool = guard
-        .get(name)
-        .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
-
-    tool.invoke(input).await
-}
-
-/// Invoke a Tool from a [`Toolbox`]
-pub async fn invoke_simple_from_toolbox(
-    toolbox: Toolbox,
-    name: &str,
-    input: serde_yaml::Value,
-) -> Result<serde_yaml::Value, ToolUseError> {
-    // test if the tool is a terminal tool
-    {
-        let guard = toolbox.terminal_tools.read().await;
-        if let Some(tool) = guard.get(name) {
-            return tool.invoke(input).await;
-        }
-    }
-
-    // the normal tool only
-    let guard = toolbox.tools.read().await;
-    let tool = guard
-        .get(name)
-        .ok_or(ToolUseError::ToolNotFound(name.to_string()))?;
-
-    tool.invoke(input).await
-}
-
-/// Try to find the tool invocation from the chat message and invoke the
-/// corresponding tool.
-///
-/// If multiple tool invocations are found, only the first one is used.
-#[tracing::instrument(skip(toolbox, data))]
-pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> (String, Result<String, ToolUseError>) {
-    let invocation = choose_invocation(data).await;
-
-    match invocation {
-        Ok(invocation) => {
-            debug!(tool_name = invocation.tool_name, "Invocation found");
-
-            let tool_name = invocation.tool_name.clone();
-            let input = invocation.input;
-            let result = invoke_from_toolbox(toolbox, &tool_name, input).await;
-
-            match result {
-                Ok(output) => (
-                    tool_name,
-                    serde_yaml::to_string(&output).map_err(ToolUseError::InvalidOutput),
-                ),
-                Err(e) => (tool_name, Err(e)),
-            }
-        }
-        Err(e) => ("unknown".to_string(), Err(e)),
-    }
-}
-
-async fn choose_invocation(data: &str) -> Result<ToolInvocationInput, ToolUseError> {
-    match invocation::find_all(data) {
-        Ok(tool_invocations) => {
-            info!("{} Tool invocations found", tool_invocations.len());
-
-            // if no tool_invocations are found, we return an error
-            if tool_invocations.is_empty() {
-                return Err(ToolUseError::NoActionFound);
-            }
-
-            // We just take the first one
-            let mut invocation = tool_invocations.into_iter().next().unwrap();
-
-            // FUTURE(ssoudan) clean up the object and return this one instead
-            // if any tool_invocations have an 'output' field, we return an error
-            if !invocation.junk.is_empty() {
-                let junk_keys = invocation
-                    .junk
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<String>>()
-                    .join(", ");
-
-                // FUTURE(ssoudan) they should not reach the ChatHistory
-                warn!(
-                    ?junk_keys,
-                    "The Action should not have fields: {}.", junk_keys
-                );
-
-                // We just remove them for now
-                invocation.junk.clear();
-
-                // return Err(ToolUseError::InvocationFailed(format!(
-                //     "The Action cannot have fields: {}. Only `command` and
-                // `input` are allowed.",     junk_keys
-                // )));
-            }
-
-            Ok(invocation)
-        }
-        Err(e) => Err(ToolUseError::InvalidInput(e)),
-    }
+    Ok(invocation)
 }
 
 #[cfg(test)]

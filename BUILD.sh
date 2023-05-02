@@ -67,5 +67,6 @@ echo -e "${BLUE}Build containers...${NORMAL}"
 
 docker build --target sapiens_cli -t sapiens_cli --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [CLI Container build failed] $NORMAL" && exit 1)
 docker build --target sapiens_bot -t sapiens_bot --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [BOT Container build failed] $NORMAL" && exit 1)
+docker build --target sapiens_exp -t sapiens_exp --build-arg FEATURES="${FEATURES}" . || (echo -e "$RED [EXP Container build failed] $NORMAL" && exit 1)
 
 echo -e "$GREEN === OK === $NORMAL"

@@ -1,6 +1,6 @@
 ---
-source: sapiens_tools/tests/hue_test.rs
-expression: output
+source: sapiens_tools/tests/e2e.rs
+expression: output.result
 ---
 stdout: ''
 stderr: ''

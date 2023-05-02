@@ -4,7 +4,7 @@ mod hue_test {
     use indoc::indoc;
     use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::hue::room::fake::FakeRoomTool;
     use sapiens_tools::hue::status::fake::FakeStatusTool;
@@ -46,11 +46,17 @@ mod hue_test {
         toolbox.add_tool(FakeRoomTool::default()).await;
         toolbox.add_tool(FakeStatusTool::default()).await;
 
-        let (tool_name, res) = invoke_tool(toolbox.clone(), data).await;
-        assert_eq!(tool_name, "SandboxedPython");
-        let output = res.unwrap();
+        let res = invoke_tool(toolbox.clone(), data).await;
 
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         // collect the conclusion
         let termination_messages = toolbox.termination_messages().await;
@@ -66,7 +72,7 @@ mod arxiv {
     use indoc::indoc;
     use insta::{assert_display_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::arxiv::ArxivTool;
     use sapiens_tools::conclude::ConcludeTool;
     use sapiens_tools::python::PythonTool;
@@ -97,11 +103,17 @@ mod arxiv {
    ```
 "#};
 
-        let (tool_name, res) = invoke_tool(toolbox, data).await;
-        assert_eq!(tool_name, "SandboxedPython");
+        let res = invoke_tool(toolbox, data).await;
 
-        let output = res.unwrap();
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         Ok(())
     }
@@ -125,11 +137,17 @@ mod arxiv {
    ```
 "#};
 
-        let (tool_name, res) = invoke_tool(toolbox, data).await;
-        assert_eq!(tool_name, "SandboxedPython");
+        let res = invoke_tool(toolbox, data).await;
 
-        let output = res.unwrap();
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         Ok(())
     }
@@ -154,11 +172,17 @@ mod arxiv {
    ```
 "#};
 
-        let (tool_name, res) = invoke_tool(toolbox, data).await;
-        assert_eq!(tool_name, "SandboxedPython");
+        let res = invoke_tool(toolbox, data).await;
 
-        let output = res.unwrap();
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         Ok(())
     }
@@ -196,11 +220,17 @@ mod arxiv {
    ```
 "#};
 
-        let (tool_name, res) = invoke_tool(toolbox.clone(), data).await;
-        assert_eq!(tool_name, "SandboxedPython");
+        let res = invoke_tool(toolbox.clone(), data).await;
 
-        let output = res.unwrap();
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         let termination_messages = toolbox.termination_messages().await;
         let done = !termination_messages.is_empty();
@@ -219,7 +249,7 @@ mod search {
     use indoc::indoc;
     use insta::assert_display_snapshot;
     use pyo3::PyResult;
-    use sapiens::tools::{invoke_tool, Toolbox};
+    use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::python::PythonTool;
     use sapiens_tools::search::SearchTool;
 
@@ -239,12 +269,17 @@ mod search {
    ```
 "#};
 
-        let (tool_name, res) = invoke_tool(toolbox, data).await;
-        assert_eq!(tool_name, "SandboxedPython");
+        let res = invoke_tool(toolbox, data).await;
 
-        let output = res.unwrap();
-
-        assert_display_snapshot!(output);
+        match res {
+            InvokeResult::Success {
+                tool_name, result, ..
+            } => {
+                assert_eq!(tool_name, "SandboxedPython");
+                assert_display_snapshot!(result);
+            }
+            _ => panic!("Unexpected result: {:?}", res),
+        }
 
         Ok(())
     }

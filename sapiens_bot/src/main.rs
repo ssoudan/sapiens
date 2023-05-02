@@ -28,28 +28,6 @@ struct Handler {
 
 #[async_trait]
 impl EventHandler for Handler {
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            info!("Received command interaction: {:#?}", command);
-
-            let content = match command.data.name.as_str() {
-                "ping" => commands::ping::run(&command.data.options),
-                _ => "not implemented :(".to_string(),
-            };
-
-            if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
-                .await
-            {
-                info!("Cannot respond to slash command: {}", why);
-            }
-        }
-    }
-
     async fn message(&self, ctx: Context, new_message: Message) {
         let channel = new_message.channel_id.to_channel(&ctx.http).await.unwrap();
 
@@ -61,6 +39,12 @@ impl EventHandler for Handler {
         // if message is not from me
         if new_message.author.id == ctx.cache().unwrap().current_user_id() {
             trace!("Message is from me, ignoring");
+            return;
+        }
+
+        // if messages is from a bot, ignore
+        if new_message.author.bot {
+            trace!("Message is from a bot, ignoring");
             return;
         }
 
@@ -104,6 +88,28 @@ impl EventHandler for Handler {
             "I now have the following guild slash commands: {:#?}",
             commands.iter().map(|c| c.name.clone()).collect::<Vec<_>>()
         );
+    }
+
+    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
+        if let Interaction::ApplicationCommand(command) = interaction {
+            info!("Received command interaction: {:#?}", command);
+
+            let content = match command.data.name.as_str() {
+                "ping" => commands::ping::run(&command.data.options),
+                _ => "not implemented :(".to_string(),
+            };
+
+            if let Err(why) = command
+                .create_interaction_response(&ctx.http, |response| {
+                    response
+                        .kind(InteractionResponseType::ChannelMessageWithSource)
+                        .interaction_response_data(|message| message.content(content))
+                })
+                .await
+            {
+                info!("Cannot respond to slash command: {}", why);
+            }
+        }
     }
 }
 
@@ -222,6 +228,8 @@ async fn main() -> PyResult<()> {
 
     // FUTURE(ssoudan) graceful shutdown
     // FUTURE(ssoudan) build the chat history from the channel history
+    // FUTURE(ssoudan) Discord bot with long-lived conversations
+    // FUTURE(ssoudan) log the conversation to build a dataset
 
     // install global subscriber configured based on RUST_LOG envvar.
     tracing_subscriber::fmt()

@@ -16,42 +16,33 @@ jobs:
     steps:
     - name: Install lld
       run: sudo apt-get update && sudo apt-get install -y lld wget unzip
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: nightly
-        override: true
-        components: rustfmt, clippy
     - name: Install protoc and protoc-gen-rust
       uses: arduino/setup-protoc@v1
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Build
-      uses: actions-rs/cargo@v1
-      with:
-        command: build
+      run: cargo build --workspace
     - name: 'Create env file'
       run: |
         echo "${{ secrets.ENV_FILE }}" > .env
     - name: Test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
+      run: cargo test --workspace
 
   check:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Install latest nightly
-      uses: actions-rs/toolchain@v1
+    - uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: nightly
-        override: true
-        components: rustfmt, clippy
+        components: clippy
     - name: Install cargo-all-features
       run: cargo install cargo-all-features
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Check (all-features)
       run: cargo check-all-features --workspace
     - name: Clippy

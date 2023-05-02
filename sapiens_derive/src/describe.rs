@@ -1,7 +1,7 @@
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
-use syn::{Path, PathSegment};
+use syn::{Expr, Path, PathSegment};
 
 use crate::DocumentedStructField;
 
@@ -59,14 +59,17 @@ impl ToTokens for DeriveReceiver {
 
                 let doc = attrs
                     .iter()
-                    .filter(|attr| attr.path.is_ident("doc"))
-                    .map(|attr| attr.parse_meta().unwrap())
-                    .map(|meta| match meta {
+                    .filter(|attr| attr.path().is_ident("doc"))
+                    .filter_map(|attr| match &attr.meta {
                         syn::Meta::NameValue(syn::MetaNameValue {
-                            lit: syn::Lit::Str(lit_str),
+                            value:
+                                Expr::Lit(syn::ExprLit {
+                                    lit: syn::Lit::Str(s),
+                                    ..
+                                }),
                             ..
-                        }) => lit_str.value(),
-                        _ => panic!("Expected doc attribute to be a string"),
+                        }) => Some(s.value()),
+                        _ => None,
                     })
                     .fold(String::new(), |mut acc, s| {
                         if !acc.is_empty() {

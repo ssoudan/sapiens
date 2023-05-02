@@ -1,9 +1,13 @@
 use std::fmt::Debug;
+use std::sync::Arc;
 
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
+use sapiens::context::{ChatEntryFormatter, ChatHistory};
 use sapiens::runner::Chain;
 use sapiens::tools::TerminationMessage;
-use sapiens::{Config, Error, StepOrStop, TaskProgressUpdateHandler};
+use sapiens::{
+    wrap_observer, Config, Error, InvocationFailureNotification, InvocationSuccessNotification,
+    ModelUpdateNotification, StepObserver, StepOrStop, WeakStepObserver,
+};
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
 use tracing::{debug, error, info, warn};
@@ -34,23 +38,25 @@ impl SapiensBot {
     }
 
     /// Start a new task
-    pub async fn start_task<T>(&mut self, task: String, handler: T) -> Result<StepOrStop<T>, Error>
-    where
-        T: TaskProgressUpdateHandler,
-    {
-        StepOrStop::with_handler(self.chain.clone(), task, handler).await
+    pub async fn start_task(
+        &mut self,
+        task: String,
+        observer: WeakStepObserver,
+    ) -> Result<StepOrStop, Error>
+where {
+        StepOrStop::with_observer(self.chain.clone(), task, observer).await
     }
 }
 
 /// Handler for task progress updates
-pub struct ProgressHandler {
+pub struct ProgressObserver {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
     pub job_tx: mpsc::Sender<JobUpdate>,
     entry_format: Box<dyn ChatEntryFormatter + 'static + Send + Sync>,
 }
 
-impl Debug for ProgressHandler {
+impl Debug for ProgressObserver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProgressHandler")
             .field("show_warmup_prompt", &self.show_warmup_prompt)
@@ -61,7 +67,7 @@ impl Debug for ProgressHandler {
 }
 
 #[async_trait::async_trait]
-impl TaskProgressUpdateHandler for ProgressHandler {
+impl StepObserver for ProgressObserver {
     async fn on_start(&mut self, chat_history: &ChatHistory) {
         let format = self.entry_format.as_ref();
         let msgs = chat_history.format(format);
@@ -82,32 +88,60 @@ impl TaskProgressUpdateHandler for ProgressHandler {
         }
     }
 
-    async fn on_model_update(&mut self, model_message: ChatEntry) {
-        let msg = self.entry_format.format(&model_message);
-        debug!(msg = ?model_message, "on_model_update");
+    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
+        let msg = self.entry_format.format(&event.chat_entry);
+        debug!(msg = ?event.chat_entry, "on_model_update");
 
         let msgs = sanitize_msgs_for_discord(vec![msg]);
         self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    async fn on_tool_update(&mut self, tool_output: ChatEntry, _success: bool) {
-        debug!(msg = ?tool_output, "on_tool_update");
+    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
+        let res = event.res;
+        let tool_name = event.tool_name;
 
-        let msg = self.entry_format.format(&tool_output);
+        debug!(res = ?res, tool_name, "on_invocation_success");
 
-        let msgs = sanitize_msgs_for_discord(vec![msg]);
+        match res {
+            Ok(tool_output) => {
+                let msg = self.entry_format.format(&tool_output);
 
-        self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+            }
+            Err(error) => {
+                let msg = format!("*Error*: {}", error);
+
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+            }
+        }
     }
 
-    async fn on_tool_error(&mut self, error: Error) {
-        debug!(error = ?error, "on_tool_error");
+    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
+        let res = event.res;
+        let tool_name = event.tool_name;
 
-        let msg = format!("*Error*: {}", error);
+        debug!(res = ?res, tool_name, "on_invocation_failure");
 
-        let msgs = sanitize_msgs_for_discord(vec![msg]);
+        match res {
+            Ok(tool_output) => {
+                let msg = self.entry_format.format(&tool_output);
 
-        self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
+            }
+            Err(error) => {
+                let msg = format!("*Error*: {}", error);
+
+                let msgs = sanitize_msgs_for_discord(vec![msg]);
+
+                self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
+            }
+        }
     }
 }
 
@@ -164,17 +198,21 @@ impl Runner {
 
             let mut tx = job.tx.clone();
 
-            let handler = ProgressHandler {
+            let observer = ProgressObserver {
                 show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
             };
 
+            let observer = wrap_observer(observer);
+
+            let w_observer = Arc::downgrade(&observer);
+
             let max_steps = job.max_steps;
 
             let mut current_step = 0;
 
-            match self.sapiens.start_task(job.task, handler).await {
+            match self.sapiens.start_task(job.task, w_observer).await {
                 Ok(step) => {
                     let mut step = step;
                     loop {
