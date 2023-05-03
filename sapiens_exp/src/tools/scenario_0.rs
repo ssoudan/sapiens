@@ -73,7 +73,7 @@ state_machine! {
 
     NoBowlNoCerealMilk => {
         GetBowl => BowlNoCerealMilk [BowlFound],
-        GetCereal => NoBowlNoCerealMilk [CerealFound],
+        GetCereal => NoBowlCerealMilk [CerealFound],
         GetMilk => NoBowlNoCerealMilk [MilkFound],
     },
 
