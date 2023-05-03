@@ -47,7 +47,7 @@ struct Args {
     max_steps: usize,
 
     /// Task to execute
-    #[arg(short, long, default_value = "Make me a cereal bowl with milk")]
+    #[arg(short, long, default_value = "Make me a bowl of cereal with milk")]
     task: String,
 
     /// Scenario to execute
