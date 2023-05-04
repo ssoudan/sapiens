@@ -191,6 +191,7 @@ impl PythonTool {
         debug!(code, "Running code");
 
         // FIXME(ssoudan) got to set a limit on the execution time
+        // https://docs.python.org/3/library/asyncio-task.html#timeouts
         // https://stackoverflow.com/questions/70142680/pyo3-prevent-user-submitted-code-from-looping-and-blocking-server-thread
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {

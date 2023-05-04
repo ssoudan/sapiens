@@ -6,8 +6,8 @@ use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::Toolbox;
 use crate::tools::{ToolDescription, ToolUseError};
 
-// TODO(ssoudan) prompt a-la `below are a series of dialogues between xxx and
-// yyy.`
+// FUTURE(ssoudan) prompt a-la: "below are a series of dialogues between..." for
+// non-instruct models
 
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed iteratively using an OODA loop.
@@ -132,9 +132,6 @@ impl Manager {
 
         // yaml serialize the tool description
         let tool_desc = serde_yaml::to_string(&tool_desc).unwrap();
-
-        // FIXME(ssoudan) use a different format for the tool description
-        // Something more like a docstring
 
         prefix + &tool_desc
     }

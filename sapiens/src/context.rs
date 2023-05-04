@@ -79,8 +79,12 @@ impl Debug for ChatHistory {
 impl ChatHistory {
     /// Create a new chat history
     pub fn new(model: String, min_token_for_completion: usize) -> Self {
-        let max_token = get_context_size(&model);
-        // FIXME(ssoudan) only for openai models
+        let max_token = match &model {
+            x if x.starts_with("gpt-") => get_context_size(x),
+            // Vicuna has 2048 - let use that for now
+            _ => 2048,
+        };
+
         Self {
             max_token,
             model,
