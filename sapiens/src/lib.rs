@@ -20,6 +20,7 @@ use async_openai::types::Role;
 use runner::Chain;
 use tokio::sync::Mutex;
 use tools::toolbox;
+use tracing::debug;
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{Client, OpenAIError};
@@ -178,6 +179,7 @@ pub struct Step {
 impl Step {
     /// Run the task for a single step
     async fn step(mut self) -> Result<StepOrStop, Error> {
+        debug!("Running step");
         let model_response = self.task_chain.query_model().await?;
 
         // Wrap the response as the chat history entry
@@ -269,9 +271,12 @@ impl Step {
                 result,
             } => {
                 // Got a response from the tool but the task is not done yet
-                let res =
-                    self.task_chain
-                        .on_tool_success(&tool_name, assistant_message.clone(), result);
+                let res = self.task_chain.on_tool_success(
+                    &tool_name,
+                    available_invocation_count,
+                    assistant_message.clone(),
+                    result,
+                );
 
                 if let Some(observer) = self.observer.upgrade() {
                     observer
@@ -407,6 +412,7 @@ impl StepOrStop {
 
     /// Run the task for the given number of steps
     pub async fn run(mut self, max_steps: usize) -> Result<Stop, Error> {
+        debug!("run task for {} steps", max_steps);
         for _ in 0..max_steps {
             match self {
                 StepOrStop::Step { step } => {

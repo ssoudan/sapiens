@@ -27,20 +27,21 @@ You must use the following format for your response. Comments are in bold and sh
 ====================
 ## Observations: 
 **What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**
-- ...
+- <...>
 ## Orientation: 
 **Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**
-- ...
+- <...>
 ## Decision: 
 **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
-- ...
+- <...>
 ## The ONLY Action: 
 **Take a single Action consisting of exactly one pair of `tool_name` and `input`. Never give more than one YAML. **
 ```yaml
 tool_name: <ToolName>
 input:
-    ...  
+    <...>  
 ```
+We will take further action based on the result.
 ====================
 
 Notes: 
@@ -58,8 +59,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 - SandboxedPython can be used to sort the list.
 - I need to provide only the `tool_name` and `input` fields for the SandboxedPython Tool.
 - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
-- I need to use the Conclude Tool to terminate the task when I have the sorted list
-- I need to provide the conclusion in plain text to the Conclude Tool.
+- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
 ## The ONLY Action:
@@ -71,6 +71,7 @@ input:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
+We will take further action based on the result.
 "#;
 
 const PROTO_EXCHANGE_3: &str = r"
@@ -148,7 +149,7 @@ impl Manager {
 
     /// Create the 'system' prompt to describe the roles.
     fn create_system_prompt(&self) -> String {
-        "You are an automated agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
+        "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
             .to_string()
     }
 
@@ -224,19 +225,61 @@ impl Task {
     pub(crate) fn action_success_prompt(
         &self,
         tool_name: impl AsRef<str>,
+        available_invocation_count: usize,
         result: impl AsRef<str>,
     ) -> String {
-        format!(
-            "# Action {} result: \n```yaml\n{}```\n{}",
-            tool_name.as_ref(),
-            result.as_ref(),
-            &self
-        )
+        if available_invocation_count != 1 {
+            format!(
+                "You must give only one Action at a time. There was {}. Only the first one was considered.\n# Action {} result: \n```yaml\n{}```\n{}",
+                available_invocation_count,
+                tool_name.as_ref(),
+                result.as_ref(),
+                &self
+            )
+        } else {
+            format!(
+                "# Action {} result: \n```yaml\n{}```\n{}",
+                tool_name.as_ref(),
+                result.as_ref(),
+                &self
+            )
+        }
     }
 }
 
 impl fmt::Display for Task {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_prompt())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::context;
+    use crate::openai::ChatCompletionRequestMessage;
+
+    #[tokio::test]
+    async fn populate_chat_history() {
+        use super::*;
+        use crate::context::ChatHistory;
+        use crate::toolbox::Toolbox;
+
+        let toolbox = Toolbox::default();
+        let manager = Manager::new(toolbox);
+
+        let config = crate::Config::default();
+
+        let mut chat_history =
+            ChatHistory::new(config.model.clone(), config.min_token_for_completion);
+
+        manager.populate_chat_history(&mut chat_history).await;
+
+        let prompts: Vec<ChatCompletionRequestMessage> = chat_history.iter().cloned().collect();
+
+        // println!("{:?}", prompts);
+
+        let tokens = context::num_tokens_from_messages(&config.model, prompts.as_slice()).unwrap();
+
+        assert_eq!(tokens, 987)
     }
 }

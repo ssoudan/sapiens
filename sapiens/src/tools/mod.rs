@@ -224,7 +224,6 @@ async fn choose_invocation(
             .collect::<Vec<String>>()
             .join(", ");
 
-        // FUTURE(ssoudan) they should not reach the ChatHistory
         warn!(
             ?junk_keys,
             "The Action should not have fields: {}.", junk_keys

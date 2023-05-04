@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
@@ -125,7 +125,11 @@ impl TaskChain {
         let input = self.prepare_chat_completion_request();
 
         debug!("Sending request to OpenAI");
-        let res = self.chain.openai_client.chat().create(input).await?;
+        let res = self.chain.openai_client.chat().create(input).await;
+        if let Err(e) = &res {
+            error!(error = ?e, "Error from OpenAI");
+        }
+        let res = res?;
         debug!(usage = ?res.usage, "Got a response from OpenAI");
 
         let first = res.choices.first().ok_or(Error::NoResponseFromModel)?;
@@ -150,7 +154,8 @@ impl TaskChain {
             n: Some(1),
             stream: None,
             stop: None,
-            max_tokens: None,
+            // max_tokens: Some(self.chain.config.min_token_for_completion as u16),
+            max_tokens: Some(1024),
             presence_penalty: None,
             frequency_penalty: None,
             logit_bias: None,
@@ -180,6 +185,7 @@ impl TaskChain {
     pub fn on_tool_success(
         &mut self,
         tool_name: &str,
+        available_invocation_count: usize,
         query: ChatEntry,
         result: String,
     ) -> Result<ChatEntry, Error> {
@@ -187,7 +193,9 @@ impl TaskChain {
         self.add_to_chat_history(query)?;
 
         // add the response to the chat history
-        let msg = self.task.action_success_prompt(tool_name, result);
+        let msg = self
+            .task
+            .action_success_prompt(tool_name, available_invocation_count, result);
 
         // if the response is too long, we add an error message to the chat history
         // instead

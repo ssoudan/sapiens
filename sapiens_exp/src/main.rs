@@ -13,7 +13,7 @@ use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
 use sapiens_exp::{setup, Config};
-use tracing::{info, trace};
+use tracing::{error, info, trace};
 use tracing_subscriber::EnvFilter;
 
 // FUTURE(ssoudan) BO
@@ -100,6 +100,8 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let _ = dotenv_override();
 
+    // TODO(ssoudan) identify failure cause in last batch
+
     tracing_subscriber::fmt()
         .compact()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
@@ -129,9 +131,13 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // reset stats
     toolbox.reset_stats().await;
 
-    let openai_client = sapiens::openai::Client::new().with_api_key(
+    let mut openai_client = sapiens::openai::Client::new().with_api_key(
         std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
     );
+
+    if let Ok(api_base) = std::env::var("OPENAI_API_BASE") {
+        openai_client = openai_client.with_api_base(api_base);
+    }
 
     // Sanitation
     // remove environment variables that could be used to access the host
@@ -148,14 +154,22 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let w_trace_observer = Arc::downgrade(&trace_observer);
 
     let task = args.task.clone();
-    let _ = run_to_the_end(
+    match run_to_the_end(
         toolbox.clone(),
         openai_client,
         (&config).into(),
         task.clone(),
         w_trace_observer,
     )
-    .await;
+    .await
+    {
+        Ok(_) => {
+            info!("Task completed");
+        }
+        Err(e) => {
+            error!(error = ?e, "Task failed");
+        }
+    }
 
     let trace = { trace_observer.lock().await.trace().await };
 

@@ -1,8 +1,8 @@
 //! Maintain the context for the bot.
 use std::fmt::{Debug, Formatter};
 
-use tiktoken_rs::async_openai::num_tokens_from_messages;
-use tiktoken_rs::model::get_context_size;
+pub use tiktoken_rs::async_openai::num_tokens_from_messages;
+pub use tiktoken_rs::model::get_context_size;
 
 use crate::openai::{ChatCompletionRequestMessage, Role};
 
@@ -80,6 +80,7 @@ impl ChatHistory {
     /// Create a new chat history
     pub fn new(model: String, min_token_for_completion: usize) -> Self {
         let max_token = get_context_size(&model);
+        // FIXME(ssoudan) only for openai models
         Self {
             max_token,
             model,
@@ -88,6 +89,17 @@ impl ChatHistory {
             prompt_num_tokens: 0,
             chitchat: vec![],
         }
+    }
+
+    fn num_tokens_from_messages(&self, messages: &[ChatCompletionRequestMessage]) -> usize {
+        if let Ok(res) = num_tokens_from_messages(&self.model, messages) {
+            return res;
+        }
+
+        // FUTURE(ssoudan) do better
+
+        // fallback - use gpt-3.5-turbo
+        num_tokens_from_messages("gpt-3.5-turbo", messages).unwrap()
     }
 
     /// add a prompt to the history
@@ -102,7 +114,7 @@ impl ChatHistory {
         }
 
         // update the prompt_num_tokens
-        self.prompt_num_tokens = num_tokens_from_messages(&self.model, &self.prompt).unwrap();
+        self.prompt_num_tokens = self.num_tokens_from_messages(&self.prompt);
     }
 
     /// add a message to the chitchat history, and prune the history if needed
@@ -136,7 +148,7 @@ impl ChatHistory {
 
         // loop until we have enough available tokens to complete the task
         while self.chitchat.len() > 1 {
-            let num_tokens = num_tokens_from_messages(&self.model, &self.chitchat).unwrap();
+            let num_tokens = self.num_tokens_from_messages(&self.chitchat);
             if num_tokens <= token_budget - self.min_token_for_completion {
                 return Ok(self.chitchat.len());
             }
