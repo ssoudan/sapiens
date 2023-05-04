@@ -20,7 +20,7 @@ expression: description
 - name: Serving
   description: "When the meal is ready, use this to serve it."
   input_format:
-    serveable: "<Serveable> what to serve. Value can be: Bowl."
+    servable: "<Servable> what to serve. Value can be: Bowl."
   output_format:
     accepted: "<bool> was it accepted? if not, maybe the bowl was not ready to be served."
 
