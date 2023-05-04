@@ -124,36 +124,37 @@ impl ToolsWrapper {
             Value::default()
         };
 
-        // println!("invoking tool {} with input {:?}", tool_name, input);
-
-        // Build the runtime for the new thread.
-        //
-        // The runtime is created before spawning the thread
-        // to more cleanly forward errors if the `unwrap()`
-        // panics.
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
         let (tx, mut rx) = tokio::sync::oneshot::channel::<Result<Value, ToolUseError>>();
 
-        let toolbox = self.toolbox.clone();
+        // release the GIL to allow the thread to run
+        py.allow_threads(move || {
+            let toolbox = self.toolbox.clone();
 
-        let tool_name = tool_name.to_string();
+            let tool_name = tool_name.to_string();
 
-        std::thread::spawn(move || {
-            rt.block_on(async move {
-                let output = invoke_simple_from_toolbox(toolbox, &tool_name, input).await;
+            // Build the runtime for the new thread.
+            //
+            // The runtime is created before spawning the thread
+            // to more cleanly forward errors if the `unwrap()`
+            // panics.
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
 
-                match output {
-                    Ok(output) => {
-                        tx.send(Ok(output)).unwrap();
+            std::thread::spawn(move || {
+                rt.block_on(async move {
+                    let output = invoke_simple_from_toolbox(toolbox, &tool_name, input).await;
+
+                    match output {
+                        Ok(output) => {
+                            tx.send(Ok(output)).unwrap();
+                        }
+                        Err(e) => {
+                            tx.send(Err(e)).unwrap();
+                        }
                     }
-                    Err(e) => {
-                        tx.send(Err(e)).unwrap();
-                    }
-                }
+                });
             });
         });
 
@@ -188,6 +189,9 @@ impl PythonTool {
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
         trace!(code, "Running code");
+
+        // FIXME(ssoudan) got to set a limit on the execution time
+        // https://stackoverflow.com/questions/70142680/pyo3-prevent-user-submitted-code-from-looping-and-blocking-server-thread
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             // println!("Python version: {}", py.version());
@@ -238,6 +242,8 @@ impl PythonTool {
             static ref FROM_RE: regex::Regex =
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
+
+        // TODO(ssoudan) what about exit(0)?
 
         // FUTURE(ssoudan) use PyModule::from_code ?
 
