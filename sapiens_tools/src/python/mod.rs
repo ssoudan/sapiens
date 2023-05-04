@@ -12,7 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use tracing::trace;
+use tracing::debug;
 
 /// Conversion tools
 pub(crate) mod utils;
@@ -25,8 +25,8 @@ const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
 ///
-/// - To use another Tool with input format `input_field_1` and `input_field_2`
-///   and output format with fields `output_field_1` and `output_field_2` use:
+/// - To use another Tool with parameters `input_field_1` and `input_field_2`
+///   and result fields `output_field_1` and `output_field_2` use:
 /// ```python
 /// result = tools.ToolName(input_field_1=..., input_field_2=...)
 /// print(result['output_field_1'])
@@ -188,7 +188,7 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        trace!(code, "Running code");
+        debug!(code, "Running code");
 
         // FIXME(ssoudan) got to set a limit on the execution time
         // https://stackoverflow.com/questions/70142680/pyo3-prevent-user-submitted-code-from-looping-and-blocking-server-thread

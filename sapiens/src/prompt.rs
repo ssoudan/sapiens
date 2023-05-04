@@ -6,6 +6,9 @@ use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::Toolbox;
 use crate::tools::{ToolDescription, ToolUseError};
 
+// TODO(ssoudan) prompt a-la `below are a series of dialogues between xxx and
+// yyy.`
+
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed iteratively using an OODA loop.
 
@@ -35,19 +38,19 @@ You must use the following format for your response. Comments are in bold and sh
 **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
 - <...>
 ## The ONLY Action: 
-**Take a single Action consisting of exactly one pair of `tool_name` and `input`. Never give more than one YAML. **
+**Take a single Action consisting of exactly one pair of `tool_name` and `parameters`. Never give more than one YAML. **
 ```yaml
 tool_name: <ToolName>
-input:
+parameters:
     <...>  
 ```
 We will take further action based on the result.
 ====================
 
 Notes: 
-- Action has the following fields: `tool_name` and `input` ONLY.
-- `input` uses the `input_format` for the Tool.
-- `output_format` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
+- Action has the following fields: `tool_name` and `parameters` ONLY.
+- `parameters` uses the format specified for the Tool.
+- `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
 - One Action at a time. No more. No less.
 ";
 
@@ -57,7 +60,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 - I need to sort this list in ascending order.
 ## Orientation:
 - SandboxedPython can be used to sort the list.
-- I need to provide only the `tool_name` and `input` fields for the SandboxedPython Tool.
+- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
 - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
 ## Decision:
@@ -65,7 +68,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 ## The ONLY Action:
 ```yaml
 tool_name: SandboxedPython
-input:
+parameters:
   code: |
     lst = [2, 3, 1, 4, 5]
     sorted_list = sorted(lst)
@@ -90,13 +93,13 @@ const PROTO_EXCHANGE_4: &str = r"
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
-- I need to provide the `tool_name` and `input` fields for the Conclude Tool.
+- I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
 ## Decision:
 - Use the Conclude Tool to terminate the task with the sorted list.
 ## The ONLY Action:
 ```yaml
 tool_name: Conclude
-input:
+parameters:
   original_question: |
     Sort in ascending order: [2, 3, 1, 4, 5]
   conclusion: |
@@ -129,6 +132,9 @@ impl Manager {
 
         // yaml serialize the tool description
         let tool_desc = serde_yaml::to_string(&tool_desc).unwrap();
+
+        // FIXME(ssoudan) use a different format for the tool description
+        // Something more like a docstring
 
         prefix + &tool_desc
     }
@@ -280,6 +286,6 @@ mod tests {
 
         let tokens = context::num_tokens_from_messages(&config.model, prompts.as_slice()).unwrap();
 
-        assert_eq!(tokens, 987)
+        assert_eq!(tokens, 985)
     }
 }

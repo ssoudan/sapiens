@@ -323,7 +323,7 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     debug!(tool_name = invocation.tool_name, "Invocation found");
 
     let tool_name = invocation.tool_name.clone();
-    let input = invocation.input;
+    let input = invocation.parameters;
 
     let extracted_input = serde_yaml::to_string(&input).unwrap_or_else(|_| {
         format!(

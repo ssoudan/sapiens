@@ -31,10 +31,12 @@ pub use async_openai::Client;
 //             user: None,
 //         };
 //
-//         let response = openai_client.chat().create(request).await;
-//         // assert!(response.is_ok());
-//         //
-//         // let response = response.unwrap();
-//         println!("{:?}", response);
-//     }
+//     let response = openai_client.chat().create(request).await;
+//     assert!(response.is_ok());
+//
+//     let response = response.unwrap();
+//     println!("{:#?}", response);
+//
+//     println!("{}", response.choices.first().unwrap().message.content);
+// }
 // }

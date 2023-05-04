@@ -12,7 +12,7 @@ async fn test_tool_invocation() -> PyResult<()> {
     # Action
     ```yaml        
     tool_name: SandboxedPython
-    input:
+    parameters:
         code: |
             print("Hello world!")          
     ```
@@ -42,7 +42,7 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
     # Action
     ```yaml        
     tool_name: Conclude
-    input:
+    parameters:
         original_question: |
             print("Hello world!")
         conclusion: |
@@ -75,7 +75,7 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
     # Action
     ```yaml        
     tool_name: SandboxedPython
-    input:
+    parameters:
         code: |
             print("Hello world!")
             rooms = toolbox.invoke("Dummy", {"blah": "blah"})
@@ -110,7 +110,7 @@ async fn test_exit_in_python() -> PyResult<()> {
     # Action
     ```yaml        
     tool_name: SandboxedPython
-    input:
+    parameters:
         code: |
             print("Bye bye!")
             exit(0)
@@ -140,7 +140,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     # Action
     ```yaml        
     tool_name: SandboxedPython
-    input:
+    parameters:
         code: |
             print("Hello world 1!")          
     ```
@@ -148,7 +148,7 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     # And another action
     ```yaml        
     tool_name: SandboxedPython
-    input:
+    parameters:
         code: |
             print("Hello world 2!")          
     ```
@@ -188,7 +188,7 @@ async fn test_python() -> PyResult<()> {
 
     let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |           
        args = {
            'blah': "hello"
@@ -224,7 +224,7 @@ async fn test_python_docstring() -> PyResult<()> {
 
     let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |                  
        output = help(tools.Dummy)           
        print(f"And the docstring is: {output}")

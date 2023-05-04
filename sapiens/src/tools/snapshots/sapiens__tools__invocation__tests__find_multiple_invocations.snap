@@ -3,28 +3,28 @@ source: sapiens/src/tools/invocation.rs
 expression: invocations
 ---
 - tool_name: Search1
-  input:
+  parameters:
     q: Marcel Deneuve
     excluded_terms: Resident Evil
     num_results: 10
 - tool_name: Search2
-  input:
+  parameters:
     q: Marcel Deneuve
     excluded_terms: Resident Evil
     num_results: 10
 - tool_name: Search3
-  input:
+  parameters:
     q: Marcel Deneuve
     excluded_terms: Resident Evil
     num_results: 10
   something: else
 - tool_name: Search4
-  input:
+  parameters:
     q: Marcel Deneuve
     excluded_terms: Resident Evil
     num_results: 10
 - tool_name: Search5
-  input:
+  parameters:
     q: Marcel Deneuve
     excluded_terms: Resident Evil
     num_results: 10

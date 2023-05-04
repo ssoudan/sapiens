@@ -16,7 +16,7 @@ mod hue_test {
     # Action
     ```yaml
     tool_name: SandboxedPython
-    input:
+    parameters:
       code: |
         room_name = "Bedroom"
     
@@ -85,7 +85,7 @@ mod arxiv {
 
         let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |           
            import datetime               
            search_query = f'cat:cs.AI'
@@ -126,7 +126,7 @@ mod arxiv {
 
         let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |           
            import datetime               
            search_query = f'cat:cs.AI'               
@@ -160,7 +160,7 @@ mod arxiv {
 
         let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |
         latest_papers = tools.Arxiv(
           search_query="cat:cs.DB",
@@ -196,7 +196,7 @@ mod arxiv {
 
         let data = indoc! {r#"```yaml
     tool_name: SandboxedPython
-    input:
+    parameters:
       code: |
         latest_papers = tools.Arxiv(
           search_query="cat:cs.DB",
@@ -261,7 +261,7 @@ mod search {
 
         let data = indoc! {r#"```yaml
    tool_name: SandboxedPython
-   input:
+   parameters:
      code: |                
          input = {"q": "rust" }     
          output = tools.Search(**input)                                     
