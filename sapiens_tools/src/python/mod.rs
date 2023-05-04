@@ -243,8 +243,6 @@ impl PythonTool {
                 regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
         }
 
-        // TODO(ssoudan) what about exit(0)?
-
         // FUTURE(ssoudan) use PyModule::from_code ?
 
         // check for forbidden keywords - with capture
