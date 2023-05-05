@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
 ## 0.5.0 (2023-05-02)
+
+<csr-id-cd0bd17051045dfaa1b821a2c83acad33634721a/>
 
 ### Chore
 
@@ -28,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 9 commits contributed to the release over the course of 4 calendar days.
+ - 10 commits contributed to the release over the course of 4 calendar days.
  - 5 days passed between releases.
  - 7 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -40,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.6.0, sapiens_derive v0.4.0, sapiens_tools v0.6.0, sapiens_bot v0.4.0, sapiens_cli v0.5.0, sapiens_exp v0.4.1, safety bump 4 crates ([`1b9dd43`](https://github.com/ssoudan/sapiens/commit/1b9dd43e9291f0aef2a83c1610cede57c897a56c))
     - Merge pull request #13 from ssoudan/getting_methodical ([`e0d97aa`](https://github.com/ssoudan/sapiens/commit/e0d97aae47b30bd97b37520a345c84b59523de9d))
     - Store the current state in Trace Events ([`4626deb`](https://github.com/ssoudan/sapiens/commit/4626deb7308ec642d0e937fc3b96af494538a027))
     - Updated ([`cd0bd17`](https://github.com/ssoudan/sapiens/commit/cd0bd17051045dfaa1b821a2c83acad33634721a))

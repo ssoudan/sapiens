@@ -5,7 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Chore
+
+ - <csr-id-d88ee26f62b325c272b734a182b5d2690c5f9eb8/> updated
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release over the course of 2 calendar days.
+ - 2 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #15 from ssoudan/getting_better ([`936b298`](https://github.com/ssoudan/sapiens/commit/936b2986bf8cf96b1d731b6e1144b3f3fb271fbe))
+    - Updated ([`d88ee26`](https://github.com/ssoudan/sapiens/commit/d88ee26f62b325c272b734a182b5d2690c5f9eb8))
+</details>
+
 ## 0.4.0 (2023-05-02)
+
+<csr-id-f5dddafa97a1ed102e42f40057e8a7e631cee377/>
 
 ### Chore
 
@@ -19,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 4 calendar days.
+ - 4 commits contributed to the release over the course of 4 calendar days.
  - 7 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -31,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.6.0, sapiens_derive v0.4.0, sapiens_tools v0.6.0, sapiens_bot v0.4.0, sapiens_cli v0.5.0, sapiens_exp v0.4.1, safety bump 4 crates ([`1b9dd43`](https://github.com/ssoudan/sapiens/commit/1b9dd43e9291f0aef2a83c1610cede57c897a56c))
     - Merge pull request #13 from ssoudan/getting_methodical ([`e0d97aa`](https://github.com/ssoudan/sapiens/commit/e0d97aae47b30bd97b37520a345c84b59523de9d))
     - Richer errors while invoking tools ([`04e83c2`](https://github.com/ssoudan/sapiens/commit/04e83c2a214212d045ef5a890a72c3dc5ab61076))
     - Syn v2 and updated darling ([`f5dddaf`](https://github.com/ssoudan/sapiens/commit/f5dddafa97a1ed102e42f40057e8a7e631cee377))

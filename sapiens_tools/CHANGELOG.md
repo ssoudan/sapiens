@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Chore
+
+ - <csr-id-98826b19cd97872a032e955478ff2d3b9af8262c/> updated
+ - <csr-id-acb2a6a46192a116b17cacb9301cba22a7b3e719/> cleanup
+
+### New Features
+
+ - <csr-id-45f5286228d2a8d42ebf89b6ea1f14a6eeb53f52/> cover the case with `exit` in Python code
+ - <csr-id-ff4d730e62c2cd4c370a83fe1ab0a74325389a84/> release GIL when doing something else
+
+### New Features (BREAKING)
+
+ - <csr-id-2912f4ff80a8b87c9727d3e05eaae469f7a4fd94/> change in format to improve task completion rate
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release over the course of 1 calendar day.
+ - 2 days passed between releases.
+ - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #15 from ssoudan/getting_better ([`936b298`](https://github.com/ssoudan/sapiens/commit/936b2986bf8cf96b1d731b6e1144b3f3fb271fbe))
+    - Updated ([`98826b1`](https://github.com/ssoudan/sapiens/commit/98826b19cd97872a032e955478ff2d3b9af8262c))
+    - Cleanup ([`acb2a6a`](https://github.com/ssoudan/sapiens/commit/acb2a6a46192a116b17cacb9301cba22a7b3e719))
+    - Change in format to improve task completion rate ([`2912f4f`](https://github.com/ssoudan/sapiens/commit/2912f4ff80a8b87c9727d3e05eaae469f7a4fd94))
+    - Cover the case with `exit` in Python code ([`45f5286`](https://github.com/ssoudan/sapiens/commit/45f5286228d2a8d42ebf89b6ea1f14a6eeb53f52))
+    - Release GIL when doing something else ([`ff4d730`](https://github.com/ssoudan/sapiens/commit/ff4d730e62c2cd4c370a83fe1ab0a74325389a84))
+</details>
+
 ## 0.6.0 (2023-05-02)
 
 ### New Features
@@ -26,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 10 commits contributed to the release over the course of 4 calendar days.
+ - 11 commits contributed to the release over the course of 4 calendar days.
  - 5 days passed between releases.
  - 8 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -38,6 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.6.0, sapiens_derive v0.4.0, sapiens_tools v0.6.0, sapiens_bot v0.4.0, sapiens_cli v0.5.0, sapiens_exp v0.4.1, safety bump 4 crates ([`1b9dd43`](https://github.com/ssoudan/sapiens/commit/1b9dd43e9291f0aef2a83c1610cede57c897a56c))
     - Merge pull request #13 from ssoudan/getting_methodical ([`e0d97aa`](https://github.com/ssoudan/sapiens/commit/e0d97aae47b30bd97b37520a345c84b59523de9d))
     - Store the current state in Trace Events ([`4626deb`](https://github.com/ssoudan/sapiens/commit/4626deb7308ec642d0e937fc3b96af494538a027))
     - Richer errors while invoking tools ([`04e83c2`](https://github.com/ssoudan/sapiens/commit/04e83c2a214212d045ef5a890a72c3dc5ab61076))
