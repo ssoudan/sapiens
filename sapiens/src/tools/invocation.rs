@@ -127,7 +127,7 @@ mod tests {
         let data = indoc! {r#"# Some text
     ```yaml
     tool_name: Search
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -145,13 +145,13 @@ mod tests {
         let data = indoc! {r#"# Some text
     ```yaml
     tool_name: Search1
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
     ---
     tool_name: Search2
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -159,7 +159,7 @@ mod tests {
     Some other text
     ```yaml
     tool_name: Search3
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -168,12 +168,12 @@ mod tests {
     Some other text
     ```yaml
     - tool_name: Search4
-      input:
+      parameters:
         q: Marcel Deneuve
         excluded_terms: Resident Evil
         num_results: 10
     - tool_name: Search5
-      input:
+      parameters:
         q: Marcel Deneuve
         excluded_terms: Resident Evil
         num_results: 10
@@ -193,7 +193,7 @@ mod tests {
         let data = indoc! {r#"# Some text
     ```yaml
     tool_name: Search
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -215,7 +215,7 @@ mod tests {
         let data = indoc! {r#"# Some text
     ```yaml
     tool_name: Search
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -233,13 +233,13 @@ mod tests {
         let invocation = &tool_invocations[0];
 
         assert_eq!(invocation.tool_name, "Search");
-        assert_eq!(invocation.input.get("q").unwrap(), "Marcel Deneuve");
+        assert_eq!(invocation.parameters.get("q").unwrap(), "Marcel Deneuve");
         assert_eq!(
-            invocation.input.get("excluded_terms").unwrap(),
+            invocation.parameters.get("excluded_terms").unwrap(),
             "Resident Evil"
         );
         assert_eq!(
-            invocation.input.get("num_results").unwrap(),
+            invocation.parameters.get("num_results").unwrap(),
             &serde_yaml::Value::Number(Number::from(10))
         );
         assert!(!invocation.junk.is_empty());
@@ -251,7 +251,7 @@ mod tests {
         let data = indoc! {r#"# Some text
     ```yaml
     tool_name: Search1
-    input:
+    parameters:
       q: Marcel Deneuve
       excluded_terms: Resident Evil
       num_results: 10
@@ -262,7 +262,7 @@ mod tests {
     Some other text
     ```yaml
     tool_name: Search2
-    input:
+    parameters:
       q: Marcel Prouse
       excluded_terms: La Recherche du Temps Perdu
       num_results: 10
@@ -270,7 +270,7 @@ mod tests {
     Some other other text
     ```yaml
     tool_name: Search3
-    input:
+    parameters:
       q: Marcel et son Orchestre
       excluded_terms: Les Vaches
       num_results: 10
@@ -313,7 +313,7 @@ mod tests {
         ## The ONLY Action:
         ```yaml
         tool_name: Search
-        input:
+        parameters:
           q: |
             types of light bulbs in offices
             devices for controlling light colors in office

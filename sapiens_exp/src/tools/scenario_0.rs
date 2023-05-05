@@ -73,7 +73,7 @@ state_machine! {
 
     NoBowlNoCerealMilk => {
         GetBowl => BowlNoCerealMilk [BowlFound],
-        GetCereal => NoBowlNoCerealMilk [CerealFound],
+        GetCereal => NoBowlCerealMilk [CerealFound],
         GetMilk => NoBowlNoCerealMilk [MilkFound],
     },
 
@@ -324,7 +324,7 @@ impl From<Option<CerealBowlRecipeOutput>> for MixingOutput {
 
 /// What to serve
 #[derive(Debug, Serialize, Deserialize, Clone)]
-enum Serveable {
+enum Servable {
     /// Bowl
     Bowl,
 }
@@ -333,13 +333,13 @@ enum Serveable {
 /// The input of a serving action
 struct ServingInput {
     /// what to serve. Value can be: Bowl.
-    serveable: Serveable,
+    servable: Servable,
 }
 
 impl StateUpdater<InternalState, ServingOutput> for ServingInput {
     fn update(&self, state: &mut InternalState) -> Result<ServingOutput, ToolUseError> {
-        match &self.serveable {
-            Serveable::Bowl => {
+        match &self.servable {
+            Servable::Bowl => {
                 let x = state
                     .fsm
                     .consume(&CerealBowlRecipeInput::ServeBowl)
@@ -559,7 +559,7 @@ mod tests {
 
         // now serve the bowl
         let input = ServingInput {
-            serveable: Serveable::Bowl,
+            servable: Servable::Bowl,
         };
 
         let input = serde_yaml::to_value(input).unwrap();

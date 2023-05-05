@@ -309,6 +309,9 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     //     return Err(ToolUseError::TooManyInvocationFound);
     // }
 
+    // TODO(ssoudan) invoke corresponding tools one by one. Fail on first error.
+    // TODO(ssoudan) document this in the initial prompt
+
     let invocation = match tools::choose_invocation(tool_invocations).await {
         Ok(invocation) => invocation,
         Err(e) => {
@@ -323,7 +326,7 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     debug!(tool_name = invocation.tool_name, "Invocation found");
 
     let tool_name = invocation.tool_name.clone();
-    let input = invocation.input;
+    let input = invocation.parameters;
 
     let extracted_input = serde_yaml::to_string(&input).unwrap_or_else(|_| {
         format!(

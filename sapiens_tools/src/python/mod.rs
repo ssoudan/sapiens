@@ -12,7 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use tracing::trace;
+use tracing::debug;
 
 /// Conversion tools
 pub(crate) mod utils;
@@ -25,8 +25,8 @@ const MAX_OUTPUT_SIZE: usize = 512;
 
 /// A tool that runs sandboxed Python code. Use this to transform data.
 ///
-/// - To use another Tool with input format `input_field_1` and `input_field_2`
-///   and output format with fields `output_field_1` and `output_field_2` use:
+/// - To use another Tool with parameters `input_field_1` and `input_field_2`
+///   and result fields `output_field_1` and `output_field_2` use:
 /// ```python
 /// result = tools.ToolName(input_field_1=..., input_field_2=...)
 /// print(result['output_field_1'])
@@ -124,36 +124,37 @@ impl ToolsWrapper {
             Value::default()
         };
 
-        // println!("invoking tool {} with input {:?}", tool_name, input);
-
-        // Build the runtime for the new thread.
-        //
-        // The runtime is created before spawning the thread
-        // to more cleanly forward errors if the `unwrap()`
-        // panics.
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
         let (tx, mut rx) = tokio::sync::oneshot::channel::<Result<Value, ToolUseError>>();
 
-        let toolbox = self.toolbox.clone();
+        // release the GIL to allow the thread to run
+        py.allow_threads(move || {
+            let toolbox = self.toolbox.clone();
 
-        let tool_name = tool_name.to_string();
+            let tool_name = tool_name.to_string();
 
-        std::thread::spawn(move || {
-            rt.block_on(async move {
-                let output = invoke_simple_from_toolbox(toolbox, &tool_name, input).await;
+            // Build the runtime for the new thread.
+            //
+            // The runtime is created before spawning the thread
+            // to more cleanly forward errors if the `unwrap()`
+            // panics.
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
 
-                match output {
-                    Ok(output) => {
-                        tx.send(Ok(output)).unwrap();
+            std::thread::spawn(move || {
+                rt.block_on(async move {
+                    let output = invoke_simple_from_toolbox(toolbox, &tool_name, input).await;
+
+                    match output {
+                        Ok(output) => {
+                            tx.send(Ok(output)).unwrap();
+                        }
+                        Err(e) => {
+                            tx.send(Err(e)).unwrap();
+                        }
                     }
-                    Err(e) => {
-                        tx.send(Err(e)).unwrap();
-                    }
-                }
+                });
             });
         });
 
@@ -187,7 +188,11 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        trace!(code, "Running code");
+        debug!(code, "Running code");
+
+        // FIXME(ssoudan) got to set a limit on the execution time
+        // https://docs.python.org/3/library/asyncio-task.html#timeouts
+        // https://stackoverflow.com/questions/70142680/pyo3-prevent-user-submitted-code-from-looping-and-blocking-server-thread
 
         let res: PyResult<(String, String)> = Python::with_gil(|py| {
             // println!("Python version: {}", py.version());

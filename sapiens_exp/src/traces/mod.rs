@@ -8,6 +8,7 @@ use sapiens::{
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
+use tracing::info;
 
 use crate::tools;
 use crate::tools::State;
@@ -251,7 +252,10 @@ impl TraceObserver {
     async fn get_state(&self) -> Option<String> {
         if let Some(state) = self.state.as_ref() {
             let guard = state.lock().await;
-            Some(guard.state())
+
+            let state = guard.state();
+            info!("Current state: {}", state);
+            Some(state)
         } else {
             None
         }

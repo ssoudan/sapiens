@@ -3,7 +3,7 @@ source: sapiens/src/tools/mod.rs
 expression: serialized
 ---
 tool_name: Search
-input:
+parameters:
   q: Marcel Deneuve
   excluded_terms: Resident Evil
   num_results: 10

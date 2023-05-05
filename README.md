@@ -125,7 +125,7 @@ Observations, Orientation, Decision, The ONLY Action?
 ## The ONLY Action:
 ```yaml
 tool_name: SandboxedPython
-input:
+parameters:
   code: |
     from sympy import symbols, solve
     x = symbols('x')
@@ -158,7 +158,7 @@ Observations, Orientation, Decision, The ONLY Action?
 ## The ONLY Action:
 ```yaml
 tool_name: Conclude
-input:
+parameters:
   original_question: Show me an example of how to use Sympy to solve a math problem.
   conclusion: |
     An example of how to use Sympy to solve the equation "x^2 - 5x + 6 = 0" is:
@@ -199,7 +199,7 @@ The solution is the roots of the equation: [2, 3].
 ## The ONLY Action:
 ```yaml
 tool_name: SandboxedPython
-input:
+parameters:
   code: |
     import requests
     from bs4 import BeautifulSoup
@@ -246,7 +246,7 @@ Observations, Orientation, Decision, The ONLY Action?
 ## The ONLY Action:
 ```yaml
 tool_name: Conclude
-input:
+parameters:
   original_question: "How is the weather today in San Jose, CA, USA? I have no API KEY but BS4 is available."
   conclusion: "The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ..."
 ```
@@ -299,7 +299,7 @@ Please use the following format for your response - no need to be verbose:
 ## The ONLY Action: <Do not give multiple command. Only one per response.>
 ```yaml
 tool_name: <ToolName>
-input:
+parameters:
   <... using the `input_format` for the Tool ...>
 ```
 ====================
@@ -352,7 +352,7 @@ Bot:
 ## The ONLY Action:
 ```yaml
 tool_name: SandboxedPythonTool
-input:
+parameters:
   code: |
     lst = [2, 3, 1, 4, 5]
     sorted_list = sorted(lst)
@@ -387,7 +387,7 @@ Bot:
 # The ONLY Action:
 ```yaml
 tool_name: ConcludeTool
-input:
+parameters:
   conclusion: |
     The ascending sorted list is [1, 2, 3, 4, 5].
 ```
@@ -414,7 +414,7 @@ Bot:
 # The ONLY Action:
 ```yaml
 tool_name: RoomTool
-input:
+parameters:
   room_filter: ["office"]
 ```
 </code></pre>
@@ -444,7 +444,7 @@ Bot:
 # The ONLY Action:
 ```yaml
 tool_name: RoomTool
-input:
+parameters:
   room_filter: []
 ```
 </code></pre>
@@ -512,7 +512,7 @@ Bot:
 # The ONLY Action:
 ```yaml
 tool_name: LightStatusTool
-input:
+parameters:
   light_filter: []
 ```
 </code></pre>
@@ -763,7 +763,7 @@ Bot:
 # The ONLY Action:
 ```yaml
 tool_name: RoomTool
-input:
+parameters:
   room_filter: []
 ```
 </code></pre>

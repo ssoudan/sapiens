@@ -70,8 +70,10 @@ pub struct ToolDescription {
     /// Description of the tool
     pub description: String,
     /// Input format
+    #[serde(rename = "parameters")]
     pub input_format: Format,
     /// Output format
+    #[serde(rename = "result_fields")]
     pub output_format: Format,
 }
 
@@ -100,17 +102,8 @@ pub enum ToolUseError {
     #[error("Failed to serialize the output: {0}")]
     InvalidOutput(String),
     /// Failed to deserialize the input
-    #[error("Failed to deserialize the input: {0}")]
+    #[error("Failed to deserialize the parameters: {0}")]
     InvalidInput(String),
-    /// Invalid input
-    #[error("Invalid invocation: {0}")]
-    InvalidInvocation(#[from] InvocationError),
-    /// Too many invocation found
-    #[error("Too many invocation found")]
-    TooManyInvocationFound,
-    /// No action found
-    #[error("No action found")]
-    NoActionFound,
 }
 
 /// A tool invocation input
@@ -119,9 +112,9 @@ pub(crate) struct ToolInvocationInput {
     /// The tool to invoke
     tool_name: String,
     // FUTURE(ssoudan) should this be flattened?
-    // FUTURE(ssoudan) should this be called `spec` or `argumens` or `parameters`?
+    // FUTURE(ssoudan) should this be called `spec` or `arguments` or `parameters`?
     /// The input to the tool
-    input: serde_yaml::Value,
+    parameters: serde_yaml::Value,
     /// The junk
     #[serde(skip_serializing_if = "HashMap::is_empty", flatten)]
     junk: HashMap<String, serde_yaml::Value>,
@@ -224,7 +217,6 @@ async fn choose_invocation(
             .collect::<Vec<String>>()
             .join(", ");
 
-        // FUTURE(ssoudan) they should not reach the ChatHistory
         warn!(
             ?junk_keys,
             "The Action should not have fields: {}.", junk_keys
@@ -283,7 +275,7 @@ mod tests {
 
         let invocation = super::ToolInvocationInput {
             tool_name: "Search".to_string(),
-            input: serde_yaml::to_value(input).unwrap(),
+            parameters: serde_yaml::to_value(input).unwrap(),
             junk: HashMap::from_iter(junk.into_iter()),
         };
 
