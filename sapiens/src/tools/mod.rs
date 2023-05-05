@@ -104,15 +104,6 @@ pub enum ToolUseError {
     /// Failed to deserialize the input
     #[error("Failed to deserialize the parameters: {0}")]
     InvalidInput(String),
-    /// Invalid input
-    #[error("Invalid invocation: {0}")]
-    InvalidInvocation(#[from] InvocationError),
-    /// Too many invocation found
-    #[error("Too many invocation found")]
-    TooManyInvocationFound,
-    /// No action found
-    #[error("No action found")]
-    NoActionFound,
 }
 
 /// A tool invocation input
