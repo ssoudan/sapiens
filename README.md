@@ -1,5 +1,10 @@
 # Sapiens
 
+[![Rust](https://github.com/ssoudan/sapiens/actions/workflows/rust.yml/badge.svg)](https://github.com/ssoudan/sapiens/actions/workflows/rust.yml)
+[![Crates.io](https://img.shields.io/crates/v/sapiens)](https://crates.io/crates/sapiens)
+[![Documentation](https://docs.rs/sapiens/badge.svg)](https://docs.rs/sapiens)
+[![Crates.io](https://img.shields.io/crates/l/sapiens)](Cargo.toml)
+
 ![Sapiens](docs/sapiens.png)
 
 *Sapiens uses tools to interact with the world.*
