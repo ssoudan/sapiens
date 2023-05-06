@@ -40,8 +40,8 @@ impl Add for Usage {
     }
 }
 
-impl From<sapiens::runner::Usage> for Usage {
-    fn from(usage: sapiens::runner::Usage) -> Self {
+impl From<sapiens::models::Usage> for Usage {
+    fn from(usage: sapiens::models::Usage) -> Self {
         Self {
             prompt_tokens: usage.prompt_tokens,
             completion_tokens: usage.completion_tokens,

@@ -146,13 +146,3 @@ pub struct Config {
     /// Scenario to use
     pub scenario: String,
 }
-
-impl From<&Config> for sapiens::Config {
-    fn from(config: &Config) -> Self {
-        Self {
-            model: config.model.clone(),
-            max_steps: config.max_steps,
-            ..Default::default()
-        }
-    }
-}

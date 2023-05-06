@@ -1,22 +1,20 @@
 use std::fmt::Debug;
 
-use tracing::{debug, error};
-
-use crate::context::{ChatEntry, ChatHistory};
-use crate::openai::{ChatCompletionRequestMessage, CreateChatCompletionRequest, Role};
+use crate::context::{ChatEntry, ChatHistory, ChatHistoryDump};
+use crate::models::{ModelResponse, Role};
 use crate::prompt::Task;
 use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::{InvokeResult, Toolbox};
 use crate::tools::{TerminationMessage, ToolUseError};
-use crate::{prompt, Client, Config, Error};
+use crate::{prompt, Error, SapiensConfig};
 
 /// A chain - not yet specialized to a task
 #[derive(Clone)]
 pub struct Chain {
     toolbox: Toolbox,
-    config: Config,
+    config: SapiensConfig,
     prompt_manager: prompt::Manager,
-    openai_client: Client,
+    // model: Rc<Box<dyn Model>>,
     /// With the initial prompt
     chat_history: ChatHistory,
 }
@@ -34,9 +32,10 @@ impl Debug for Chain {
 
 impl Chain {
     /// Create a new chain
-    pub async fn new(toolbox: Toolbox, config: Config, openai_client: Client) -> Self {
+    pub async fn new(toolbox: Toolbox, config: SapiensConfig) -> Self {
+        let max_token = { config.model.context_size().await };
         let mut chat_history =
-            ChatHistory::new(config.model.clone(), config.min_token_for_completion);
+            ChatHistory::new(config.clone(), max_token, config.min_token_for_completion);
 
         // Add the prompts to the chat history
         let prompt_manager = prompt::Manager::new(toolbox.clone());
@@ -47,14 +46,13 @@ impl Chain {
         Self {
             toolbox,
             config,
-            openai_client,
             chat_history,
             prompt_manager,
         }
     }
 
     /// Start a task
-    pub fn start_task(&self, task: String) -> Result<TaskChain, Error> {
+    pub async fn start_task(&self, task: String) -> Result<TaskChain, Error> {
         let task = self.prompt_manager.build_task_prompt(&task);
 
         let entry = ChatEntry {
@@ -65,7 +63,7 @@ impl Chain {
         // clone and update
         let mut chain = self.clone();
 
-        chain.chat_history.add_chitchat(entry)?;
+        chain.chat_history.add_chitchat(entry).await?;
 
         Ok(TaskChain { chain, task })
     }
@@ -86,85 +84,24 @@ impl Debug for TaskChain {
     }
 }
 
-/// Token usage
-#[derive(Debug, Clone)]
-pub struct Usage {
-    /// The number of tokens used for the prompt
-    pub prompt_tokens: u32,
-    /// The number of tokens used for the completion
-    pub completion_tokens: u32,
-    /// The total number of tokens used
-    pub total_tokens: u32,
-}
-
-impl From<async_openai::types::Usage> for Usage {
-    fn from(usage: async_openai::types::Usage) -> Self {
-        Self {
-            prompt_tokens: usage.prompt_tokens,
-            completion_tokens: usage.completion_tokens,
-            total_tokens: usage.total_tokens,
-        }
-    }
-}
-
-/// Response from a language model
-#[derive(Debug, Clone)]
-pub struct ModelResponse {
-    /// The message
-    pub msg: String,
-    /// The usage
-    pub usage: Option<Usage>,
-}
-
 impl TaskChain {
     /// Query the model
     ///
     /// Does not update the chat history
     #[tracing::instrument(skip(self))]
     pub async fn query_model(&mut self) -> Result<ModelResponse, Error> {
-        let input = self.prepare_chat_completion_request();
-
-        debug!("Sending request to OpenAI");
-        let res = self.chain.openai_client.chat().create(input).await;
-        if let Err(e) = &res {
-            error!(error = ?e, "Error from OpenAI");
-        }
-        let res = res?;
-        debug!(usage = ?res.usage, "Got a response from OpenAI");
-
-        let first = res.choices.first().ok_or(Error::NoResponseFromModel)?;
-
-        let msg = first.message.content.clone();
-
-        Ok(ModelResponse {
-            msg,
-            usage: res.usage.map(Into::into),
-        })
-    }
-
-    /// prepare the [`ChatCompletionRequest`] to be passed to OpenAI
-    fn prepare_chat_completion_request(&self) -> CreateChatCompletionRequest {
-        let messages: Vec<ChatCompletionRequestMessage> = (&self.chain.chat_history).into();
-        let temperature = self.chain.config.temperature;
-        CreateChatCompletionRequest {
-            model: self.chain.config.model.clone(),
-            messages,
-            temperature,
-            top_p: None,
-            n: Some(1),
-            stream: None,
-            stop: None,
-            max_tokens: Some(self.chain.config.min_token_for_completion as u16),
-            presence_penalty: None,
-            frequency_penalty: None,
-            logit_bias: None,
-            user: None,
-        }
+        let entries = self.chain.chat_history.iter().collect::<Vec<_>>();
+        Ok(self
+            .chain
+            .config
+            .model
+            .query(&entries, Some(self.chain.config.min_token_for_completion))
+            .await?)
     }
 
     /// Add a chat entry to the chat history
-    fn add_to_chat_history(&mut self, entry: ChatEntry) -> Result<usize, Error> {
-        Ok(self.chain.chat_history.add_chitchat(entry)?)
+    async fn add_to_chat_history(&mut self, entry: ChatEntry) -> Result<usize, Error> {
+        Ok(self.chain.chat_history.add_chitchat(entry).await?)
     }
 
     /// Try to find the tool invocation from the chat message and invoke the
@@ -181,7 +118,7 @@ impl TaskChain {
     /// Tool.
     ///
     /// If the response is too long, we add an error message to the chat history
-    pub fn on_tool_success(
+    pub async fn on_tool_success(
         &mut self,
         tool_name: &str,
         available_invocation_count: usize,
@@ -189,7 +126,7 @@ impl TaskChain {
         result: String,
     ) -> Result<ChatEntry, Error> {
         // add the query to the chat history
-        self.add_to_chat_history(query)?;
+        self.add_to_chat_history(query).await?;
 
         // add the response to the chat history
         let msg = self
@@ -211,7 +148,8 @@ impl TaskChain {
             self.add_to_chat_history(ChatEntry {
                 msg: msg.clone(),
                 role: Role::User,
-            })?;
+            })
+            .await?;
 
             return Err(Error::ActionResponseTooLong(msg));
         }
@@ -220,21 +158,21 @@ impl TaskChain {
             msg,
             role: Role::User,
         };
-        self.add_to_chat_history(entry.clone())?;
+        self.add_to_chat_history(entry.clone()).await?;
 
         Ok(entry)
     }
 
     /// Generate a new prompt for the assistant based on the error from the
     /// Tool invocation.
-    pub fn on_tool_failure(
+    pub async fn on_tool_failure(
         &mut self,
         tool_name: &String,
         query: ChatEntry,
         e: ToolUseError,
     ) -> Result<ChatEntry, Error> {
         // add the query to the chat history
-        self.add_to_chat_history(query)?;
+        self.add_to_chat_history(query).await?;
 
         // add the error message to the chat history
         let msg = self.task.action_failed_prompt(tool_name, &e);
@@ -244,19 +182,19 @@ impl TaskChain {
             role: Role::User,
         };
 
-        self.add_to_chat_history(entry.clone())?;
+        self.add_to_chat_history(entry.clone()).await?;
 
         Ok(entry)
     }
 
     /// Generate a new prompt for the assistant based on the invocation parsing.
-    pub fn on_invocation_failure(
+    pub async fn on_invocation_failure(
         &mut self,
         query: ChatEntry,
         e: InvocationError,
     ) -> Result<ChatEntry, Error> {
         // add the query to the chat history
-        self.add_to_chat_history(query)?;
+        self.add_to_chat_history(query).await?;
 
         // add the error message to the chat history
         let msg = self.task.invalid_action_prompt(&e);
@@ -266,7 +204,7 @@ impl TaskChain {
             role: Role::User,
         };
 
-        self.add_to_chat_history(entry.clone())?;
+        self.add_to_chat_history(entry.clone()).await?;
 
         Ok(entry)
     }
@@ -282,7 +220,7 @@ impl TaskChain {
     }
 
     /// Return the chat history
-    pub fn chat_history(&self) -> &ChatHistory {
-        &self.chain.chat_history
+    pub fn chat_history(&self) -> ChatHistoryDump {
+        self.chain.chat_history.dump()
     }
 }

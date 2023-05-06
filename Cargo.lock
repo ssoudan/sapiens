@@ -2238,7 +2238,6 @@ dependencies = [
  "async-trait",
  "chrono",
  "clap 4.2.7",
- "colored",
  "dotenvy",
  "huelib2",
  "insta",

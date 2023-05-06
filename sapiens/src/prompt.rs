@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::context::ChatHistory;
-use crate::openai::Role;
+use crate::models::Role;
 use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::Toolbox;
 use crate::tools::{ToolDescription, ToolUseError};
@@ -179,7 +179,7 @@ impl Manager {
             (Role::Assistant, PROTO_EXCHANGE_4.trim().to_string()),
         ];
 
-        chat_history.add_prompts(&prompt);
+        chat_history.add_prompts(&prompt).await;
     }
 }
 
@@ -258,8 +258,8 @@ impl fmt::Display for Task {
 
 #[cfg(test)]
 mod tests {
-    use crate::context;
-    use crate::openai::ChatCompletionRequestMessage;
+
+    use crate::context::ChatEntry;
 
     #[tokio::test]
     async fn populate_chat_history() {
@@ -270,18 +270,19 @@ mod tests {
         let toolbox = Toolbox::default();
         let manager = Manager::new(toolbox);
 
-        let config = crate::Config::default();
+        let config = crate::SapiensConfig::default();
 
+        let min_token_for_completion = config.min_token_for_completion;
+        let max_token = config.model.context_size().await;
         let mut chat_history =
-            ChatHistory::new(config.model.clone(), config.min_token_for_completion);
+            ChatHistory::new(config.clone(), max_token, min_token_for_completion);
 
         manager.populate_chat_history(&mut chat_history).await;
 
-        let prompts: Vec<ChatCompletionRequestMessage> = chat_history.iter().cloned().collect();
+        let prompts: Vec<ChatEntry> = chat_history.iter().cloned().collect();
 
         // println!("{:?}", prompts);
-
-        let tokens = context::num_tokens_from_messages(&config.model, prompts.as_slice()).unwrap();
+        let tokens = config.model.num_tokens(prompts.as_slice()).await;
 
         assert_eq!(tokens, 985)
     }

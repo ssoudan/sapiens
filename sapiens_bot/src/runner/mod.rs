@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use sapiens::context::{ChatEntryFormatter, ChatHistory};
+use sapiens::context::{ChatEntryFormatter, ChatHistoryDump};
 use sapiens::runner::Chain;
 use sapiens::tools::TerminationMessage;
 use sapiens::{
-    wrap_observer, Config, Error, InvocationFailureNotification, InvocationSuccessNotification,
-    ModelUpdateNotification, StepObserver, StepOrStop, WeakStepObserver,
+    wrap_observer, Error, InvocationFailureNotification, InvocationSuccessNotification,
+    ModelUpdateNotification, SapiensConfig, StepObserver, StepOrStop, WeakStepObserver,
 };
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
@@ -27,12 +27,11 @@ impl SapiensBot {
     pub async fn new_from_env() -> Self {
         let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-        let openai_client = sapiens::openai::Client::new().with_api_key(
-            std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
-        );
+        let _ =
+            std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file");
 
-        let config = Config::default();
-        let chain = Chain::new(toolbox, config, openai_client).await;
+        let config = SapiensConfig::default();
+        let chain = Chain::new(toolbox, config).await;
 
         Self { chain }
     }
@@ -68,7 +67,7 @@ impl Debug for ProgressObserver {
 
 #[async_trait::async_trait]
 impl StepObserver for ProgressObserver {
-    async fn on_start(&mut self, chat_history: &ChatHistory) {
+    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
         let format = self.entry_format.as_ref();
         let msgs = chat_history.format(format);
         let last_msg = msgs.last();

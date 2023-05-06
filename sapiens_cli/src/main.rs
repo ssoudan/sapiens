@@ -4,11 +4,11 @@ use std::sync::Arc;
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
-use sapiens::openai::Role;
+use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
+use sapiens::models::Role;
 use sapiens::{
-    run_to_the_end, wrap_observer, Config, InvocationFailureNotification,
-    InvocationSuccessNotification, ModelUpdateNotification, StepObserver,
+    run_to_the_end, wrap_observer, InvocationFailureNotification, InvocationSuccessNotification,
+    ModelUpdateNotification, SapiensConfig, StepObserver,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -60,16 +60,6 @@ struct Args {
     show_warmup_prompt: bool,
 }
 
-impl From<&Args> for Config {
-    fn from(args: &Args) -> Self {
-        Self {
-            model: args.model.clone(),
-            max_steps: args.max_steps,
-            ..Default::default()
-        }
-    }
-}
-
 struct ColorFormatter;
 
 impl ChatEntryFormatter for ColorFormatter {
@@ -92,7 +82,7 @@ struct Observer {
 
 #[async_trait::async_trait]
 impl StepObserver for Observer {
-    async fn on_start(&mut self, chat_history: &ChatHistory) {
+    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
             let msgs = chat_history.format(&formatter);
@@ -103,8 +93,8 @@ impl StepObserver for Observer {
             }
         } else {
             // Show only the last message
-            let last_msg = chat_history.iter().last().unwrap();
-            let msg = ColorFormatter.format(&last_msg.into());
+            let last_msg = chat_history.messages.last().unwrap();
+            let msg = ColorFormatter.format(last_msg);
             println!("{}", msg);
             println!("=============");
         }
@@ -160,9 +150,14 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-    let openai_client = sapiens::openai::Client::new().with_api_key(
-        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
-    );
+    let openai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY is not set");
+
+    let task = args.task.clone();
+    let config = SapiensConfig {
+        model: sapiens::models::openai::build(&args.model, &openai_api_key, None, Some(0.)).await,
+        max_steps: args.max_steps,
+        ..Default::default()
+    };
 
     // Sanitation
     // remove environment variables that could be used to access the host
@@ -182,9 +177,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let w_observer = Arc::downgrade(&observer);
 
-    let task = args.task.clone();
-    let termination_messages =
-        run_to_the_end(toolbox, openai_client, (&args).into(), task, w_observer).await;
+    let termination_messages = run_to_the_end(toolbox, config, task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());

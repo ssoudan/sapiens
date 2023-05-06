@@ -4,11 +4,8 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
-use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter};
-use sapiens::openai::Role;
-use sapiens::{run_to_the_end, wrap_observer};
+use sapiens::{models, run_to_the_end, wrap_observer};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
@@ -80,36 +77,20 @@ impl From<&Args> for Config {
     }
 }
 
-struct ColorFormatter;
-
-impl ChatEntryFormatter for ColorFormatter {
-    fn format(&self, entry: &ChatEntry) -> String {
-        let msg = &entry.msg;
-        let role = &entry.role;
-        match role {
-            Role::System => msg.yellow().to_string(),
-            Role::User => msg.green().to_string(),
-            Role::Assistant => msg.blue().to_string(),
-        }
-    }
-}
-
 #[pyo3_asyncio::tokio::main]
 async fn main() -> Result<(), pyo3::PyErr> {
     let args = Args::parse();
 
     let _ = dotenv_override();
 
-    // TODO(ssoudan) identify failure cause in last batch
-
     tracing_subscriber::fmt()
         .compact()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
     // Prepare config
-    let config = Config::from(&args);
+    let trial_config = Config::from(&args);
 
-    info!(config = ?config, "Starting sapiens_exp");
+    info!(trial_config = ?trial_config, "Starting sapiens_exp");
 
     let trial_file = args
         .trial_file
@@ -131,13 +112,16 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // reset stats
     toolbox.reset_stats().await;
 
-    let mut openai_client = sapiens::openai::Client::new().with_api_key(
-        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
-    );
+    let api_key =
+        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file");
+    let api_base = std::env::var("OPENAI_API_BASE").ok();
 
-    if let Ok(api_base) = std::env::var("OPENAI_API_BASE") {
-        openai_client = openai_client.with_api_base(api_base);
-    }
+    let temperature = Some(args.temperature);
+    let config = sapiens::SapiensConfig {
+        max_steps: args.max_steps,
+        model: models::openai::build(&args.model, &api_key, api_base, temperature).await,
+        ..Default::default()
+    };
 
     // Sanitation
     // remove environment variables that could be used to access the host
@@ -154,15 +138,8 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let w_trace_observer = Arc::downgrade(&trace_observer);
 
     let task = args.task.clone();
-    match run_to_the_end(
-        toolbox.clone(),
-        openai_client,
-        (&config).into(),
-        task.clone(),
-        w_trace_observer,
-    )
-    .await
-    {
+
+    match run_to_the_end(toolbox.clone(), config, task.clone(), w_trace_observer).await {
         Ok(_) => {
             info!("Task completed");
         }
@@ -190,7 +167,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     // Build trial
     let trial = Trial::build(
-        config,
+        trial_config,
         task,
         trace,
         tool_stats,
