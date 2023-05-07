@@ -305,7 +305,7 @@ Please use the following format for your response - no need to be verbose:
 ```yaml
 tool_name: <ToolName>
 parameters:
-  <... using the `input_format` for the Tool ...>
+  <... using the `parameters` for the Tool ...>
 ```
 ====================
 
@@ -313,22 +313,22 @@ parameters:
 - name: RoomTool
   description: A tool to use that the source of truth for the Lights of a Room.
   description_context: Use this to fetch the Lights of Rooms.
-  input_format:
+  parameters:
     room_filter: 'The list of Room names (<string>) to get the lights for, e.g. `room_filter: ["Bedroom"]`. If unsure, use `[]` to get all Rooms.'
 - name: ConcludeTool
   description: A tool to terminate a task with a conclusion.
   description_context: Use this to terminate a task when it is complete.
-  input_format:
+  parameters:
     conclusion: The final textual answer for this task. No string interpolation supported, only plain text. MANDATORY.
 - name: SandboxedPythonTool
   description: 'A tool that executes sandboxed Python code. Only stdout and stderr are captured and made available. '
   description_context: Use this to transform data. This is not a tool to retrieve information. Except `print()`, no interactions with the world. No input. No `import`. No library. No API access. Just plain Python. import|open|exec|eval|__import__ are forbidden.
-  input_format:
+  parameters:
     code: 'The Python code to execute. For example: `data = [...]; <...>; output = <...> ; print(output)`. MANDATORY'
 - name: LightStatusTool
   description: A tool to use that the source of truth for the Light statuses.
   description_context: Use this to fetch the Light statuses
-  input_format:
+  parameters:
     light_filter: 'The list of Lights IDs (<string>) to get the status for, e.g. `light_filter: ["1", "2"]`. Use `[]` to get all Lights.'
 
 </code></pre>

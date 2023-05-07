@@ -36,7 +36,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 ///   total). If the output is larger, use `tools.Conclude` directly from the
 ///   code.
 /// - List available tools with `tools.list()`. And returns a list of
-///   `{'name':.., 'description':.., 'input_format':.., 'output_format':.., }`.
+///   `{'name':.., 'description':.., 'parameters':.., 'result_fields':.., }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
 /// BeautifulSoup4, feedparser, arxiv.
@@ -282,8 +282,8 @@ impl PythonTool {
         tool_class_code.push('\n');
 
         for (name, description) in tools {
-            let inputs_parts = description.input_format.fields;
-            let output_parts = description.output_format.fields;
+            let inputs_parts = description.parameters.fields;
+            let output_parts = description.result_fields.fields;
 
             // FUTURE(ssoudan) might want to add None only for optional inputs
             let mut inputs = inputs_parts.clone();
@@ -322,8 +322,8 @@ impl PythonTool {
             //
             // Several descriptions are multi-line:
             // - description.description
-            // - description.input_format.fields.description
-            // - description.output_format.fields.description
+            // - description.parameters.fields.description
+            // - description.result_fields.fields.description
             let mut docstring = String::new();
             // Description
             description.description.lines().for_each(|l| {

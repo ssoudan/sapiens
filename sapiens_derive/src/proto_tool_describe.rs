@@ -79,8 +79,8 @@ impl ToTokens for DeriveReceiver {
                     ToolDescription {
                         name: #name.to_string(),
                         description: #doc.to_string(),
-                        input_format: #input_ty::describe(),
-                        output_format: #output_ty::describe(),
+                        parameters: #input_ty::describe(),
+                        result_fields: #output_ty::describe(),
                     }
                 }
             }

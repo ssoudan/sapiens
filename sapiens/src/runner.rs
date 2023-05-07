@@ -14,7 +14,6 @@ pub struct Chain {
     toolbox: Toolbox,
     config: SapiensConfig,
     prompt_manager: prompt::Manager,
-    // model: Rc<Box<dyn Model>>,
     /// With the initial prompt
     chat_history: ChatHistory,
 }
