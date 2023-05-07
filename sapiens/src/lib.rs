@@ -170,7 +170,7 @@ pub trait StepObserver: Send {
     /// Called when the task is submitted
     async fn on_task(&mut self, _task: &str) {}
 
-    /// Called when the task starts
+    /// Called on start
     async fn on_start(&mut self, _chat_history: ChatHistoryDump) {}
 
     /// Called when the model updates the chat history
