@@ -185,41 +185,42 @@ impl From<async_openai::types::Usage> for Usage {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn can_connect() {
-        // let api_base = "https://api.openai.com/v1".to_string();
-        let api_base = "http://hector:8000/v1".to_string();
-        let openai_client = async_openai::Client::new().with_api_base(api_base);
-
-        let request = CreateChatCompletionRequest {
-            model: "vicuna-7b-1.1".to_string(),
-            messages: vec![ChatCompletionRequestMessage {
-                role: async_openai::types::Role::User,
-                content: "Hello, my name is Marcel".to_string(),
-                name: None,
-            }],
-            temperature: Some(0.0),
-            top_p: None,
-            n: Some(1),
-            stream: None,
-            stop: None,
-            max_tokens: Some(1024),
-            presence_penalty: None,
-            frequency_penalty: None,
-            logit_bias: None,
-            user: None,
-        };
-
-        let response = openai_client.chat().create(request).await;
-        println!("{:#?}", response);
-
-        let response = response.unwrap();
-        println!("{:#?}", response);
-
-        println!("{}", response.choices.first().unwrap().message.content);
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     #[tokio::test]
+//     async fn can_connect() {
+//         // let api_base = "https://api.openai.com/v1".to_string();
+//         let api_base = "http://hector:8000/v1".to_string();
+//         let openai_client =
+// async_openai::Client::new().with_api_base(api_base);
+//
+//         let request = CreateChatCompletionRequest {
+//             model: "vicuna-7b-1.1".to_string(),
+//             messages: vec![ChatCompletionRequestMessage {
+//                 role: async_openai::types::Role::User,
+//                 content: "Hello, my name is Marcel".to_string(),
+//                 name: None,
+//             }],
+//             temperature: Some(0.0),
+//             top_p: None,
+//             n: Some(1),
+//             stream: None,
+//             stop: None,
+//             max_tokens: Some(1024),
+//             presence_penalty: None,
+//             frequency_penalty: None,
+//             logit_bias: None,
+//             user: None,
+//         };
+//
+//         let response = openai_client.chat().create(request).await;
+//         println!("{:#?}", response);
+//
+//         let response = response.unwrap();
+//         println!("{:#?}", response);
+//
+//         println!("{}", response.choices.first().unwrap().message.content);
+//     }
+// }
