@@ -4,11 +4,9 @@ use std::fmt::Display;
 use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
-use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter};
-use sapiens::openai::Role;
-use sapiens::{run_to_the_end, wrap_observer};
+use sapiens::models::openai::SupportedModel;
+use sapiens::{models, run_to_the_end, wrap_observer};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
@@ -39,12 +37,20 @@ impl Display for Scenario {
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Model to use
-    #[arg(long, default_value = "gpt-3.5-turbo")]
-    model: String,
+    #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
+    model: SupportedModel,
 
     /// Maximum number of steps to execute
     #[arg(short, long, default_value_t = 10)]
     max_steps: usize,
+
+    /// Minimum tokens for completion
+    #[arg(long, default_value_t = 512)]
+    min_tokens_for_completion: usize,
+
+    /// Max tokens for the model to generate
+    #[arg(long)]
+    max_tokens: Option<usize>,
 
     /// Task to execute
     #[arg(short, long, default_value = "Make me a bowl of cereal with milk")]
@@ -74,22 +80,10 @@ impl From<&Args> for Config {
         Self {
             model: args.model.clone(),
             max_steps: args.max_steps,
+            min_tokens_for_completion: args.min_tokens_for_completion,
+            max_tokens: args.max_tokens,
             temperature: Some(args.temperature),
             scenario: args.scenario.to_string(),
-        }
-    }
-}
-
-struct ColorFormatter;
-
-impl ChatEntryFormatter for ColorFormatter {
-    fn format(&self, entry: &ChatEntry) -> String {
-        let msg = &entry.msg;
-        let role = &entry.role;
-        match role {
-            Role::System => msg.yellow().to_string(),
-            Role::User => msg.green().to_string(),
-            Role::Assistant => msg.blue().to_string(),
         }
     }
 }
@@ -100,16 +94,14 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let _ = dotenv_override();
 
-    // TODO(ssoudan) identify failure cause in last batch
-
     tracing_subscriber::fmt()
         .compact()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
     // Prepare config
-    let config = Config::from(&args);
+    let trial_config = Config::from(&args);
 
-    info!(config = ?config, "Starting sapiens_exp");
+    info!(trial_config = ?trial_config, "Starting sapiens_exp");
 
     let trial_file = args
         .trial_file
@@ -131,13 +123,18 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // reset stats
     toolbox.reset_stats().await;
 
-    let mut openai_client = sapiens::openai::Client::new().with_api_key(
-        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
-    );
+    let api_key = std::env::var("OPENAI_API_KEY").ok();
+    let api_base = std::env::var("OPENAI_API_BASE").ok();
 
-    if let Ok(api_base) = std::env::var("OPENAI_API_BASE") {
-        openai_client = openai_client.with_api_base(api_base);
-    }
+    let temperature = Some(args.temperature);
+    let config = sapiens::SapiensConfig {
+        max_steps: args.max_steps,
+        model: models::openai::build(args.model.clone(), api_key, api_base, temperature)
+            .await
+            .expect("Failed to build model"),
+        min_tokens_for_completion: args.min_tokens_for_completion,
+        max_tokens: args.max_tokens,
+    };
 
     // Sanitation
     // remove environment variables that could be used to access the host
@@ -154,15 +151,8 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let w_trace_observer = Arc::downgrade(&trace_observer);
 
     let task = args.task.clone();
-    match run_to_the_end(
-        toolbox.clone(),
-        openai_client,
-        (&config).into(),
-        task.clone(),
-        w_trace_observer,
-    )
-    .await
-    {
+
+    match run_to_the_end(toolbox.clone(), config, task.clone(), w_trace_observer).await {
         Ok(_) => {
             info!("Task completed");
         }
@@ -190,7 +180,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     // Build trial
     let trial = Trial::build(
-        config,
+        trial_config,
         task,
         trace,
         tool_stats,

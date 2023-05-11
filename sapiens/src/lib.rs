@@ -1,4 +1,22 @@
-//! Botrs library
+//! Sapiens library
+//!
+//! *Sapiens uses tools to interact with the world.*
+//!
+//! An experiment with handing over the tools to the machine.
+//!
+//! # Overview
+//! This library is the core of Sapiens. It contains the logic for the
+//! interaction between the user, the language model and the tools.
+//!
+//! # More information
+//! See https://github.com/ssoudan/sapiens/tree/main/sapiens_cli for an example of usage or
+//! https://github.com/ssoudan/sapiens/tree/main/sapiens_bot for a Discord bot.
+//!
+//! https://github.com/ssoudan/sapiens/tree/main/sapiens_exp is a framework to run experiments and collect traces
+//! of the interactions between the language model and the tools to accomplish a
+//! task.
+//!
+//! A collection of tools is defined in https://github.com/ssoudan/sapiens/tree/main/sapiens_tools.
 pub mod context;
 
 /// Prompt generation logic
@@ -10,21 +28,21 @@ pub mod tools;
 /// Runner for sapiens
 pub mod runner;
 
-/// OpenAI API client
-pub mod openai;
+/// Language models
+pub mod models;
 
 use std::fmt::Debug;
 use std::sync::{Arc, Weak};
 
-use async_openai::types::Role;
 use runner::Chain;
 use tokio::sync::Mutex;
 use tools::toolbox;
 use tracing::debug;
 
-use crate::context::{ChatEntry, ChatHistory};
-use crate::openai::{Client, OpenAIError};
-use crate::runner::{ModelResponse, TaskChain, Usage};
+use crate::context::{ChatEntry, ChatHistoryDump};
+use crate::models::openai::OpenAI;
+use crate::models::{ModelRef, ModelResponse, Role, Usage};
+use crate::runner::TaskChain;
 use crate::tools::toolbox::InvokeResult;
 use crate::tools::TerminationMessage;
 
@@ -34,12 +52,9 @@ pub enum Error {
     /// Failed to add to the chat history
     #[error("Failed to add to the chat history")]
     ChatHistoryError(#[from] context::Error),
-    /// No response from the model
-    #[error("No response from the model")]
-    NoResponseFromModel,
-    /// The model returned an error
-    #[error("Model invocation failed")]
-    OpenAIError(#[from] OpenAIError),
+    /// Model evaluation error
+    #[error("Model evaluation error: {0}")]
+    ModelEvaluationError(#[from] models::Error),
     /// Reached the maximum number of steps
     #[error("Maximal number of steps reached")]
     MaxStepsReached,
@@ -49,27 +64,35 @@ pub enum Error {
 }
 
 /// Configuration for the bot
-#[derive(Debug, Clone)]
-pub struct Config {
+#[derive(Clone)]
+pub struct SapiensConfig {
     /// The model to use
-    pub model: String,
+    pub model: ModelRef,
     /// The maximum number of steps
     pub max_steps: usize,
     /// The minimum number of tokens that need to be available for completion
-    pub min_token_for_completion: usize,
-    /// The OpenAI chat completion request temperature
-    /// min: 0, max: 2, default: 1,
-    /// The higher the temperature, the crazier the text.
-    pub temperature: Option<f32>,
+    pub min_tokens_for_completion: usize,
+    /// Maximum number of tokens for the model to generate
+    pub max_tokens: Option<usize>,
 }
 
-impl Default for Config {
+impl Debug for SapiensConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Config")
+            .field("max_steps", &self.max_steps)
+            .field("min_tokens_for_completion", &self.min_tokens_for_completion)
+            .field("max_tokens", &self.max_tokens)
+            .finish()
+    }
+}
+
+impl Default for SapiensConfig {
     fn default() -> Self {
         Self {
-            model: "gpt-3.5-turbo".to_string(),
+            model: Arc::new(Box::<OpenAI>::default()),
             max_steps: 10,
-            min_token_for_completion: 512,
-            temperature: None,
+            min_tokens_for_completion: 512,
+            max_tokens: None,
         }
     }
 }
@@ -151,8 +174,8 @@ pub trait StepObserver: Send {
     /// Called when the task is submitted
     async fn on_task(&mut self, _task: &str) {}
 
-    /// Called when the task starts
-    async fn on_start(&mut self, _chat_history: &ChatHistory) {}
+    /// Called on start
+    async fn on_start(&mut self, _chat_history: ChatHistoryDump) {}
 
     /// Called when the model updates the chat history
     async fn on_model_update(&mut self, _event: ModelUpdateNotification) {}
@@ -205,7 +228,8 @@ impl Step {
             InvokeResult::NoInvocationsFound { e } => {
                 let res = self
                     .task_chain
-                    .on_invocation_failure(assistant_message.clone(), e);
+                    .on_invocation_failure(assistant_message.clone(), e)
+                    .await;
                 if let Some(observer) = self.observer.upgrade() {
                     observer
                         .lock()
@@ -225,7 +249,8 @@ impl Step {
             } => {
                 let res = self
                     .task_chain
-                    .on_invocation_failure(assistant_message.clone(), e);
+                    .on_invocation_failure(assistant_message.clone(), e)
+                    .await;
                 if let Some(observer) = self.observer.upgrade() {
                     observer
                         .lock()
@@ -247,7 +272,8 @@ impl Step {
             } => {
                 let res = self
                     .task_chain
-                    .on_tool_failure(&tool_name, assistant_message.clone(), e);
+                    .on_tool_failure(&tool_name, assistant_message.clone(), e)
+                    .await;
 
                 if let Some(observer) = self.observer.upgrade() {
                     observer
@@ -271,12 +297,15 @@ impl Step {
                 result,
             } => {
                 // Got a response from the tool but the task is not done yet
-                let res = self.task_chain.on_tool_success(
-                    &tool_name,
-                    available_invocation_count,
-                    assistant_message.clone(),
-                    result,
-                );
+                let res = self
+                    .task_chain
+                    .on_tool_success(
+                        &tool_name,
+                        available_invocation_count,
+                        assistant_message.clone(),
+                        result,
+                    )
+                    .await;
 
                 if let Some(observer) = self.observer.upgrade() {
                     observer
@@ -360,8 +389,8 @@ impl StepObserver for VoidTaskProgressUpdateObserver {}
 
 impl StepOrStop {
     /// Create a new [`StepOrStop`] for a `task`.
-    pub fn new(chain: Chain, task: String) -> Result<Self, Error> {
-        let task_chain = chain.start_task(task)?;
+    pub async fn new(chain: Chain, task: String) -> Result<Self, Error> {
+        let task_chain = chain.start_task(task).await?;
 
         let observer = wrap_observer(VoidTaskProgressUpdateObserver {});
 
@@ -391,7 +420,7 @@ impl StepOrStop {
             observer.lock().await.on_task(&task).await;
         }
 
-        let task_chain = chain.start_task(task)?;
+        let task_chain = chain.start_task(task).await?;
 
         // call the observer
         if let Some(observer) = observer.upgrade() {
@@ -448,19 +477,19 @@ impl StepOrStop {
 ///
 /// See ['StepOrStop::new'], [`StepOrStop::step`] and ['StepOrStop::run] for
 /// more flexible ways to run a task
-#[tracing::instrument(skip(toolbox, openai_client, observer, config))]
+#[tracing::instrument(skip(toolbox, observer, config))]
 pub async fn run_to_the_end(
     toolbox: toolbox::Toolbox,
-    openai_client: Client,
-    config: Config,
+    config: SapiensConfig,
     task: String,
     observer: WeakStepObserver,
 ) -> Result<Vec<TerminationMessage>, Error> {
-    let chain = Chain::new(toolbox, config.clone(), openai_client).await;
+    let max_steps = config.max_steps;
+    let chain = Chain::new(toolbox, config).await;
 
     let step_or_stop = StepOrStop::with_observer(chain, task, observer).await?;
 
-    let stop = step_or_stop.run(config.max_steps).await?;
+    let stop = step_or_stop.run(max_steps).await?;
 
     Ok(stop.termination_messages)
 }

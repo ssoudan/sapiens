@@ -1,6 +1,7 @@
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::{cmark_resume, State};
 use sapiens::context::{ChatEntry, ChatEntryFormatter};
+use sapiens::models::Role;
 
 /// Chat entry formatter that renders the chat entry in markdown
 pub struct Formatter {}
@@ -9,9 +10,9 @@ impl ChatEntryFormatter for Formatter {
     fn format(&self, entry: &ChatEntry) -> String {
         let msg = entry.msg.clone();
         match entry.role {
-            sapiens::openai::Role::User => format!(":earth_americas:\n{}", msg),
-            sapiens::openai::Role::Assistant => format!(":robot:\n{}", msg),
-            sapiens::openai::Role::System => format!(":rooster:\n{}", msg),
+            Role::User => format!(":earth_americas:\n{}", msg),
+            Role::Assistant => format!(":robot:\n{}", msg),
+            Role::System => format!(":rooster:\n{}", msg),
         }
     }
 }

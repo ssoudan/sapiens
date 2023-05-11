@@ -1,5 +1,6 @@
 //! Sapiens CLI library
 
+use sapiens::models::openai::SupportedModel;
 use serde::{Deserialize, Serialize};
 
 /// Tools related to experimentation.
@@ -137,7 +138,7 @@ pub mod evaluate;
 pub struct Config {
     // FUTURE(ssoudan) more feature flags
     /// Model to use
-    pub model: String,
+    pub model: SupportedModel,
     /// Maximum number of steps to execute
     pub max_steps: usize,
     /// Chat completion sampling temperature
@@ -145,14 +146,8 @@ pub struct Config {
     pub temperature: Option<f32>,
     /// Scenario to use
     pub scenario: String,
-}
-
-impl From<&Config> for sapiens::Config {
-    fn from(config: &Config) -> Self {
-        Self {
-            model: config.model.clone(),
-            max_steps: config.max_steps,
-            ..Default::default()
-        }
-    }
+    /// Number of tokens to use for completion
+    pub min_tokens_for_completion: usize,
+    /// Maximum number of tokens for the model to generate
+    pub max_tokens: Option<usize>,
 }

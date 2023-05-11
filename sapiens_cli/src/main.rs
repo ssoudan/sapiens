@@ -4,11 +4,12 @@ use std::sync::Arc;
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistory};
-use sapiens::openai::Role;
+use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
+use sapiens::models::openai::SupportedModel;
+use sapiens::models::Role;
 use sapiens::{
-    run_to_the_end, wrap_observer, Config, InvocationFailureNotification,
-    InvocationSuccessNotification, ModelUpdateNotification, StepObserver,
+    run_to_the_end, wrap_observer, InvocationFailureNotification, InvocationSuccessNotification,
+    ModelUpdateNotification, SapiensConfig, StepObserver,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -32,7 +33,6 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) GH Pages
 //
 // Explore:
-// FUTURE(ssoudan) other models?
 // FUTURE(ssoudan) memory?
 // FUTURE(ssoudan) vector stores?
 // FUTURE(ssoudan) prompt optimization
@@ -44,13 +44,20 @@ use tracing_subscriber::EnvFilter;
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Model to use
-    #[arg(long, default_value = "gpt-3.5-turbo")]
-    model: String,
+    #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
+    model: SupportedModel,
 
     /// Maximum number of steps to execute
     #[arg(short, long, default_value_t = 10)]
     max_steps: usize,
 
+    /// Minimum tokens for completion
+    #[arg(long, default_value_t = 512)]
+    min_tokens_for_completion: usize,
+
+    /// Max tokens for the model to generate
+    #[arg(long)]
+    max_tokens: Option<usize>,
     /// Task to execute
     #[arg(short, long, default_value = "Tell me a joke.")]
     task: String,
@@ -58,16 +65,6 @@ struct Args {
     /// Show the warmup prompt
     #[arg(long)]
     show_warmup_prompt: bool,
-}
-
-impl From<&Args> for Config {
-    fn from(args: &Args) -> Self {
-        Self {
-            model: args.model.clone(),
-            max_steps: args.max_steps,
-            ..Default::default()
-        }
-    }
 }
 
 struct ColorFormatter;
@@ -92,7 +89,7 @@ struct Observer {
 
 #[async_trait::async_trait]
 impl StepObserver for Observer {
-    async fn on_start(&mut self, chat_history: &ChatHistory) {
+    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
             let msgs = chat_history.format(&formatter);
@@ -103,8 +100,8 @@ impl StepObserver for Observer {
             }
         } else {
             // Show only the last message
-            let last_msg = chat_history.iter().last().unwrap();
-            let msg = ColorFormatter.format(&last_msg.into());
+            let last_msg = chat_history.messages.last().unwrap();
+            let msg = ColorFormatter.format(last_msg);
             println!("{}", msg);
             println!("=============");
         }
@@ -160,9 +157,18 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-    let openai_client = sapiens::openai::Client::new().with_api_key(
-        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file"),
-    );
+    let api_key = std::env::var("OPENAI_API_KEY").ok();
+    let api_base = std::env::var("OPENAI_API_BASE").ok();
+
+    let task = args.task.clone();
+    let config = SapiensConfig {
+        model: sapiens::models::openai::build(args.model.clone(), api_key, api_base, Some(0.))
+            .await
+            .expect("Failed to build model"),
+        max_steps: args.max_steps,
+        min_tokens_for_completion: args.min_tokens_for_completion,
+        max_tokens: args.max_tokens,
+    };
 
     // Sanitation
     // remove environment variables that could be used to access the host
@@ -182,9 +188,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let w_observer = Arc::downgrade(&observer);
 
-    let task = args.task.clone();
-    let termination_messages =
-        run_to_the_end(toolbox, openai_client, (&args).into(), task, w_observer).await;
+    let termination_messages = run_to_the_end(toolbox, config, task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());

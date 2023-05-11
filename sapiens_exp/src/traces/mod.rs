@@ -2,6 +2,8 @@ use std::fmt::{Debug, Formatter};
 use std::ops::Add;
 use std::sync::Arc;
 
+use sapiens::context::{ChatEntry, ChatHistoryDump};
+use sapiens::models::Role;
 use sapiens::{
     InvalidInvocationNotification, InvocationFailureNotification, InvocationSuccessNotification,
     ModelUpdateNotification, StepObserver, TerminationNotification,
@@ -40,8 +42,8 @@ impl Add for Usage {
     }
 }
 
-impl From<sapiens::runner::Usage> for Usage {
-    fn from(usage: sapiens::runner::Usage) -> Self {
+impl From<sapiens::models::Usage> for Usage {
+    fn from(usage: sapiens::models::Usage) -> Self {
         Self {
             prompt_tokens: usage.prompt_tokens,
             completion_tokens: usage.completion_tokens,
@@ -86,6 +88,24 @@ pub enum InvocationResult {
     },
 }
 
+/// Prompt entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PromptEntry {
+    /// the role
+    pub role: Role,
+    /// The message
+    pub msg: String,
+}
+
+impl From<&ChatEntry> for PromptEntry {
+    fn from(entry: &ChatEntry) -> Self {
+        Self {
+            role: entry.role.clone(),
+            msg: entry.msg.clone(),
+        }
+    }
+}
+
 /// An event in a trace
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -94,6 +114,11 @@ pub enum Event {
     Start {
         /// The task
         task: String,
+    },
+    /// Initial prompt
+    Prompt {
+        /// Initial prompt
+        initial_prompt: Vec<PromptEntry>,
     },
     /// A tool was invoked
     ToolInvocationSucceeded {
@@ -184,6 +209,7 @@ impl Event {
     /// Get the token usage
     pub fn tokens(&self) -> Option<Usage> {
         match &self {
+            Event::Prompt { .. } => None,
             Event::Start { .. } => None,
             Event::ToolInvocationSucceeded { token_usage, .. } => token_usage.clone(),
             Event::ToolInvocationFailed { token_usage, .. } => token_usage.clone(),
@@ -405,6 +431,17 @@ impl StepObserver for TraceObserver {
         self.trace.events.push(
             Event::Start {
                 task: task.to_string(),
+            }
+            .into_event_and_state(state),
+        );
+    }
+
+    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
+        let state = self.get_state().await;
+
+        self.trace.events.push(
+            Event::Prompt {
+                initial_prompt: chat_history.messages.iter().map(|msg| msg.into()).collect(),
             }
             .into_event_and_state(state),
         );

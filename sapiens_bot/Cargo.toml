@@ -10,6 +10,7 @@ publish.workspace = true
 readme = "../README.md"
 keywords.workspace = true
 categories.workspace = true
+documentation = "https://docs.rs/sapiens_bot"
 
 
 [features]

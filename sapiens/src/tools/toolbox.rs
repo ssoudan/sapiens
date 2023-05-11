@@ -309,8 +309,8 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     //     return Err(ToolUseError::TooManyInvocationFound);
     // }
 
-    // TODO(ssoudan) invoke corresponding tools one by one. Fail on first error.
-    // TODO(ssoudan) document this in the initial prompt
+    // FUTURE(ssoudan) invoke corresponding tools one by one. Fail on first error.
+    // FUTURE(ssoudan) document this in the initial prompt
 
     let invocation = match tools::choose_invocation(tool_invocations).await {
         Ok(invocation) => invocation,

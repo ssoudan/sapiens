@@ -322,7 +322,7 @@ mod tests {
             how to set rainbow colors on Nanoleaf light panels
           lr: lang_en
           num: 3
-        output_format:
+        result_fields:
           results:
           - title: What Type of Light Bulbs Are Used in Office Buildings?
               Link: www.builddirect.com

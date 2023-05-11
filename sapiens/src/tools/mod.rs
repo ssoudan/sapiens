@@ -70,21 +70,19 @@ pub struct ToolDescription {
     /// Description of the tool
     pub description: String,
     /// Input format
-    #[serde(rename = "parameters")]
-    pub input_format: Format,
+    pub parameters: Format,
     /// Output format
-    #[serde(rename = "result_fields")]
-    pub output_format: Format,
+    pub result_fields: Format,
 }
 
 impl ToolDescription {
     /// Create a new tool description
-    pub fn new(name: &str, description: &str, input_format: Format, output_format: Format) -> Self {
+    pub fn new(name: &str, description: &str, parameters: Format, result_fields: Format) -> Self {
         ToolDescription {
             name: name.to_string(),
             description: description.to_string(),
-            input_format,
-            output_format,
+            parameters,
+            result_fields,
         }
     }
 }

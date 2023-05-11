@@ -1,10 +1,8 @@
 //! Maintain the context for the bot.
 use std::fmt::{Debug, Formatter};
 
-pub use tiktoken_rs::async_openai::num_tokens_from_messages;
-pub use tiktoken_rs::model::get_context_size;
-
-use crate::openai::{ChatCompletionRequestMessage, Role};
+use crate::models::Role;
+use crate::SapiensConfig;
 
 /// A trait for formatting entries for the chat history
 pub trait ChatEntryFormatter {
@@ -29,15 +27,6 @@ pub struct ChatEntry {
     pub msg: String,
 }
 
-impl From<&ChatCompletionRequestMessage> for ChatEntry {
-    fn from(msg: &ChatCompletionRequestMessage) -> Self {
-        Self {
-            role: msg.role.clone(),
-            msg: msg.content.clone(),
-        }
-    }
-}
-
 /// Maintain a chat history that can be truncated (from the head) to ensure
 /// we have enough tokens to complete the task
 ///
@@ -51,24 +40,23 @@ impl From<&ChatCompletionRequestMessage> for ChatEntry {
 /// [ChatHistory::add_chitchat].
 #[derive(Clone)]
 pub struct ChatHistory {
-    /// The model
-    model: String,
+    /// Config - contains a ref to the model
+    config: SapiensConfig,
     /// The maximum number of tokens we can have in the history for the model
     max_token: usize,
     /// The minimum number of tokens we need to complete the task
     min_token_for_completion: usize,
     /// The 'prompt' (aka messages we want to stay at the top of the history)
-    prompt: Vec<ChatCompletionRequestMessage>,
+    prompt: Vec<ChatEntry>,
     /// Num token for the prompt
     prompt_num_tokens: usize,
     /// The other messages
-    chitchat: Vec<ChatCompletionRequestMessage>,
+    chitchat: Vec<ChatEntry>,
 }
 
 impl Debug for ChatHistory {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ChatHistory")
-            .field("model", &self.model)
             .field("max_token", &self.max_token)
             .field("min_token_for_completion", &self.min_token_for_completion)
             .field("prompt_num_tokens", &self.prompt_num_tokens)
@@ -78,16 +66,10 @@ impl Debug for ChatHistory {
 
 impl ChatHistory {
     /// Create a new chat history
-    pub fn new(model: String, min_token_for_completion: usize) -> Self {
-        let max_token = match &model {
-            x if x.starts_with("gpt-") => get_context_size(x),
-            // Vicuna has 2048 - let use that for now
-            _ => 2048,
-        };
-
+    pub fn new(config: SapiensConfig, max_token: usize, min_token_for_completion: usize) -> Self {
         Self {
+            config,
             max_token,
-            model,
             min_token_for_completion,
             prompt: vec![],
             prompt_num_tokens: 0,
@@ -95,51 +77,33 @@ impl ChatHistory {
         }
     }
 
-    fn num_tokens_from_messages(&self, messages: &[ChatCompletionRequestMessage]) -> usize {
-        if let Ok(res) = num_tokens_from_messages(&self.model, messages) {
-            return res;
-        }
-
-        // FUTURE(ssoudan) do better
-
-        // fallback - use gpt-3.5-turbo
-        num_tokens_from_messages("gpt-3.5-turbo", messages).unwrap()
-    }
-
     /// add a prompt to the history
-    pub fn add_prompts(&mut self, prompts: &[(Role, String)]) {
+    pub async fn add_prompts(&mut self, prompts: &[(Role, String)]) {
         for (role, content) in prompts {
-            let msg = ChatCompletionRequestMessage {
+            let msg = ChatEntry {
                 role: role.clone(),
-                content: content.clone(),
-                name: None,
+                msg: content.clone(),
             };
             self.prompt.push(msg);
         }
 
         // update the prompt_num_tokens
-        self.prompt_num_tokens = self.num_tokens_from_messages(&self.prompt);
+        self.prompt_num_tokens = self.config.model.num_tokens(&self.prompt).await;
     }
 
     /// add a message to the chitchat history, and prune the history if needed
     /// returns the number of messages in the chitchat history
-    pub fn add_chitchat(&mut self, entry: ChatEntry) -> Result<usize, Error> {
-        let msg = ChatCompletionRequestMessage {
-            role: entry.role,
-            content: entry.msg,
-            name: None,
-        };
-
-        self.chitchat.push(msg);
+    pub async fn add_chitchat(&mut self, entry: ChatEntry) -> Result<usize, Error> {
+        self.chitchat.push(entry);
 
         // prune the history if needed
-        self.purge()
+        self.purge().await
     }
 
     /// uses [tiktoken_rs::num_tokens_from_messages] prune
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
-    pub fn purge(&mut self) -> Result<usize, Error> {
+    async fn purge(&mut self) -> Result<usize, Error> {
         // FIXME(ssoudan) preserve the alternance of roles
 
         let token_budget = self.max_token.saturating_sub(self.prompt_num_tokens);
@@ -151,19 +115,21 @@ impl ChatHistory {
         }
 
         // loop until we have enough available tokens to complete the task
-        while self.chitchat.len() > 1 {
-            let num_tokens = self.num_tokens_from_messages(&self.chitchat);
-            if num_tokens <= token_budget - self.min_token_for_completion {
-                return Ok(self.chitchat.len());
+        {
+            while self.chitchat.len() > 1 {
+                let num_tokens = self.config.model.num_tokens(&self.chitchat).await;
+                if num_tokens <= token_budget - self.min_token_for_completion {
+                    return Ok(self.chitchat.len());
+                }
+                self.chitchat.remove(0);
             }
-            self.chitchat.remove(0);
         }
 
         Ok(self.chitchat.len())
     }
 
     /// iterate over the prompt and chitchat messages
-    pub fn iter(&self) -> impl Iterator<Item = &ChatCompletionRequestMessage> {
+    pub fn iter(&self) -> impl Iterator<Item = &ChatEntry> {
         self.prompt.iter().chain(self.chitchat.iter())
     }
 
@@ -173,19 +139,39 @@ impl ChatHistory {
         T: ChatEntryFormatter + ?Sized,
     {
         self.iter()
-            .map(|msg| {
-                let e = ChatEntry {
-                    role: msg.role.clone(),
-                    msg: msg.content.clone(),
-                };
-                formatter.format(&e)
-            })
+            .map(|msg| formatter.format(msg))
             .collect::<Vec<_>>()
+    }
+
+    /// dump the history
+    pub fn dump(&self) -> ChatHistoryDump {
+        ChatHistoryDump {
+            messages: self.iter().cloned().collect(),
+        }
     }
 }
 
-impl From<&ChatHistory> for Vec<ChatCompletionRequestMessage> {
+impl From<&ChatHistory> for Vec<ChatEntry> {
     fn from(val: &ChatHistory) -> Self {
         val.iter().cloned().collect()
+    }
+}
+
+/// A dump of the chat history
+pub struct ChatHistoryDump {
+    /// the messages
+    pub messages: Vec<ChatEntry>,
+}
+
+impl ChatHistoryDump {
+    /// format the history using the given formatter
+    pub fn format<T>(&self, formatter: &T) -> Vec<String>
+    where
+        T: ChatEntryFormatter + ?Sized,
+    {
+        self.messages
+            .iter()
+            .map(|msg| formatter.format(msg))
+            .collect::<Vec<_>>()
     }
 }

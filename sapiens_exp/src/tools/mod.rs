@@ -79,8 +79,8 @@ impl<I: Describe, S, O: Describe> GenericTool<I, S, O> {
             ToolDescription {
                 name,
                 description,
-                input_format: I::describe(),
-                output_format: O::describe(),
+                parameters: I::describe(),
+                result_fields: O::describe(),
             },
             state,
         )

@@ -175,21 +175,21 @@ pub(crate) struct SimpleToolDescription {
     /// Description of the tool
     pub description: String,
     /// Input format of the tool
-    pub input_format: Vec<SimpleFormat>,
+    pub parameters: Vec<SimpleFormat>,
     /// Output format of the tool
-    pub output_format: Vec<SimpleFormat>,
+    pub result_fields: Vec<SimpleFormat>,
 }
 
 impl From<ToolDescription> for SimpleToolDescription {
     fn from(desc: ToolDescription) -> Self {
-        let input_format = desc
-            .input_format
+        let parameters = desc
+            .parameters
             .fields
             .into_iter()
             .map(|x| x.into())
             .collect();
-        let output_format = desc
-            .output_format
+        let result_fields = desc
+            .result_fields
             .fields
             .into_iter()
             .map(|x| x.into())
@@ -198,8 +198,8 @@ impl From<ToolDescription> for SimpleToolDescription {
         SimpleToolDescription {
             name: desc.name,
             description: desc.description,
-            input_format,
-            output_format,
+            parameters,
+            result_fields,
         }
     }
 }
@@ -210,9 +210,9 @@ impl ToPyObject for SimpleToolDescription {
         dict.set_item("name", self.name.clone()).unwrap();
         dict.set_item("description", self.description.clone())
             .unwrap();
-        dict.set_item("input_format", self.input_format.clone())
+        dict.set_item("parameters", self.parameters.clone())
             .unwrap();
-        dict.set_item("output_format", self.output_format.clone())
+        dict.set_item("result_fields", self.result_fields.clone())
             .unwrap();
         dict.into()
     }

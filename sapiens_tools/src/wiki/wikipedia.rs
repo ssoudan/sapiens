@@ -187,7 +187,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_wikipedia_input_format() {
+    async fn test_wikipedia_parameters() {
         let mut settings = insta::Settings::clone_current();
         settings.set_sort_maps(true);
         settings
