@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use tracing::trace;
+
 use crate::context::{ChatEntry, ChatHistory, ChatHistoryDump};
 use crate::models::{ModelResponse, Role};
 use crate::prompt::Task;
@@ -34,7 +36,7 @@ impl Chain {
     pub async fn new(toolbox: Toolbox, config: SapiensConfig) -> Self {
         let max_token = { config.model.context_size().await };
         let mut chat_history =
-            ChatHistory::new(config.clone(), max_token, config.min_token_for_completion);
+            ChatHistory::new(config.clone(), max_token, config.min_tokens_for_completion);
 
         // Add the prompts to the chat history
         let prompt_manager = prompt::Manager::new(toolbox.clone());
@@ -90,12 +92,15 @@ impl TaskChain {
     #[tracing::instrument(skip(self))]
     pub async fn query_model(&mut self) -> Result<ModelResponse, Error> {
         let entries = self.chain.chat_history.iter().collect::<Vec<_>>();
-        Ok(self
+        trace!(min_tokens = self.chain.config.min_tokens_for_completion, max_tokens = self.chain.config.max_tokens, entries = ?entries, "Querying model with {} entries", entries.len());
+        let res = self
             .chain
             .config
             .model
-            .query(&entries, Some(self.chain.config.min_token_for_completion))
-            .await?)
+            .query(&entries, self.chain.config.max_tokens)
+            .await?;
+        trace!(res = ?res, "Got model response");
+        Ok(res)
     }
 
     /// Add a chat entry to the chat history

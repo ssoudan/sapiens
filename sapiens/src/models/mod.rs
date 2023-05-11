@@ -1,4 +1,6 @@
 pub mod openai;
+
+use std::fmt::Display;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -17,6 +19,9 @@ pub enum Error {
     /// No response from the model
     #[error("No response from the model")]
     NoResponseFromModel,
+    /// The model is not supported
+    #[error("Model not supported: {0}")]
+    ModelNotSupported(String),
 }
 
 /// Roles in the conversation
@@ -32,14 +37,20 @@ pub enum Role {
     Assistant,
 }
 
-// TODO(ssoudan)
-// Support:
-// - the token length estimation too
-// - different prompting prefixes
-// - configs
-// - ability to run multistep chains to come to response
+impl Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Role::System => write!(f, "system"),
+            Role::User => write!(f, "user"),
+            Role::Assistant => write!(f, "assistant"),
+        }
+    }
+}
 
-// TODO(ssoudan) support local llam.cpp models
+// FUTURE(ssoudan) support pure completion API
+// FUTURE(ssoudan) support ability to run multistep chains to come to response
+// FUTURE(ssoudan) support local llam.cpp models
+// FUTURE(ssoudan) support Vertex AI api
 
 /// Something that can count the number of tokens in a chat entry
 #[async_trait::async_trait]
@@ -69,6 +80,8 @@ pub struct ModelResponse {
     pub msg: String,
     /// The usage
     pub usage: Option<Usage>,
+    /// Finish reason
+    pub finish_reason: Option<String>,
 }
 
 /// Token usage

@@ -272,7 +272,7 @@ mod tests {
 
         let config = crate::SapiensConfig::default();
 
-        let min_token_for_completion = config.min_token_for_completion;
+        let min_token_for_completion = config.min_tokens_for_completion;
         let max_token = config.model.context_size().await;
         let mut chat_history =
             ChatHistory::new(config.clone(), max_token, min_token_for_completion);

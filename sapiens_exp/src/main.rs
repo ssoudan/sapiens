@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
 use dotenvy::dotenv_override;
+use sapiens::models::openai::SupportedModel;
 use sapiens::{models, run_to_the_end, wrap_observer};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
@@ -36,12 +37,20 @@ impl Display for Scenario {
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Model to use
-    #[arg(long, default_value = "gpt-3.5-turbo")]
-    model: String,
+    #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
+    model: SupportedModel,
 
     /// Maximum number of steps to execute
     #[arg(short, long, default_value_t = 10)]
     max_steps: usize,
+
+    /// Minimum tokens for completion
+    #[arg(long, default_value_t = 512)]
+    min_tokens_for_completion: usize,
+
+    /// Max tokens for the model to generate
+    #[arg(long)]
+    max_tokens: Option<usize>,
 
     /// Task to execute
     #[arg(short, long, default_value = "Make me a bowl of cereal with milk")]
@@ -71,6 +80,8 @@ impl From<&Args> for Config {
         Self {
             model: args.model.clone(),
             max_steps: args.max_steps,
+            min_tokens_for_completion: args.min_tokens_for_completion,
+            max_tokens: args.max_tokens,
             temperature: Some(args.temperature),
             scenario: args.scenario.to_string(),
         }
@@ -112,15 +123,17 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // reset stats
     toolbox.reset_stats().await;
 
-    let api_key =
-        std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY not set in configuration file");
+    let api_key = std::env::var("OPENAI_API_KEY").ok();
     let api_base = std::env::var("OPENAI_API_BASE").ok();
 
     let temperature = Some(args.temperature);
     let config = sapiens::SapiensConfig {
         max_steps: args.max_steps,
-        model: models::openai::build(&args.model, &api_key, api_base, temperature).await,
-        ..Default::default()
+        model: models::openai::build(args.model.clone(), api_key, api_base, temperature)
+            .await
+            .expect("Failed to build model"),
+        min_tokens_for_completion: args.min_tokens_for_completion,
+        max_tokens: args.max_tokens,
     };
 
     // Sanitation

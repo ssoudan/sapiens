@@ -5,6 +5,7 @@ use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
+use sapiens::models::openai::SupportedModel;
 use sapiens::models::Role;
 use sapiens::{
     run_to_the_end, wrap_observer, InvocationFailureNotification, InvocationSuccessNotification,
@@ -32,7 +33,6 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) GH Pages
 //
 // Explore:
-// FUTURE(ssoudan) other models?
 // FUTURE(ssoudan) memory?
 // FUTURE(ssoudan) vector stores?
 // FUTURE(ssoudan) prompt optimization
@@ -44,13 +44,20 @@ use tracing_subscriber::EnvFilter;
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Model to use
-    #[arg(long, default_value = "gpt-3.5-turbo")]
-    model: String,
+    #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
+    model: SupportedModel,
 
     /// Maximum number of steps to execute
     #[arg(short, long, default_value_t = 10)]
     max_steps: usize,
 
+    /// Minimum tokens for completion
+    #[arg(long, default_value_t = 512)]
+    min_tokens_for_completion: usize,
+
+    /// Max tokens for the model to generate
+    #[arg(long)]
+    max_tokens: Option<usize>,
     /// Task to execute
     #[arg(short, long, default_value = "Tell me a joke.")]
     task: String,
@@ -150,13 +157,17 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-    let openai_api_key = std::env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY is not set");
+    let api_key = std::env::var("OPENAI_API_KEY").ok();
+    let api_base = std::env::var("OPENAI_API_BASE").ok();
 
     let task = args.task.clone();
     let config = SapiensConfig {
-        model: sapiens::models::openai::build(&args.model, &openai_api_key, None, Some(0.)).await,
+        model: sapiens::models::openai::build(args.model.clone(), api_key, api_base, Some(0.))
+            .await
+            .expect("Failed to build model"),
         max_steps: args.max_steps,
-        ..Default::default()
+        min_tokens_for_completion: args.min_tokens_for_completion,
+        max_tokens: args.max_tokens,
     };
 
     // Sanitation

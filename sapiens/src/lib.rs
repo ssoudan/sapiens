@@ -71,14 +71,17 @@ pub struct SapiensConfig {
     /// The maximum number of steps
     pub max_steps: usize,
     /// The minimum number of tokens that need to be available for completion
-    pub min_token_for_completion: usize,
+    pub min_tokens_for_completion: usize,
+    /// Maximum number of tokens for the model to generate
+    pub max_tokens: Option<usize>,
 }
 
 impl Debug for SapiensConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
             .field("max_steps", &self.max_steps)
-            .field("min_token_for_completion", &self.min_token_for_completion)
+            .field("min_tokens_for_completion", &self.min_tokens_for_completion)
+            .field("max_tokens", &self.max_tokens)
             .finish()
     }
 }
@@ -88,7 +91,8 @@ impl Default for SapiensConfig {
         Self {
             model: Arc::new(Box::<OpenAI>::default()),
             max_steps: 10,
-            min_token_for_completion: 512,
+            min_tokens_for_completion: 512,
+            max_tokens: None,
         }
     }
 }
