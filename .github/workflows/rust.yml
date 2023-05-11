@@ -28,7 +28,11 @@ jobs:
     - name: 'Create env file'
       run: |
         echo "${{ secrets.ENV_FILE }}" > .env
+    - name: Test (dependabot)
+      if: github.actor == 'dependabot[bot]'
+      run: cargo test --workspace --features disable-test-dependabot
     - name: Test
+      if: github.actor != 'dependabot[bot]'
       run: cargo test --workspace
 
   check:

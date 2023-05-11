@@ -200,7 +200,7 @@ impl SearchTool {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "disable-test-dependabot")))]
 mod tests {
     use super::*;
 
