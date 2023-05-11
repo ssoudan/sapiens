@@ -244,7 +244,7 @@ mod arxiv {
 
 mod python;
 
-#[cfg(feature = "search")]
+#[cfg(all(feature = "search", not(feature = "disable-test-dependabot")))]
 mod search {
     use indoc::indoc;
     use insta::assert_display_snapshot;
