@@ -33,7 +33,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.7.0", default-feature
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
-tokio = { version = "1.28.0", features = ["full"] }
+tokio = { version = "1.28.1", features = ["full"] }
 async-trait = "0.1.68"
 
 pyo3 = { version = "0.18.3", features = [] }
