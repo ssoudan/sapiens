@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_tools"
-version= "0.7.0"
+version= "0.8.0"
 edition.workspace = true
 authors.workspace = true
 description = "The tools - Sapiens"
@@ -26,8 +26,8 @@ summarize = ["dep:async-openai"]
 search = ["dep:reqwest", "dep:serde_json"]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.7.0" }
-sapiens_derive = { path = "../sapiens_derive", version = "^0.4.1" }
+sapiens = { path = "../sapiens", version = "^0.8.0" }
+sapiens_derive = { path = "../sapiens_derive", version = "^0.4.2" }
 
 huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.10", optional = true  }

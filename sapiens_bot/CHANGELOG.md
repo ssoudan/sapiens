@@ -5,7 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.6.0 (2023-05-11)
+
+### Chore
+
+ - <csr-id-25661955e8aba7f9dee4a16e046c621c5ffd3fca/> badges, docs.rs links, ...
+
+### Chore (BREAKING)
+
+ - <csr-id-46bd185de682284de78347616171a69a488447fb/> moved the LM to a single place
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release over the course of 5 calendar days.
+ - 5 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #16 from ssoudan/decoupling ([`981d4d4`](https://github.com/ssoudan/sapiens/commit/981d4d4e1e6b625e17d7dcc2fc94e0709e11267c))
+    - Moved the LM to a single place ([`46bd185`](https://github.com/ssoudan/sapiens/commit/46bd185de682284de78347616171a69a488447fb))
+    - Badges, docs.rs links, ... ([`2566195`](https://github.com/ssoudan/sapiens/commit/25661955e8aba7f9dee4a16e046c621c5ffd3fca))
+</details>
+
 ## 0.5.0 (2023-05-05)
+
+<csr-id-8efe0a225520f14d2c3e0abc7ea8c99578146ca0/>
 
 ### Chore
 
@@ -15,7 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
  - 2 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -27,6 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.7.0, sapiens_derive v0.4.1, sapiens_tools v0.7.0, sapiens_bot v0.5.0, sapiens_cli v0.6.0, sapiens_exp v0.5.0, safety bump 4 crates ([`3b2c461`](https://github.com/ssoudan/sapiens/commit/3b2c461f7273b55660f37ed73b0a10b88e0f788b))
     - CHANGELOG ([`8efe0a2`](https://github.com/ssoudan/sapiens/commit/8efe0a225520f14d2c3e0abc7ea8c99578146ca0))
 </details>
 
