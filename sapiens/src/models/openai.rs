@@ -1,19 +1,21 @@
 //! OpenAI models
 
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub use async_openai::error::OpenAIError;
 use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest};
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 pub use tiktoken_rs::async_openai::num_tokens_from_messages;
 pub use tiktoken_rs::model::get_context_size;
 use tracing::{debug, error};
 
 use crate::context::ChatEntry;
-use crate::models::{ChatEntryTokenNumber, Error, Model, ModelRef, ModelResponse, Role, Usage};
+use crate::models::{
+    ChatEntryTokenNumber, ChatInput, Error, Model, ModelRef, ModelResponse, Role, SupportedModel,
+    Usage,
+};
 /// Build an OpenAI model
 /// # Arguments
 /// * `model_name` - The model to use
@@ -55,72 +57,6 @@ pub struct OpenAI {
     client: async_openai::Client,
 }
 
-/// Supported models
-#[derive(Clone, Serialize, Deserialize, Default)]
-pub enum SupportedModel {
-    /// GPT 3.5 Turbo
-    #[default]
-    GPT3_5Turbo,
-    /// Vicuna 7B 1.1
-    Vicuna7B1_1,
-    /// Vicuna 13B 1.1
-    Vicuna13B1_1,
-}
-
-impl Display for SupportedModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-        }
-    }
-}
-
-impl Debug for SupportedModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-        }
-    }
-}
-
-impl FromStr for SupportedModel {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "gpt-3.5-turbo" => Ok(Self::GPT3_5Turbo),
-            "vicuna-7b-1.1" => Ok(Self::Vicuna7B1_1),
-            "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
-            _ => Err(Error::ModelNotSupported(s.to_string())),
-        }
-    }
-}
-
-#[cfg(feature = "clap")]
-impl clap::ValueEnum for SupportedModel {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[
-            SupportedModel::GPT3_5Turbo,
-            SupportedModel::Vicuna7B1_1,
-            SupportedModel::Vicuna13B1_1,
-        ]
-    }
-
-    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
-        match self {
-            SupportedModel::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
-            SupportedModel::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
-            SupportedModel::Vicuna13B1_1 => {
-                Some(clap::builder::PossibleValue::new("vicuna-13b-1.1"))
-            }
-        }
-    }
-}
-
 impl OpenAI {
     /// Create a new OpenAI model
     pub fn new(
@@ -155,50 +91,53 @@ lazy_static! {
 
 #[async_trait::async_trait]
 impl ChatEntryTokenNumber for OpenAI {
-    async fn num_tokens(&self, entries: &[ChatEntry]) -> usize {
+    async fn num_tokens(&self, input: ChatInput) -> usize {
+        let req = self.prepare_chat_completion_request(input, None);
+
         match &self.model {
             SupportedModel::GPT3_5Turbo => {
-                let messages = entries.iter().map(|x| x.into()).collect::<Vec<_>>();
-                num_tokens_from_messages(&self.model.to_string(), &messages)
+                let messages = req.messages;
+                num_tokens_from_messages(&self.model.to_string(), messages.as_slice())
                     .expect("model not supported")
             }
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => {
                 // See https://github.com/lm-sys/FastChat/blob/667c584ad437b4655f29ca99d480d96833470860/fastchat/conversation.py#LL62C24-L62C24
                 let seps = vec![" ", "</s>"];
 
-                let chat = entries
+                let chat = req
+                    .messages
                     .iter()
                     .enumerate()
                     .map(|(i, x)| {
                         // assumes the first is a 'System' message
                         let sep = seps[(i + 1) % seps.len()];
                         match x.role {
-                            Role::System => {
-                                if x.msg.is_empty() {
+                            async_openai::types::Role::System => {
+                                if x.content.is_empty() {
                                     String::new()
                                 } else {
-                                    format!("{}\n", x.msg)
+                                    format!("{}\n", x.content)
                                 }
                             }
-                            Role::User => {
-                                if x.msg.is_empty() {
+                            async_openai::types::Role::User => {
+                                if x.content.is_empty() {
                                     format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 } else {
                                     format!(
                                         "{}: {}\n",
                                         x.role.to_string().to_ascii_uppercase(),
-                                        x.msg
+                                        x.content
                                     )
                                 }
                             }
-                            Role::Assistant => {
-                                if x.msg.is_empty() {
+                            async_openai::types::Role::Assistant => {
+                                if x.content.is_empty() {
                                     format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 } else {
                                     format!(
                                         "{}: {}{}\n",
                                         x.role.to_string().to_ascii_uppercase(),
-                                        x.msg,
+                                        x.content,
                                         sep
                                     )
                                 }
@@ -214,6 +153,7 @@ impl ChatEntryTokenNumber for OpenAI {
                 // FUTURE(ssoudan) compare with the number of tokens from the
                 // response
             }
+            _ => panic!("model not supported"),
         }
     }
 
@@ -221,6 +161,7 @@ impl ChatEntryTokenNumber for OpenAI {
         match &self.model {
             SupportedModel::GPT3_5Turbo => get_context_size(&self.model.to_string()),
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => 2048,
+            _ => panic!("model not supported"),
         }
     }
 }
@@ -229,11 +170,40 @@ impl OpenAI {
     /// prepare the [`ChatCompletionRequest`] to be passed to OpenAI
     fn prepare_chat_completion_request(
         &self,
-        entries: &[&ChatEntry],
+        input: ChatInput,
         max_tokens: Option<usize>,
     ) -> CreateChatCompletionRequest {
-        let messages: Vec<ChatCompletionRequestMessage> =
-            entries.iter().map(|&x| x.into()).collect();
+        let mut messages = vec![];
+
+        for m in input.context {
+            messages.push(ChatCompletionRequestMessage {
+                role: m.role.into(),
+                content: m.msg,
+                name: None,
+            });
+        }
+        messages.push(ChatCompletionRequestMessage {
+            role: Role::Assistant.into(),
+            content: "Understood.".to_string(),
+            name: None,
+        });
+
+        for example in input.examples {
+            messages.push(ChatCompletionRequestMessage {
+                role: example.role.into(),
+                content: example.msg,
+                name: None,
+            });
+        }
+
+        for message in input.chat {
+            messages.push(ChatCompletionRequestMessage {
+                role: message.role.into(),
+                content: message.msg,
+                name: None,
+            });
+        }
+
         let temperature = self.temperature;
         CreateChatCompletionRequest {
             model: self.model.to_string(),
@@ -256,10 +226,10 @@ impl OpenAI {
 impl Model for OpenAI {
     async fn query(
         &self,
-        entries: &[&ChatEntry],
+        input: ChatInput,
         max_tokens: Option<usize>,
     ) -> Result<ModelResponse, Error> {
-        let input = self.prepare_chat_completion_request(entries, max_tokens);
+        let input = self.prepare_chat_completion_request(input, max_tokens);
 
         debug!("Sending request to the model");
         let res = self.client.chat().create(input).await;
@@ -333,8 +303,6 @@ impl From<async_openai::types::Usage> for Usage {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
-
     // #[tokio::test]
     // async fn can_connect() {
     //     // let api_base = "https://api.openai.com/v1".to_string();
@@ -368,6 +336,7 @@ mod tests {
     //
     //     println!("{}", response.choices.first().unwrap().message.content);
     // }
+    use super::*;
 
     #[tokio::test]
     async fn test_vicuna_sizes() {
@@ -377,32 +346,37 @@ mod tests {
 
         assert_eq!(model.context_size().await, 2048);
 
-        let chat_entries = vec![
-            ChatEntry {
-                role: Role::System,
-                msg: "A chat between a user and an assistant.".to_string(),
-            },
-            ChatEntry {
-                role: Role::User,
-                msg: "Hello, my name is Marcel".to_string(),
-            },
-            ChatEntry {
-                role: Role::Assistant,
-                msg: "Hello, Marcel, how are you doing today?".to_string(),
-            },
-            ChatEntry {
-                role: Role::User,
-                msg: "I am doing great, thanks for asking".to_string(),
-            },
-            ChatEntry {
-                role: Role::Assistant,
-                msg: "That's great to hear!".to_string(),
-            },
-        ];
+        let input = ChatInput {
+            context: vec![
+                ChatEntry {
+                    role: Role::System,
+                    msg: "A chat between a user and an assistant.".to_string(),
+                },
+                ChatEntry {
+                    role: Role::User,
+                    msg: "Hello, my name is Marcel".to_string(),
+                },
+            ],
+            examples: vec![],
+            chat: vec![
+                ChatEntry {
+                    role: Role::Assistant,
+                    msg: "Hello, Marcel, how are you doing today?".to_string(),
+                },
+                ChatEntry {
+                    role: Role::User,
+                    msg: "I am doing great, thanks for asking".to_string(),
+                },
+                ChatEntry {
+                    role: Role::Assistant,
+                    msg: "That's great to hear!".to_string(),
+                },
+            ],
+        };
 
-        let token_sz = model.num_tokens(&chat_entries).await;
+        let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 64);
+        assert_eq!(token_sz, 70);
     }
 
     #[tokio::test]
@@ -413,31 +387,36 @@ mod tests {
 
         assert_eq!(model.context_size().await, 4096);
 
-        let chat_entries = vec![
-            ChatEntry {
-                role: Role::System,
-                msg: "A chat between a user and an assistant.".to_string(),
-            },
-            ChatEntry {
-                role: Role::User,
-                msg: "Hello, my name is Marcel".to_string(),
-            },
-            ChatEntry {
-                role: Role::Assistant,
-                msg: "Hello, Marcel, how are you doing today?".to_string(),
-            },
-            ChatEntry {
-                role: Role::User,
-                msg: "I am doing great, thanks for asking".to_string(),
-            },
-            ChatEntry {
-                role: Role::Assistant,
-                msg: "That's great to hear!".to_string(),
-            },
-        ];
+        let input = ChatInput {
+            context: vec![
+                ChatEntry {
+                    role: Role::System,
+                    msg: "A chat between a user and an assistant.".to_string(),
+                },
+                ChatEntry {
+                    role: Role::User,
+                    msg: "Hello, my name is Marcel".to_string(),
+                },
+            ],
+            examples: vec![],
+            chat: vec![
+                ChatEntry {
+                    role: Role::Assistant,
+                    msg: "Hello, Marcel, how are you doing today?".to_string(),
+                },
+                ChatEntry {
+                    role: Role::User,
+                    msg: "I am doing great, thanks for asking".to_string(),
+                },
+                ChatEntry {
+                    role: Role::Assistant,
+                    msg: "That's great to hear!".to_string(),
+                },
+            ],
+        };
 
-        let token_sz = model.num_tokens(&chat_entries).await;
+        let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 67);
+        assert_eq!(token_sz, 75);
     }
 }

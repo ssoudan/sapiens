@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use clap::{Parser, ValueEnum};
 use dotenvy::dotenv_override;
-use sapiens::models::openai::SupportedModel;
+use sapiens::models::SupportedModel;
 use sapiens::{models, run_to_the_end, wrap_observer};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
@@ -123,15 +123,30 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // reset stats
     toolbox.reset_stats().await;
 
-    let api_key = std::env::var("OPENAI_API_KEY").ok();
-    let api_base = std::env::var("OPENAI_API_BASE").ok();
-
     let temperature = Some(args.temperature);
+
+    let model = match args.model {
+        SupportedModel::ChatBison001 => {
+            let google_api_key =
+                std::env::var("GOOGLE_API_KEY").expect("GOOGLE_API_KEY is not set");
+
+            models::vertex_ai::build(google_api_key, temperature)
+                .await
+                .expect("Failed to build model")
+        }
+        _ => {
+            let api_key = std::env::var("OPENAI_API_KEY").ok();
+            let api_base = std::env::var("OPENAI_API_BASE").ok();
+
+            models::openai::build(args.model.clone(), api_key, api_base, temperature)
+                .await
+                .expect("Failed to build model")
+        }
+    };
+
     let config = sapiens::SapiensConfig {
         max_steps: args.max_steps,
-        model: models::openai::build(args.model.clone(), api_key, api_base, temperature)
-            .await
-            .expect("Failed to build model"),
+        model,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,
     };

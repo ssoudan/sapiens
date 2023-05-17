@@ -1,6 +1,6 @@
 //! Sapiens CLI library
 
-use sapiens::models::openai::SupportedModel;
+use sapiens::models::SupportedModel;
 use serde::{Deserialize, Serialize};
 
 /// Tools related to experimentation.

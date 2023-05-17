@@ -15,6 +15,7 @@ ARG FEATURES=""
 RUN apt-get update && apt-get install -y \
     libpython3-dev \
     pkg-config \
+    protobuf-compiler \
     && rm -rf /var/lib/apt/lists/*
 
 COPY rust-toolchain.toml .
