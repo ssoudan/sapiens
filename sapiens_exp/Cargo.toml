@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_exp"
-version= "0.6.0"
+version= "0.7.0"
 edition.workspace = true
 authors.workspace = true
 description = "Experiments - Sapiens"
@@ -16,8 +16,8 @@ documentation = "https://docs.rs/sapiens_exp"
 default = [ ]
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.8.0" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.8.0", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.9.0" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.9.0", default-features = false }
 sapiens_derive = { path = "../sapiens_derive", version = "^0.4.2", default-features = false }
 
 tracing = "0.1.37"

@@ -5,7 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 (2023-05-17)
+
+### New Features (BREAKING)
+
+ - <csr-id-14eb667de00ddb53c5162dca550d8a0d35f094e4/> support for Palm chat-bison-001
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 6 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #24 from ssoudan/more_steps ([`e28fdf3`](https://github.com/ssoudan/sapiens/commit/e28fdf388d24fbf084b15314e922bdf6bc386479))
+    - Support for Palm chat-bison-001 ([`14eb667`](https://github.com/ssoudan/sapiens/commit/14eb667de00ddb53c5162dca550d8a0d35f094e4))
+</details>
+
 ## 0.7.0 (2023-05-11)
+
+<csr-id-37fe5c57cb17dabf56fa61e8dcad8c5585846750/>
+<csr-id-25661955e8aba7f9dee4a16e046c621c5ffd3fca/>
+<csr-id-46bd185de682284de78347616171a69a488447fb/>
 
 ### Chore
 
@@ -24,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 5 calendar days.
+ - 6 commits contributed to the release over the course of 5 calendar days.
  - 5 days passed between releases.
  - 4 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -36,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.8.0, sapiens_derive v0.4.2, sapiens_tools v0.8.0, sapiens_bot v0.6.0, sapiens_cli v0.7.0, sapiens_exp v0.6.0, safety bump 4 crates ([`a18acd9`](https://github.com/ssoudan/sapiens/commit/a18acd9218045421957aff1c73c9f0a1597eb8d5))
     - Update ([`37fe5c5`](https://github.com/ssoudan/sapiens/commit/37fe5c57cb17dabf56fa61e8dcad8c5585846750))
     - Merge pull request #16 from ssoudan/decoupling ([`981d4d4`](https://github.com/ssoudan/sapiens/commit/981d4d4e1e6b625e17d7dcc2fc94e0709e11267c))
     - Support for Vicuna 7B 1.1 and 13B 1.1- not too impressive at this point ([`eed2b7c`](https://github.com/ssoudan/sapiens/commit/eed2b7c58b25e2edff0b69919fbe265cfd75459f))

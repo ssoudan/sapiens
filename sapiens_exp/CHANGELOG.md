@@ -5,7 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0 (2023-05-17)
+
+### Chore
+
+ - <csr-id-099c611a319519c44b62274627e35b01746ce37e/> bump serde from 1.0.162 to 1.0.163
+   Bumps [serde](https://github.com/serde-rs/serde) from 1.0.162 to 1.0.163.
+   - [Release notes](https://github.com/serde-rs/serde/releases)
+   - [Commits](https://github.com/serde-rs/serde/compare/v1.0.162...v1.0.163)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: serde
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+
+### New Features (BREAKING)
+
+ - <csr-id-14eb667de00ddb53c5162dca550d8a0d35f094e4/> support for Palm chat-bison-001
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 6 calendar days.
+ - 6 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #24 from ssoudan/more_steps ([`e28fdf3`](https://github.com/ssoudan/sapiens/commit/e28fdf388d24fbf084b15314e922bdf6bc386479))
+    - Support for Palm chat-bison-001 ([`14eb667`](https://github.com/ssoudan/sapiens/commit/14eb667de00ddb53c5162dca550d8a0d35f094e4))
+    - Merge pull request #19 from ssoudan/dependabot/cargo/serde-1.0.163 ([`d6497e5`](https://github.com/ssoudan/sapiens/commit/d6497e564aa66cfa80500b8f91bc5e0b4447f689))
+    - Bump serde from 1.0.162 to 1.0.163 ([`099c611`](https://github.com/ssoudan/sapiens/commit/099c611a319519c44b62274627e35b01746ce37e))
+</details>
+
 ## 0.6.0 (2023-05-11)
+
+<csr-id-37fe5c57cb17dabf56fa61e8dcad8c5585846750/>
+<csr-id-c46990fe7b630ecc1e2698da5c168508da47fe34/>
+<csr-id-25661955e8aba7f9dee4a16e046c621c5ffd3fca/>
+<csr-id-46bd185de682284de78347616171a69a488447fb/>
 
 ### Chore
 
@@ -29,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 5 calendar days.
+ - 8 commits contributed to the release over the course of 5 calendar days.
  - 5 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -41,6 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.8.0, sapiens_derive v0.4.2, sapiens_tools v0.8.0, sapiens_bot v0.6.0, sapiens_cli v0.7.0, sapiens_exp v0.6.0, safety bump 4 crates ([`a18acd9`](https://github.com/ssoudan/sapiens/commit/a18acd9218045421957aff1c73c9f0a1597eb8d5))
     - Update ([`37fe5c5`](https://github.com/ssoudan/sapiens/commit/37fe5c57cb17dabf56fa61e8dcad8c5585846750))
     - Merge pull request #16 from ssoudan/decoupling ([`981d4d4`](https://github.com/ssoudan/sapiens/commit/981d4d4e1e6b625e17d7dcc2fc94e0709e11267c))
     - Support for Vicuna 7B 1.1 and 13B 1.1- not too impressive at this point ([`eed2b7c`](https://github.com/ssoudan/sapiens/commit/eed2b7c58b25e2edff0b69919fbe265cfd75459f))
