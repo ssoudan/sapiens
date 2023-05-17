@@ -1,6 +1,8 @@
 pub mod openai;
+pub mod vertex_ai;
 
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
+use std::str::FromStr;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -22,6 +24,9 @@ pub enum Error {
     /// The model is not supported
     #[error("Model not supported: {0}")]
     ModelNotSupported(String),
+    /// Vertex AI error
+    #[error("Vertex AI error: {0}")]
+    VertexAIError(#[from] gcp_vertex_ai_generative_language::Error),
 }
 
 /// Roles in the conversation
@@ -50,7 +55,6 @@ impl Display for Role {
 // FUTURE(ssoudan) support pure completion API
 // FUTURE(ssoudan) support ability to run multistep chains to come to response
 // FUTURE(ssoudan) support local llam.cpp models
-// FUTURE(ssoudan) support Vertex AI api
 
 /// Something that can count the number of tokens in a chat entry
 #[async_trait::async_trait]
@@ -104,4 +108,79 @@ pub struct Usage {
     pub completion_tokens: u32,
     /// The total number of tokens used
     pub total_tokens: u32,
+}
+
+/// Supported models
+#[derive(Clone, Serialize, Deserialize, Default)]
+pub enum SupportedModel {
+    /// GPT 3.5 Turbo
+    #[default]
+    GPT3_5Turbo,
+    /// Vicuna 7B 1.1
+    Vicuna7B1_1,
+    /// Vicuna 13B 1.1
+    Vicuna13B1_1,
+    /// GCP "chat-bison-001"
+    ChatBison001,
+}
+
+impl Display for SupportedModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
+            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
+            SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
+        }
+    }
+}
+
+impl Debug for SupportedModel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
+            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
+            SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
+        }
+    }
+}
+
+impl FromStr for SupportedModel {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "gpt-3.5-turbo" => Ok(Self::GPT3_5Turbo),
+            "vicuna-7b-1.1" => Ok(Self::Vicuna7B1_1),
+            "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
+            "chat-bison-001" => Ok(Self::ChatBison001),
+            _ => Err(Error::ModelNotSupported(s.to_string())),
+        }
+    }
+}
+
+#[cfg(feature = "clap")]
+impl clap::ValueEnum for SupportedModel {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[
+            SupportedModel::GPT3_5Turbo,
+            SupportedModel::Vicuna7B1_1,
+            SupportedModel::Vicuna13B1_1,
+            SupportedModel::ChatBison001,
+        ]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        match self {
+            SupportedModel::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
+            SupportedModel::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
+            SupportedModel::Vicuna13B1_1 => {
+                Some(clap::builder::PossibleValue::new("vicuna-13b-1.1"))
+            }
+            SupportedModel::ChatBison001 => {
+                Some(clap::builder::PossibleValue::new("chat-bison-001"))
+            }
+        }
+    }
 }

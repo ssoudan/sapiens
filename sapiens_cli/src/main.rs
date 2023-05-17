@@ -5,11 +5,10 @@ use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
-use sapiens::models::openai::SupportedModel;
-use sapiens::models::Role;
+use sapiens::models::{Role, SupportedModel};
 use sapiens::{
-    run_to_the_end, wrap_observer, InvocationFailureNotification, InvocationSuccessNotification,
-    ModelUpdateNotification, SapiensConfig, StepObserver,
+    models, run_to_the_end, wrap_observer, InvocationFailureNotification,
+    InvocationSuccessNotification, ModelUpdateNotification, SapiensConfig, StepObserver,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -65,6 +64,12 @@ struct Args {
     /// Show the warmup prompt
     #[arg(long)]
     show_warmup_prompt: bool,
+
+    /// Temperature for the model sampling
+    /// min: 0, max: 2
+    /// The higher the temperature, the crazier the text.
+    #[arg(long, default_value_t = 0.)]
+    temperature: f32,
 }
 
 struct ColorFormatter;
@@ -157,14 +162,33 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
-    let api_key = std::env::var("OPENAI_API_KEY").ok();
-    let api_base = std::env::var("OPENAI_API_BASE").ok();
+    let model = match args.model {
+        SupportedModel::ChatBison001 => {
+            let google_api_key =
+                std::env::var("GOOGLE_API_KEY").expect("GOOGLE_API_KEY is not set");
+
+            models::vertex_ai::build(google_api_key, Some(args.temperature))
+                .await
+                .expect("Failed to build model")
+        }
+        _ => {
+            let api_key = std::env::var("OPENAI_API_KEY").ok();
+            let api_base = std::env::var("OPENAI_API_BASE").ok();
+
+            models::openai::build(
+                args.model.clone(),
+                api_key,
+                api_base,
+                Some(args.temperature),
+            )
+            .await
+            .expect("Failed to build model")
+        }
+    };
 
     let task = args.task.clone();
     let config = SapiensConfig {
-        model: sapiens::models::openai::build(args.model.clone(), api_key, api_base, Some(0.))
-            .await
-            .expect("Failed to build model"),
+        model,
         max_steps: args.max_steps,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,

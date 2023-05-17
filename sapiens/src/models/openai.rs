@@ -1,20 +1,20 @@
 //! OpenAI models
 
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::Arc;
 
 pub use async_openai::error::OpenAIError;
 use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest};
 use lazy_static::lazy_static;
-use serde::{Deserialize, Serialize};
 pub use tiktoken_rs::async_openai::num_tokens_from_messages;
 pub use tiktoken_rs::model::get_context_size;
 use tracing::{debug, error};
 
 use crate::context::ChatEntry;
 use crate::models::{
-    ChatEntryTokenNumber, ChatInput, Error, Model, ModelRef, ModelResponse, Role, Usage,
+    ChatEntryTokenNumber, ChatInput, Error, Model, ModelRef, ModelResponse, Role, SupportedModel,
+    Usage,
 };
 /// Build an OpenAI model
 /// # Arguments
@@ -55,72 +55,6 @@ pub struct OpenAI {
     pub temperature: Option<f32>,
     /// The client
     client: async_openai::Client,
-}
-
-/// Supported models
-#[derive(Clone, Serialize, Deserialize, Default)]
-pub enum SupportedModel {
-    /// GPT 3.5 Turbo
-    #[default]
-    GPT3_5Turbo,
-    /// Vicuna 7B 1.1
-    Vicuna7B1_1,
-    /// Vicuna 13B 1.1
-    Vicuna13B1_1,
-}
-
-impl Display for SupportedModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-        }
-    }
-}
-
-impl Debug for SupportedModel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-        }
-    }
-}
-
-impl FromStr for SupportedModel {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "gpt-3.5-turbo" => Ok(Self::GPT3_5Turbo),
-            "vicuna-7b-1.1" => Ok(Self::Vicuna7B1_1),
-            "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
-            _ => Err(Error::ModelNotSupported(s.to_string())),
-        }
-    }
-}
-
-#[cfg(feature = "clap")]
-impl clap::ValueEnum for SupportedModel {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[
-            SupportedModel::GPT3_5Turbo,
-            SupportedModel::Vicuna7B1_1,
-            SupportedModel::Vicuna13B1_1,
-        ]
-    }
-
-    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
-        match self {
-            SupportedModel::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
-            SupportedModel::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
-            SupportedModel::Vicuna13B1_1 => {
-                Some(clap::builder::PossibleValue::new("vicuna-13b-1.1"))
-            }
-        }
-    }
 }
 
 impl OpenAI {
@@ -219,6 +153,7 @@ impl ChatEntryTokenNumber for OpenAI {
                 // FUTURE(ssoudan) compare with the number of tokens from the
                 // response
             }
+            _ => panic!("model not supported"),
         }
     }
 
@@ -226,6 +161,7 @@ impl ChatEntryTokenNumber for OpenAI {
         match &self.model {
             SupportedModel::GPT3_5Turbo => get_context_size(&self.model.to_string()),
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => 2048,
+            _ => panic!("model not supported"),
         }
     }
 }
@@ -367,8 +303,6 @@ impl From<async_openai::types::Usage> for Usage {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
-
     // #[tokio::test]
     // async fn can_connect() {
     //     // let api_base = "https://api.openai.com/v1".to_string();
@@ -402,6 +336,7 @@ mod tests {
     //
     //     println!("{}", response.choices.first().unwrap().message.content);
     // }
+    use super::*;
 
     #[tokio::test]
     async fn test_vicuna_sizes() {

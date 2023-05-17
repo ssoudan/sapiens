@@ -119,7 +119,7 @@ impl ChatHistory {
         }
 
         // loop until we have enough available tokens to complete the task
-        while self.chitchat.len() >= 1 {
+        while !self.chitchat.is_empty() {
             let input = self.make_input();
             let num_tokens = self.config.model.num_tokens(input).await;
             if num_tokens <= self.max_token - self.min_token_for_completion {
