@@ -43,6 +43,8 @@ jobs:
       with:
         toolchain: nightly
         components: clippy
+    - name: Install protoc and protoc-gen-rust
+      uses: arduino/setup-protoc@v1
     - name: Install cargo-all-features
       run: cargo install cargo-all-features
     - name: Checkout
