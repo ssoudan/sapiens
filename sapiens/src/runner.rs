@@ -91,13 +91,27 @@ impl TaskChain {
     /// Does not update the chat history
     #[tracing::instrument(skip(self))]
     pub async fn query_model(&mut self) -> Result<ModelResponse, Error> {
-        let entries = self.chain.chat_history.iter().collect::<Vec<_>>();
-        trace!(min_tokens = self.chain.config.min_tokens_for_completion, max_tokens = self.chain.config.max_tokens, entries = ?entries, "Querying model with {} entries", entries.len());
+        // TODO(ssoudan) support different way of getting to a ModelResponse
+
+        // - 2201.11903 - Chain of thought prompting - 2022
+        // - 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
+        // - 2207.05608 - Inner monologue - Different types of feedbacks - 2022
+        // - 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
+        // - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
+        // - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
+        // - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
+
+        // TODO(ssoudan) should the chat_history be more structured? SARSA-like?
+        // More roles, more type of information, more metadata, etc.?
+
+        let input = self.chain.chat_history.make_input();
+
+        trace!(min_tokens = self.chain.config.min_tokens_for_completion, max_tokens = self.chain.config.max_tokens, input = ?input, "Querying model with {} entries", input.chat.len());
         let res = self
             .chain
             .config
             .model
-            .query(&entries, self.chain.config.max_tokens)
+            .query(input, self.chain.config.max_tokens)
             .await?;
         trace!(res = ?res, "Got model response");
         Ok(res)

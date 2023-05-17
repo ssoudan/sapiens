@@ -1,7 +1,7 @@
 //! Maintain the context for the bot.
 use std::fmt::{Debug, Formatter};
 
-use crate::models::Role;
+use crate::models::{ChatInput, Role};
 use crate::SapiensConfig;
 
 /// A trait for formatting entries for the chat history
@@ -42,14 +42,14 @@ pub struct ChatEntry {
 pub struct ChatHistory {
     /// Config - contains a ref to the model
     config: SapiensConfig,
-    /// The maximum number of tokens we can have in the history for the model
+    /// The maximum number of tokens we can have in the input for the model
     max_token: usize,
     /// The minimum number of tokens we need to complete the task
     min_token_for_completion: usize,
-    /// The 'prompt' (aka messages we want to stay at the top of the history)
-    prompt: Vec<ChatEntry>,
-    /// Num token for the prompt
-    prompt_num_tokens: usize,
+    /// The 'context' - first messages.
+    context: Vec<ChatEntry>,
+    /// The examples
+    examples: Vec<ChatEntry>,
     /// The other messages
     chitchat: Vec<ChatEntry>,
 }
@@ -59,7 +59,6 @@ impl Debug for ChatHistory {
         f.debug_struct("ChatHistory")
             .field("max_token", &self.max_token)
             .field("min_token_for_completion", &self.min_token_for_completion)
-            .field("prompt_num_tokens", &self.prompt_num_tokens)
             .finish()
     }
 }
@@ -71,24 +70,26 @@ impl ChatHistory {
             config,
             max_token,
             min_token_for_completion,
-            prompt: vec![],
-            prompt_num_tokens: 0,
+            context: vec![],
+            examples: vec![],
             chitchat: vec![],
         }
     }
 
+    /// Set the context msg
+    pub fn set_context(&mut self, context: Vec<ChatEntry>) {
+        self.context = context;
+    }
+
     /// add a prompt to the history
-    pub async fn add_prompts(&mut self, prompts: &[(Role, String)]) {
-        for (role, content) in prompts {
+    pub async fn add_examples(&mut self, examples: &[(Role, String)]) {
+        for (role, content) in examples {
             let msg = ChatEntry {
                 role: role.clone(),
                 msg: content.clone(),
             };
-            self.prompt.push(msg);
+            self.examples.push(msg);
         }
-
-        // update the prompt_num_tokens
-        self.prompt_num_tokens = self.config.model.num_tokens(&self.prompt).await;
     }
 
     /// add a message to the chitchat history, and prune the history if needed
@@ -100,37 +101,42 @@ impl ChatHistory {
         self.purge().await
     }
 
+    /// Prepare the input for the model
+    pub(crate) fn make_input(&self) -> ChatInput {
+        ChatInput {
+            context: self.context.clone(),
+            examples: self.examples.clone(),
+            chat: self.chitchat.clone(),
+        }
+    }
+
     /// uses [tiktoken_rs::num_tokens_from_messages] prune
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
     async fn purge(&mut self) -> Result<usize, Error> {
-        // FIXME(ssoudan) preserve the alternance of roles
-
-        let token_budget = self.max_token.saturating_sub(self.prompt_num_tokens);
-
-        if token_budget == 0 {
-            // we can't even fit the prompt
-            self.chitchat = vec![];
-            return Err(Error::PromptTooLong);
+        if self.chitchat.is_empty() {
+            return Ok(0);
         }
 
         // loop until we have enough available tokens to complete the task
-        {
-            while self.chitchat.len() > 1 {
-                let num_tokens = self.config.model.num_tokens(&self.chitchat).await;
-                if num_tokens <= token_budget - self.min_token_for_completion {
-                    return Ok(self.chitchat.len());
-                }
-                self.chitchat.remove(0);
+        while self.chitchat.len() >= 1 {
+            let input = self.make_input();
+            let num_tokens = self.config.model.num_tokens(input).await;
+            if num_tokens <= self.max_token - self.min_token_for_completion {
+                return Ok(self.chitchat.len());
             }
+            // remove oldest message
+            self.chitchat.remove(0);
         }
-
-        Ok(self.chitchat.len())
+        Err(Error::PromptTooLong)
     }
 
     /// iterate over the prompt and chitchat messages
     pub fn iter(&self) -> impl Iterator<Item = &ChatEntry> {
-        self.prompt.iter().chain(self.chitchat.iter())
+        self.context
+            .iter()
+            .chain(self.examples.iter())
+            .chain(self.chitchat.iter())
     }
 
     /// format the history using the given formatter

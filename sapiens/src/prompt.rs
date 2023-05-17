@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::context::ChatHistory;
+use crate::context::{ChatEntry, ChatHistory};
 use crate::models::Role;
 use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::Toolbox;
@@ -164,10 +164,18 @@ impl Manager {
             task: "Sort in ascending order: [2, 3, 1, 4, 5]".to_string(),
         };
 
-        let prompt = [
-            (Role::System, system_prompt.trim().to_string()),
-            (Role::User, warm_up_prompt.trim().to_string()),
-            (Role::Assistant, "Understood.".to_string()),
+        chat_history.set_context(vec![
+            ChatEntry {
+                role: Role::System,
+                msg: system_prompt.trim().to_string(),
+            },
+            ChatEntry {
+                role: Role::User,
+                msg: warm_up_prompt.trim().to_string(),
+            },
+        ]);
+
+        let examples = [
             (Role::User, warmup_task.to_prompt()),
             (Role::Assistant, PROTO_EXCHANGE_2.trim().to_string()),
             (
@@ -179,7 +187,7 @@ impl Manager {
             (Role::Assistant, PROTO_EXCHANGE_4.trim().to_string()),
         ];
 
-        chat_history.add_prompts(&prompt).await;
+        chat_history.add_examples(&examples).await;
     }
 }
 
@@ -259,8 +267,6 @@ impl fmt::Display for Task {
 #[cfg(test)]
 mod tests {
 
-    use crate::context::ChatEntry;
-
     #[tokio::test]
     async fn populate_chat_history() {
         use super::*;
@@ -279,10 +285,10 @@ mod tests {
 
         manager.populate_chat_history(&mut chat_history).await;
 
-        let prompts: Vec<ChatEntry> = chat_history.iter().cloned().collect();
+        // let prompts: Vec<ChatEntry> = chat_history.iter().cloned().collect();
 
         // println!("{:?}", prompts);
-        let tokens = config.model.num_tokens(prompts.as_slice()).await;
+        let tokens = config.model.num_tokens(chat_history.make_input()).await;
 
         assert_eq!(tokens, 985)
     }

@@ -56,10 +56,21 @@ impl Display for Role {
 #[async_trait::async_trait]
 pub trait ChatEntryTokenNumber {
     /// Count the number of tokens in the chat entries
-    async fn num_tokens(&self, entries: &[ChatEntry]) -> usize;
+    async fn num_tokens(&self, input: ChatInput) -> usize;
 
     /// Get the context size
     async fn context_size(&self) -> usize;
+}
+
+/// A chat input
+#[derive(Debug, Clone)]
+pub struct ChatInput {
+    /// The context
+    pub(crate) context: Vec<ChatEntry>,
+    /// The examples
+    pub(crate) examples: Vec<ChatEntry>,
+    /// The chat history
+    pub(crate) chat: Vec<ChatEntry>,
 }
 
 /// A model
@@ -68,7 +79,7 @@ pub trait Model: ChatEntryTokenNumber + Send + Sync {
     /// Query the model
     async fn query(
         &self,
-        entries: &[&ChatEntry],
+        input: ChatInput,
         max_tokens: Option<usize>,
     ) -> Result<ModelResponse, Error>;
 }
