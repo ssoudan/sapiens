@@ -3,16 +3,18 @@
 use core::fmt::Debug;
 use std::sync::Arc;
 
+use gcp_vertex_ai_generative_language::google::ai::generativelanguage::v1beta2::content_filter::BlockedReason;
 use gcp_vertex_ai_generative_language::google::ai::generativelanguage::v1beta2::{
     CountMessageTokensRequest, Example, GenerateMessageRequest, GetModelRequest, Message,
     MessagePrompt,
 };
 use gcp_vertex_ai_generative_language::{Credentials, LanguageClient};
 use tokio::sync::Mutex;
+use tracing::warn;
 
 use crate::models;
 use crate::models::{
-    ChatEntryTokenNumber, ChatInput, Error, ModelRef, ModelResponse, SupportedModel,
+    ChatEntryTokenNumber, ChatInput, Error, ModelRef, ModelResponse, Role, SupportedModel,
 };
 
 /// GCP Vertex AI Generative Language Model
@@ -61,16 +63,16 @@ impl LanguageModel {
 
         let examples = input
             .examples
-            .chunks(2)
-            .map(|x| Example {
+            .iter()
+            .map(|(user, bot)| Example {
                 input: Some(Message {
-                    author: x[0].role.to_string(),
-                    content: x[0].msg.to_string(),
+                    author: Role::User.to_string(),
+                    content: user.msg.to_string(),
                     citation_metadata: None,
                 }),
                 output: Some(Message {
-                    author: x[1].role.to_string(),
-                    content: x[1].msg.to_string(),
+                    author: Role::Assistant.to_string(),
+                    content: bot.msg.to_string(),
                     citation_metadata: None,
                 }),
             })
@@ -159,6 +161,25 @@ impl models::Model for LanguageModel {
             .map_err(gcp_vertex_ai_generative_language::Error::from)?;
 
         let resp = resp.get_ref();
+
+        if resp.candidates.is_empty() {
+            if !resp.filters.is_empty() {
+                resp.filters.iter().for_each(|f| {
+                    if let Some(message) = f.message.as_ref() {
+                        warn!(
+                            "Filter: {:?} - {}",
+                            BlockedReason::from_i32(f.reason),
+                            message
+                        );
+                    } else {
+                        warn!("Filter: {:?}", BlockedReason::from_i32(f.reason));
+                    }
+                });
+                return Err(Error::Filtered);
+            }
+
+            return Err(Error::NoResponseFromModel);
+        }
 
         Ok(ModelResponse {
             msg: resp.candidates[0].content.clone(),

@@ -1,6 +1,8 @@
 //! Maintain the context for the bot.
 use std::fmt::{Debug, Formatter};
 
+use tracing::debug;
+
 use crate::models::{ChatInput, Role};
 use crate::SapiensConfig;
 
@@ -49,7 +51,7 @@ pub struct ChatHistory {
     /// The 'context' - first messages.
     context: Vec<ChatEntry>,
     /// The examples
-    examples: Vec<ChatEntry>,
+    examples: Vec<(ChatEntry, ChatEntry)>,
     /// The other messages
     chitchat: Vec<ChatEntry>,
 }
@@ -82,19 +84,30 @@ impl ChatHistory {
     }
 
     /// add a prompt to the history
-    pub async fn add_examples(&mut self, examples: &[(Role, String)]) {
-        for (role, content) in examples {
-            let msg = ChatEntry {
-                role: role.clone(),
-                msg: content.clone(),
-            };
-            self.examples.push(msg);
-        }
+    pub async fn add_example(&mut self, user: String, bot: String) {
+        let msg_user = ChatEntry {
+            role: Role::User,
+            msg: user,
+        };
+
+        let msg_bot = ChatEntry {
+            role: Role::Assistant,
+            msg: bot,
+        };
+
+        self.examples.push((msg_user, msg_bot));
     }
 
     /// add a message to the chitchat history, and prune the history if needed
     /// returns the number of messages in the chitchat history
     pub async fn add_chitchat(&mut self, entry: ChatEntry) -> Result<usize, Error> {
+        // ensure we don't have two consecutive messages from the same role
+        if let Some(last) = self.chitchat.last() {
+            if last.role == entry.role {
+                self.chitchat.pop();
+            }
+        }
+
         self.chitchat.push(entry);
 
         // prune the history if needed
@@ -118,16 +131,50 @@ impl ChatHistory {
             return Ok(0);
         }
 
-        // loop until we have enough available tokens to complete the task
-        while !self.chitchat.is_empty() {
+        debug!(
+            max_token = self.max_token,
+            min_token_for_completion = self.min_token_for_completion,
+            "purging history"
+        );
+
+        // start by pruning the examples
+        while !self.examples.is_empty() {
             let input = self.make_input();
             let num_tokens = self.config.model.num_tokens(input).await;
+            debug!(
+                max_token = self.max_token,
+                min_token_for_completion = self.min_token_for_completion,
+                len = self.examples.len(),
+                num_tokens,
+                "purging history - examples"
+            );
+
+            if num_tokens <= self.max_token - self.min_token_for_completion {
+                return Ok(self.chitchat.len());
+            }
+            // remove oldest message
+            self.examples.remove(0);
+        }
+
+        // loop until we have enough available tokens to complete the task
+        while self.chitchat.len() > 1 {
+            let input = self.make_input();
+            let num_tokens = self.config.model.num_tokens(input).await;
+            debug!(
+                max_token = self.max_token,
+                min_token_for_completion = self.min_token_for_completion,
+                len = self.chitchat.len(),
+                num_tokens,
+                "purging history - loop"
+            );
+
             if num_tokens <= self.max_token - self.min_token_for_completion {
                 return Ok(self.chitchat.len());
             }
             // remove oldest message
             self.chitchat.remove(0);
         }
+
         Err(Error::PromptTooLong)
     }
 
@@ -135,7 +182,7 @@ impl ChatHistory {
     pub fn iter(&self) -> impl Iterator<Item = &ChatEntry> {
         self.context
             .iter()
-            .chain(self.examples.iter())
+            .chain(self.examples.iter().flat_map(|(a, b)| vec![a, b]))
             .chain(self.chitchat.iter())
     }
 

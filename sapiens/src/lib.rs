@@ -50,7 +50,7 @@ use crate::tools::TerminationMessage;
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
     /// Failed to add to the chat history
-    #[error("Failed to add to the chat history")]
+    #[error("Failed to add to the chat history: {0}")]
     ChatHistoryError(#[from] context::Error),
     /// Model evaluation error
     #[error("Model evaluation error: {0}")]
@@ -91,7 +91,7 @@ impl Default for SapiensConfig {
         Self {
             model: Arc::new(Box::<OpenAI>::default()),
             max_steps: 10,
-            min_tokens_for_completion: 512,
+            min_tokens_for_completion: 256,
             max_tokens: None,
         }
     }

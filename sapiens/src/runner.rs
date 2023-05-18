@@ -106,7 +106,12 @@ impl TaskChain {
 
         let input = self.chain.chat_history.make_input();
 
-        trace!(min_tokens = self.chain.config.min_tokens_for_completion, max_tokens = self.chain.config.max_tokens, input = ?input, "Querying model with {} entries", input.chat.len());
+        trace!(
+            min_tokens = self.chain.config.min_tokens_for_completion,
+            max_tokens = self.chain.config.max_tokens,
+            "Querying model with {} entries",
+            input.chat.len()
+        );
         let res = self
             .chain
             .config

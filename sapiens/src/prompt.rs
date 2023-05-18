@@ -175,19 +175,17 @@ impl Manager {
             },
         ]);
 
-        let examples = [
-            (Role::User, warmup_task.to_prompt()),
-            (Role::Assistant, PROTO_EXCHANGE_2.trim().to_string()),
-            (
-                Role::User,
+        chat_history
+            .add_example(warmup_task.to_prompt(), PROTO_EXCHANGE_2.trim().to_string())
+            .await;
+        chat_history
+            .add_example(
                 (format!("{}{}", PROTO_EXCHANGE_3, warmup_task.to_prompt()))
                     .trim()
                     .to_string(),
-            ),
-            (Role::Assistant, PROTO_EXCHANGE_4.trim().to_string()),
-        ];
-
-        chat_history.add_examples(&examples).await;
+                PROTO_EXCHANGE_4.trim().to_string(),
+            )
+            .await;
     }
 }
 
@@ -216,7 +214,7 @@ impl Task {
         e: &ToolUseError,
     ) -> String {
         format!(
-            "# Action {} failed with:\n{:?}\nWhat was incorrect in previous response?\n{}",
+            "# Action {} failed with:\n{:?}\nSomething was incorrect in previous response.\n{}",
             tool_name.as_ref(),
             e,
             self.to_prompt()
@@ -226,7 +224,7 @@ impl Task {
     /// Create the prompt to react to invalid action specification
     pub(crate) fn invalid_action_prompt(&self, e: &InvocationError) -> String {
         format!(
-            "# No valid Action found:\n{:?}\nWhat was incorrect in previous response?\n{}",
+            "# No valid Action found:\n{:?}\nSomething was incorrect in previous response.\n{}",
             e,
             self.to_prompt()
         )

@@ -188,7 +188,7 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        debug!(code, "Running code");
+        trace!("Running code:\n{}", code);
 
         // FIXME(ssoudan) got to set a limit on the execution time
         // https://docs.python.org/3/library/asyncio-task.html#timeouts

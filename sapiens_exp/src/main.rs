@@ -45,7 +45,7 @@ struct Args {
     max_steps: usize,
 
     /// Minimum tokens for completion
-    #[arg(long, default_value_t = 512)]
+    #[arg(long, default_value_t = 256)]
     min_tokens_for_completion: usize,
 
     /// Max tokens for the model to generate

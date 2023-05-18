@@ -27,6 +27,9 @@ pub enum Error {
     /// Vertex AI error
     #[error("Vertex AI error: {0}")]
     VertexAIError(#[from] gcp_vertex_ai_generative_language::Error),
+    /// Filtered output
+    #[error("Filtered output")]
+    Filtered,
 }
 
 /// Roles in the conversation
@@ -72,7 +75,7 @@ pub struct ChatInput {
     /// The context
     pub(crate) context: Vec<ChatEntry>,
     /// The examples
-    pub(crate) examples: Vec<ChatEntry>,
+    pub(crate) examples: Vec<(ChatEntry, ChatEntry)>,
     /// The chat history
     pub(crate) chat: Vec<ChatEntry>,
 }

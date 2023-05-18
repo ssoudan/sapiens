@@ -188,10 +188,16 @@ impl OpenAI {
             name: None,
         });
 
-        for example in input.examples {
+        for (user, bot) in input.examples {
             messages.push(ChatCompletionRequestMessage {
-                role: example.role.into(),
-                content: example.msg,
+                role: Role::User.into(),
+                content: user.msg,
+                name: None,
+            });
+
+            messages.push(ChatCompletionRequestMessage {
+                role: Role::Assistant.into(),
+                content: bot.msg,
                 name: None,
             });
         }
