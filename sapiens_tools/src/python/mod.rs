@@ -12,7 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use tracing::debug;
+use tracing::trace;
 
 /// Conversion tools
 pub(crate) mod utils;
