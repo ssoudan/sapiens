@@ -199,10 +199,27 @@ pub struct Step {
     observer: WeakStepObserver,
 }
 
+// TODO(ssoudan) support more generic Steps
+
 impl Step {
     /// Run the task for a single step
-    async fn step(mut self) -> Result<StepOrStop, Error> {
-        debug!("Running step");
+    async fn step(mut self) -> Result<TaskState, Error> {
+        // TODO(ssoudan) support different types of steps
+
+        // - OODA - Observe, Orient, Decide, Act
+        //  - in one shot
+        //  - in several steps
+        // - 2201.11903 - Chain of thought prompting - 2022
+        // - 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
+        // - 2207.05608 - Inner monologue - Different types of feedbacks - 2022
+        // - 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
+        // - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
+        // - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
+        // - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
+
+        // TODO(ssoudan) should the chat_history be more structured? SARSA-like?
+        // More roles, more type of information, more metadata, etc.?
+
         let model_response = self.task_chain.query_model().await?;
 
         // Wrap the response as the chat history entry
@@ -336,14 +353,14 @@ impl Step {
                     .await;
             }
 
-            return Ok(StepOrStop::Stop {
+            return Ok(TaskState::Stop {
                 stop: Stop {
                     termination_messages,
                 },
             });
         }
 
-        Ok(StepOrStop::Step { step: self })
+        Ok(TaskState::Step { step: self })
     }
 }
 
@@ -353,8 +370,8 @@ pub struct Stop {
     pub termination_messages: Vec<TerminationMessage>,
 }
 
-/// A step or the task is done
-pub enum StepOrStop {
+/// The state machine of a task
+pub enum TaskState {
     /// The task is not done yet
     Step {
         /// The actual step task
@@ -367,7 +384,7 @@ pub enum StepOrStop {
     },
 }
 
-/// Wrap an observer into the a [`StrongStepObserver<O>`] = [`Rc<Mutex<O>>`]
+/// Wrap an observer into the a [`StrongStepObserver<O>`] = [`Arc<Mutex<O>>`]
 ///
 /// Use [`Arc::downgrade`] to get a [`Weak<Mutex<dyn StepObserver>>`] and pass
 /// it to [`run_to_the_end`] for example.
@@ -387,8 +404,8 @@ pub struct VoidTaskProgressUpdateObserver;
 #[async_trait::async_trait]
 impl StepObserver for VoidTaskProgressUpdateObserver {}
 
-impl StepOrStop {
-    /// Create a new [`StepOrStop`] for a `task`.
+impl TaskState {
+    /// Create a new [`TaskState`] for a `task`.
     pub async fn new(chain: Chain, task: String) -> Result<Self, Error> {
         let task_chain = chain.start_task(task).await?;
 
@@ -396,7 +413,7 @@ impl StepOrStop {
 
         let observer = Arc::downgrade(&observer);
 
-        Ok(StepOrStop::Step {
+        Ok(TaskState::Step {
             step: Step {
                 task_chain,
                 observer,
@@ -405,8 +422,8 @@ impl StepOrStop {
     }
 }
 
-impl StepOrStop {
-    /// Create a new [`StepOrStop`] for a `task`.
+impl TaskState {
+    /// Create a new [`TaskState`] for a `task`.
     ///
     /// The `observer` will be called when the task starts and when a step is
     /// completed - either successfully or not. The `observer` will be called
@@ -431,7 +448,7 @@ impl StepOrStop {
                 .await;
         }
 
-        Ok(StepOrStop::Step {
+        Ok(TaskState::Step {
             step: Step {
                 task_chain,
                 observer,
@@ -444,10 +461,10 @@ impl StepOrStop {
         debug!("run task for {} steps", max_steps);
         for _ in 0..max_steps {
             match self {
-                StepOrStop::Step { step } => {
+                TaskState::Step { step } => {
                     self = step.step().await?;
                 }
-                StepOrStop::Stop { stop } => {
+                TaskState::Stop { stop } => {
                     return Ok(stop);
                 }
             }
@@ -459,23 +476,23 @@ impl StepOrStop {
     /// Run the task for a single step
     pub async fn step(self) -> Result<Self, Error> {
         match self {
-            StepOrStop::Step { step } => step.step().await,
-            StepOrStop::Stop { stop } => Ok(StepOrStop::Stop { stop }),
+            TaskState::Step { step } => step.step().await,
+            TaskState::Stop { stop } => Ok(TaskState::Stop { stop }),
         }
     }
 
     /// is the task done?
     pub fn is_done(&self) -> Option<Vec<TerminationMessage>> {
         match self {
-            StepOrStop::Step { step: _ } => None,
-            StepOrStop::Stop { stop } => Some(stop.termination_messages.clone()),
+            TaskState::Step { step: _ } => None,
+            TaskState::Stop { stop } => Some(stop.termination_messages.clone()),
         }
     }
 }
 
 /// Run until the task is done or the maximum number of steps is reached
 ///
-/// See ['StepOrStop::new'], [`StepOrStop::step`] and ['StepOrStop::run] for
+/// See [`TaskState::new`], [`TaskState::step`] and [`TaskState::run`] for
 /// more flexible ways to run a task
 #[tracing::instrument(skip(toolbox, observer, config))]
 pub async fn run_to_the_end(
@@ -487,9 +504,9 @@ pub async fn run_to_the_end(
     let max_steps = config.max_steps;
     let chain = Chain::new(toolbox, config).await;
 
-    let step_or_stop = StepOrStop::with_observer(chain, task, observer).await?;
+    let task_state = TaskState::with_observer(chain, task, observer).await?;
 
-    let stop = step_or_stop.run(max_steps).await?;
+    let stop = task_state.run(max_steps).await?;
 
     Ok(stop.termination_messages)
 }

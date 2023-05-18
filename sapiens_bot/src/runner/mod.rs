@@ -9,7 +9,7 @@ use sapiens::runner::Chain;
 use sapiens::tools::TerminationMessage;
 use sapiens::{
     models, wrap_observer, Error, InvocationFailureNotification, InvocationSuccessNotification,
-    ModelUpdateNotification, SapiensConfig, StepObserver, StepOrStop, WeakStepObserver,
+    ModelUpdateNotification, SapiensConfig, StepObserver, TaskState, WeakStepObserver,
 };
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
@@ -80,9 +80,9 @@ impl SapiensBot {
         &mut self,
         task: String,
         observer: WeakStepObserver,
-    ) -> Result<StepOrStop, Error>
+    ) -> Result<TaskState, Error>
 where {
-        StepOrStop::with_observer(self.chain.clone(), task, observer).await
+        TaskState::with_observer(self.chain.clone(), task, observer).await
     }
 }
 
@@ -255,12 +255,12 @@ impl Runner {
                     let mut step = step;
                     loop {
                         match step.step().await {
-                            Ok(s @ StepOrStop::Step { .. }) => {
+                            Ok(s @ TaskState::Step { .. }) => {
                                 step = s;
                                 // update is going to come through the handler
                                 debug!("Step for: {}", task);
                             }
-                            Ok(StepOrStop::Stop { stop }) => {
+                            Ok(TaskState::Stop { stop }) => {
                                 info!("Task finished: {}", task);
 
                                 let messages = stop

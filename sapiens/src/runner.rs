@@ -23,10 +23,7 @@ pub struct Chain {
 impl Debug for Chain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Chain")
-            // .field("toolbox", &self.toolbox)
             .field("config", &self.config)
-            // .field("openai_client", &self.openai_client)
-            // .field("chat_history", &self.chat_history)
             .finish()
     }
 }
@@ -91,19 +88,6 @@ impl TaskChain {
     /// Does not update the chat history
     #[tracing::instrument(skip(self))]
     pub async fn query_model(&mut self) -> Result<ModelResponse, Error> {
-        // TODO(ssoudan) support different way of getting to a ModelResponse
-
-        // - 2201.11903 - Chain of thought prompting - 2022
-        // - 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
-        // - 2207.05608 - Inner monologue - Different types of feedbacks - 2022
-        // - 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
-        // - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
-        // - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
-        // - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
-
-        // TODO(ssoudan) should the chat_history be more structured? SARSA-like?
-        // More roles, more type of information, more metadata, etc.?
-
         let input = self.chain.chat_history.make_input();
 
         trace!(
