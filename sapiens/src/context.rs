@@ -3,6 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use tracing::debug;
 
+use crate::chain::Message;
 use crate::models::{ChatInput, Role};
 use crate::SapiensConfig;
 
@@ -123,6 +124,11 @@ impl ChatHistory {
         }
     }
 
+    /// Is the chitchat history empty?
+    pub(crate) fn is_chitchat_empty(&self) -> bool {
+        self.chitchat.is_empty()
+    }
+
     /// uses [tiktoken_rs::num_tokens_from_messages] prune
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
@@ -195,13 +201,6 @@ impl ChatHistory {
             .map(|msg| formatter.format(msg))
             .collect::<Vec<_>>()
     }
-
-    /// dump the history
-    pub fn dump(&self) -> ChatHistoryDump {
-        ChatHistoryDump {
-            messages: self.iter().cloned().collect(),
-        }
-    }
 }
 
 impl From<&ChatHistory> for Vec<ChatEntry> {
@@ -211,16 +210,22 @@ impl From<&ChatHistory> for Vec<ChatEntry> {
 }
 
 /// A dump of the chat history
-pub struct ChatHistoryDump {
+pub struct ContextDump {
     /// the messages
-    pub messages: Vec<ChatEntry>,
+    pub messages: Vec<Message>,
 }
 
-impl ChatHistoryDump {
+/// A formatter for a chat entry
+pub trait MessageFormatter {
+    /// format the message
+    fn format(&self, msg: &Message) -> String;
+}
+
+impl ContextDump {
     /// format the history using the given formatter
     pub fn format<T>(&self, formatter: &T) -> Vec<String>
     where
-        T: ChatEntryFormatter + ?Sized,
+        T: MessageFormatter + ?Sized,
     {
         self.messages
             .iter()

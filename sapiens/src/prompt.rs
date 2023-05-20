@@ -144,7 +144,7 @@ impl Manager {
     }
 
     /// Create the prompt for the task
-    pub(crate) fn build_task_prompt(&self, task: &str) -> Task {
+    pub fn build_task_prompt(&self, task: &str) -> Task {
         Task {
             task: task.to_string(),
         }
@@ -199,7 +199,7 @@ pub struct Task {
 
 impl Task {
     /// Create the prompt for the task
-    fn to_prompt(&self) -> String {
+    pub fn to_prompt(&self) -> String {
         // NOTE(ssoudan) what about bringing focus on the answer before the tool result?
         format!(
             "# Your turn\nOriginal question: {}\nDo you have the answer? Use the Conclude Tool to terminate the task.\nObservations, Orientation, Decision, The ONLY Action?",
@@ -269,7 +269,7 @@ mod tests {
     async fn populate_chat_history() {
         use super::*;
         use crate::context::ChatHistory;
-        use crate::toolbox::Toolbox;
+        use crate::Toolbox;
 
         let toolbox = Toolbox::default();
         let manager = Manager::new(toolbox);

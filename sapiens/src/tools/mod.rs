@@ -34,7 +34,7 @@ pub trait Describe {
 }
 
 /// Format of [`Tools`] input and output
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Format {
     /// Fields of the format
     pub fields: Vec<FieldFormat>,
@@ -88,7 +88,7 @@ impl ToolDescription {
 }
 
 /// Error while using a tool
-#[derive(Debug, thiserror::Error, Clone)]
+#[derive(Debug, thiserror::Error, Clone, Serialize, Deserialize)]
 pub enum ToolUseError {
     /// Tool not found
     #[error("Tool not found: {0}")]

@@ -4,11 +4,12 @@ use std::sync::Arc;
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
+use sapiens::chain::Message;
+use sapiens::context::{ChatEntry, ChatEntryFormatter, ContextDump, MessageFormatter};
 use sapiens::models::{Role, SupportedModel};
 use sapiens::{
-    models, run_to_the_end, wrap_observer, InvocationFailureNotification,
-    InvocationSuccessNotification, ModelUpdateNotification, SapiensConfig, StepObserver,
+    models, run_to_the_end, wrap_observer, InvocationResultNotification, ModelNotification,
+    RuntimeObserver, SapiensConfig,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -86,6 +87,12 @@ impl ChatEntryFormatter for ColorFormatter {
     }
 }
 
+impl MessageFormatter for ColorFormatter {
+    fn format(&self, msg: &Message) -> String {
+        msg.to_string().yellow().to_string()
+    }
+}
+
 #[derive(Debug)]
 struct Observer {
     /// Whether to show the warm-up prompt
@@ -93,8 +100,8 @@ struct Observer {
 }
 
 #[async_trait::async_trait]
-impl StepObserver for Observer {
-    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
+impl RuntimeObserver for Observer {
+    async fn on_start(&mut self, chat_history: ContextDump) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
             let msgs = chat_history.format(&formatter);
@@ -106,40 +113,29 @@ impl StepObserver for Observer {
         } else {
             // Show only the last message
             let last_msg = chat_history.messages.last().unwrap();
-            let msg = ColorFormatter.format(last_msg);
+            let msg = MessageFormatter::format(&ColorFormatter, last_msg);
             println!("{}", msg);
             println!("=============");
         }
     }
 
-    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
-        let msg = ColorFormatter.format(&event.chat_entry);
+    async fn on_model_update(&mut self, event: ModelNotification) {
+        let msg = ChatEntryFormatter::format(&ColorFormatter, &event.chat_entry);
         println!("{}", msg);
         println!("=============");
     }
 
-    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
-        match event.res {
-            Ok(tool_output) => {
-                let msg = ColorFormatter.format(&tool_output);
-                println!("{}", msg);
+    async fn on_invocation_result(&mut self, event: InvocationResultNotification) {
+        match event {
+            InvocationResultNotification::InvocationSuccess(i) => {
+                println!("{}", i.result.green());
             }
-            Err(e) => {
-                println!("{}", e.to_string().red());
+            InvocationResultNotification::InvocationFailure(i) => {
+                println!("{}", i.extracted_input.magenta());
+                println!("{}", i.e.to_string().red());
             }
-        }
-
-        println!("=============");
-    }
-
-    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
-        match event.res {
-            Ok(tool_output) => {
-                let msg = tool_output.msg.yellow();
-                println!("{}", msg);
-            }
-            Err(e) => {
-                println!("{}", e.to_string().red());
+            InvocationResultNotification::InvalidInvocation(i) => {
+                println!("{}", i.e.to_string().yellow());
             }
         }
 
@@ -212,7 +208,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let w_observer = Arc::downgrade(&observer);
 
-    let termination_messages = run_to_the_end(toolbox, config, task, w_observer).await;
+    let termination_messages = run_to_the_end(config, toolbox, task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());

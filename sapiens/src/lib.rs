@@ -25,26 +25,24 @@ pub mod prompt;
 /// Toolbox for sapiens
 pub mod tools;
 
-/// Runner for sapiens
-pub mod runner;
-
 /// Language models
 pub mod models;
+
+/// Execution chains
+pub mod chain;
 
 use std::fmt::Debug;
 use std::sync::{Arc, Weak};
 
-use runner::Chain;
 use tokio::sync::Mutex;
-use tools::toolbox;
-use tracing::debug;
 
-use crate::context::{ChatEntry, ChatHistoryDump};
+use crate::chain::{Message, OODAChain};
+use crate::context::{ChatEntry, ContextDump};
 use crate::models::openai::OpenAI;
 use crate::models::{ModelRef, ModelResponse, Role, Usage};
-use crate::runner::TaskChain;
-use crate::tools::toolbox::InvokeResult;
-use crate::tools::TerminationMessage;
+use crate::tools::invocation::InvocationError;
+use crate::tools::toolbox::{InvokeResult, Toolbox};
+use crate::tools::{TerminationMessage, ToolUseError};
 
 /// The error type for the bot
 #[derive(thiserror::Error, Debug)]
@@ -61,6 +59,9 @@ pub enum Error {
     /// The response is too long
     #[error("The response is too long: {0}")]
     ActionResponseTooLong(String),
+    /// Error in the chain
+    #[error("Chain error: {0}")]
+    ChainError(#[from] chain::Error),
 }
 
 /// Configuration for the bot
@@ -99,14 +100,14 @@ impl Default for SapiensConfig {
 
 /// An update from the model
 #[derive(Debug, Clone)]
-pub struct ModelUpdateNotification {
+pub struct ModelNotification {
     /// The message from the model
     pub chat_entry: ChatEntry,
     /// The number of tokens used by the model
     pub usage: Option<Usage>,
 }
 
-impl From<ModelResponse> for ModelUpdateNotification {
+impl From<ModelResponse> for ModelNotification {
     fn from(res: ModelResponse) -> Self {
         Self {
             chat_entry: ChatEntry {
@@ -118,48 +119,101 @@ impl From<ModelResponse> for ModelUpdateNotification {
     }
 }
 
+/// A message from a scheduler
+#[derive(Debug, Clone)]
+pub struct MessageNotification {
+    /// The message from the scheduler
+    pub message: Message,
+}
+
+impl From<Message> for MessageNotification {
+    fn from(message: Message) -> Self {
+        Self { message }
+    }
+}
+
+/// Notification of the result of a tool invocation
+pub enum InvocationResultNotification {
+    /// Invocation success notification
+    InvocationSuccess(InvocationSuccessNotification),
+    /// Invocation failure notification
+    InvocationFailure(InvocationFailureNotification),
+    /// Invalid invocation notification
+    InvalidInvocation(InvalidInvocationNotification),
+}
+
+impl From<InvokeResult> for InvocationResultNotification {
+    fn from(res: InvokeResult) -> Self {
+        match res {
+            InvokeResult::NoInvocationsFound { e } => {
+                InvocationResultNotification::InvalidInvocation(InvalidInvocationNotification {
+                    e,
+                    invocation_count: 0,
+                })
+            }
+            InvokeResult::NoValidInvocationsFound {
+                e,
+                invocation_count,
+            } => InvocationResultNotification::InvalidInvocation(InvalidInvocationNotification {
+                e,
+                invocation_count,
+            }),
+            InvokeResult::Success {
+                invocation_count,
+                tool_name,
+                extracted_input,
+                result,
+            } => InvocationResultNotification::InvocationSuccess(InvocationSuccessNotification {
+                invocation_count,
+                tool_name,
+                extracted_input,
+                result,
+            }),
+            InvokeResult::Error {
+                invocation_count,
+                tool_name,
+                extracted_input,
+                e,
+            } => InvocationResultNotification::InvocationFailure(InvocationFailureNotification {
+                invocation_count,
+                tool_name,
+                extracted_input,
+                e,
+            }),
+        }
+    }
+}
+
 /// Invocation success notification
 pub struct InvocationSuccessNotification {
+    /// The number of invocation blocks in the message
+    pub invocation_count: usize,
     /// The tool name
     pub tool_name: String,
-    /// The input
-    pub assistant_message: ChatEntry,
-    /// The result
-    pub res: Result<ChatEntry, Error>,
-    /// The number of tokens used by the model
-    pub usage: Option<Usage>,
-    /// Number of invocation blocks in the message
-    pub available_invocation_count: usize,
     /// The input that was extracted from the message and passed to `tool_name`
     pub extracted_input: String,
+    /// The result
+    pub result: String,
 }
 
 /// Invocation failure notification
 pub struct InvocationFailureNotification {
+    /// Number of invocation  blocks in the message
+    pub invocation_count: usize,
     /// The tool name
     pub tool_name: String,
-    /// The input
-    pub assistant_message: ChatEntry,
-    /// The result
-    pub res: Result<ChatEntry, Error>,
-    /// The number of tokens used by the model
-    pub usage: Option<Usage>,
-    /// Number of invocation blocks in the message
-    pub available_invocation_count: usize,
     /// The input that was extracted from the message and passed to `tool_name`
     pub extracted_input: String,
+    /// The result
+    pub e: ToolUseError,
 }
 
 /// Invalid invocation notification
 pub struct InvalidInvocationNotification {
-    /// The input
-    pub assistant_message: ChatEntry,
     /// The result
-    pub res: Result<ChatEntry, Error>,
-    /// The number of tokens used by the model
-    pub usage: Option<Usage>,
+    pub e: InvocationError,
     /// Number of invocation blocks in the message
-    pub available_invocation_count: usize,
+    pub invocation_count: usize,
 }
 
 /// Termination notification
@@ -170,179 +224,64 @@ pub struct TerminationNotification {
 
 /// Observer for the step progresses
 #[async_trait::async_trait]
-pub trait StepObserver: Send {
+pub trait RuntimeObserver: Send {
     /// Called when the task is submitted
     async fn on_task(&mut self, _task: &str) {}
 
     /// Called on start
-    async fn on_start(&mut self, _chat_history: ChatHistoryDump) {}
+    async fn on_start(&mut self, _context: ContextDump) {}
 
-    /// Called when the model updates the chat history
-    async fn on_model_update(&mut self, _event: ModelUpdateNotification) {}
+    /// Called when the model returns something
+    async fn on_model_update(&mut self, _event: ModelNotification) {}
+
+    /// Called when the scheduler has selected a message
+    async fn on_message(&mut self, _event: MessageNotification) {}
 
     /// Called when the tool invocation was successful
-    async fn on_invocation_success(&mut self, _event: InvocationSuccessNotification) {}
-
-    /// Called when no valid tool invocation was found
-    async fn on_invalid_invocation(&mut self, _event: InvalidInvocationNotification) {}
-
-    /// Called when the tool invocation failed
-    async fn on_invocation_failure(&mut self, _event: InvocationFailureNotification) {}
+    async fn on_invocation_result(&mut self, _event: InvocationResultNotification) {}
 
     /// Called when the task is done
     async fn on_termination(&mut self, _event: TerminationNotification) {}
 }
 
-/// A step in the task
-pub struct Step {
-    task_chain: TaskChain,
-    observer: WeakStepObserver,
+/// Wrap an observer into the a [`StrongRuntimeObserver<O>`] = [`Arc<Mutex<O>>`]
+///
+/// Use [`Arc::downgrade`] to get a [`Weak<Mutex<dyn RuntimeObserver>>`] and
+/// pass it to [`run_to_the_end`] for example.
+pub fn wrap_observer<O: RuntimeObserver + 'static>(observer: O) -> StrongRuntimeObserver<O> {
+    Arc::new(Mutex::new(observer))
 }
 
-// TODO(ssoudan) support more generic Steps
+/// A strong reference to the observer
+pub type StrongRuntimeObserver<O> = Arc<Mutex<O>>;
+
+/// A weak reference to the observer
+pub type WeakRuntimeObserver = Weak<Mutex<dyn RuntimeObserver>>;
+
+/// A void observer
+pub struct VoidTaskProgressUpdateObserver;
+
+#[cfg(test)]
+fn void_observer() -> StrongRuntimeObserver<VoidTaskProgressUpdateObserver> {
+    wrap_observer(VoidTaskProgressUpdateObserver)
+}
+
+#[async_trait::async_trait]
+impl RuntimeObserver for VoidTaskProgressUpdateObserver {}
+
+/// A step in the task
+pub struct Step {
+    task_chain: OODAChain,
+    observer: WeakRuntimeObserver,
+}
 
 impl Step {
     /// Run the task for a single step
     async fn step(mut self) -> Result<TaskState, Error> {
-        // TODO(ssoudan) support different types of steps
-
-        // - OODA - Observe, Orient, Decide, Act
-        //  - in one shot
-        //  - in several steps
-        // - 2201.11903 - Chain of thought prompting - 2022
-        // - 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
-        // - 2207.05608 - Inner monologue - Different types of feedbacks - 2022
-        // - 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
-        // - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
-        // - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
-        // - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
-
-        // TODO(ssoudan) should the chat_history be more structured? SARSA-like?
-        // More roles, more type of information, more metadata, etc.?
-
-        let model_response = self.task_chain.query_model().await?;
-
-        // Wrap the response as the chat history entry
-        let model_update = ModelUpdateNotification::from(model_response);
-
-        let usage = model_update.usage.clone();
-
-        // Show the message from the assistant
-        if let Some(observer) = self.observer.upgrade() {
-            observer
-                .lock()
-                .await
-                .on_model_update(model_update.clone())
-                .await;
-        }
-
-        // pass the message to the tools and get the response
-        let assistant_message = model_update.chat_entry;
-        let resp = self.task_chain.invoke_tool(&assistant_message.msg).await;
-
-        // report on the tool invocation
-        match resp {
-            InvokeResult::NoInvocationsFound { e } => {
-                let res = self
-                    .task_chain
-                    .on_invocation_failure(assistant_message.clone(), e)
-                    .await;
-                if let Some(observer) = self.observer.upgrade() {
-                    observer
-                        .lock()
-                        .await
-                        .on_invalid_invocation(InvalidInvocationNotification {
-                            assistant_message,
-                            res,
-                            usage,
-                            available_invocation_count: 0,
-                        })
-                        .await;
-                }
-            }
-            InvokeResult::NoValidInvocationsFound {
-                e,
-                invocation_count: available_invocation_count,
-            } => {
-                let res = self
-                    .task_chain
-                    .on_invocation_failure(assistant_message.clone(), e)
-                    .await;
-                if let Some(observer) = self.observer.upgrade() {
-                    observer
-                        .lock()
-                        .await
-                        .on_invalid_invocation(InvalidInvocationNotification {
-                            assistant_message,
-                            res,
-                            usage,
-                            available_invocation_count,
-                        })
-                        .await;
-                }
-            }
-            InvokeResult::Error {
-                invocation_count: available_invocation_count,
-                tool_name,
-                extracted_input,
-                e,
-            } => {
-                let res = self
-                    .task_chain
-                    .on_tool_failure(&tool_name, assistant_message.clone(), e)
-                    .await;
-
-                if let Some(observer) = self.observer.upgrade() {
-                    observer
-                        .lock()
-                        .await
-                        .on_invocation_failure(InvocationFailureNotification {
-                            assistant_message,
-                            tool_name,
-                            res,
-                            usage,
-                            available_invocation_count,
-                            extracted_input,
-                        })
-                        .await;
-                }
-            }
-            InvokeResult::Success {
-                available_invocation_count,
-                tool_name,
-                extracted_input,
-                result,
-            } => {
-                // Got a response from the tool but the task is not done yet
-                let res = self
-                    .task_chain
-                    .on_tool_success(
-                        &tool_name,
-                        available_invocation_count,
-                        assistant_message.clone(),
-                        result,
-                    )
-                    .await;
-
-                if let Some(observer) = self.observer.upgrade() {
-                    observer
-                        .lock()
-                        .await
-                        .on_invocation_success(InvocationSuccessNotification {
-                            assistant_message,
-                            tool_name,
-                            res,
-                            usage,
-                            available_invocation_count,
-                            extracted_input,
-                        })
-                        .await;
-                }
-            }
-        }
+        let termination_messages = self.task_chain.step().await?;
 
         // check if the task is done
-        if let Some(termination_messages) = self.task_chain.is_terminal().await {
+        if !termination_messages.is_empty() {
             if let Some(observer) = self.observer.upgrade() {
                 observer
                     .lock()
@@ -384,34 +323,15 @@ pub enum TaskState {
     },
 }
 
-/// Wrap an observer into the a [`StrongStepObserver<O>`] = [`Arc<Mutex<O>>`]
-///
-/// Use [`Arc::downgrade`] to get a [`Weak<Mutex<dyn StepObserver>>`] and pass
-/// it to [`run_to_the_end`] for example.
-pub fn wrap_observer<O: StepObserver + 'static>(observer: O) -> StrongStepObserver<O> {
-    Arc::new(Mutex::new(observer))
-}
-
-/// A strong reference to the observer
-pub type StrongStepObserver<O> = Arc<Mutex<O>>;
-
-/// A weak reference to the observer
-pub type WeakStepObserver = Weak<Mutex<dyn StepObserver>>;
-
-/// A void observer
-pub struct VoidTaskProgressUpdateObserver;
-
-#[async_trait::async_trait]
-impl StepObserver for VoidTaskProgressUpdateObserver {}
-
 impl TaskState {
     /// Create a new [`TaskState`] for a `task`.
-    pub async fn new(chain: Chain, task: String) -> Result<Self, Error> {
-        let task_chain = chain.start_task(task).await?;
-
+    pub async fn new(config: SapiensConfig, toolbox: Toolbox, task: String) -> Result<Self, Error> {
         let observer = wrap_observer(VoidTaskProgressUpdateObserver {});
-
         let observer = Arc::downgrade(&observer);
+
+        let task_chain = OODAChain::new(config, toolbox, observer.clone())
+            .await?
+            .with_task(task);
 
         Ok(TaskState::Step {
             step: Step {
@@ -420,32 +340,29 @@ impl TaskState {
             },
         })
     }
-}
 
-impl TaskState {
     /// Create a new [`TaskState`] for a `task`.
     ///
     /// The `observer` will be called when the task starts and when a step is
     /// completed - either successfully or not. The `observer` will be called
     /// with the latest chat history element. It is also called on error.
     pub async fn with_observer(
-        chain: Chain,
+        config: SapiensConfig,
+        toolbox: Toolbox,
         task: String,
-        observer: WeakStepObserver,
+        observer: WeakRuntimeObserver,
     ) -> Result<Self, Error> {
         if let Some(observer) = observer.upgrade() {
             observer.lock().await.on_task(&task).await;
         }
 
-        let task_chain = chain.start_task(task).await?;
+        let task_chain = OODAChain::new(config, toolbox, observer.clone())
+            .await?
+            .with_task(task);
 
         // call the observer
         if let Some(observer) = observer.upgrade() {
-            observer
-                .lock()
-                .await
-                .on_start(task_chain.chat_history())
-                .await;
+            observer.lock().await.on_start(task_chain.dump()).await;
         }
 
         Ok(TaskState::Step {
@@ -456,10 +373,9 @@ impl TaskState {
         })
     }
 
-    /// Run the task for the given number of steps
-    pub async fn run(mut self, max_steps: usize) -> Result<Stop, Error> {
-        debug!("run task for {} steps", max_steps);
-        for _ in 0..max_steps {
+    /// Run the task until it is done
+    pub async fn run(mut self) -> Result<Stop, Error> {
+        loop {
             match self {
                 TaskState::Step { step } => {
                     self = step.step().await?;
@@ -469,8 +385,6 @@ impl TaskState {
                 }
             }
         }
-
-        Err(Error::MaxStepsReached)
     }
 
     /// Run the task for a single step
@@ -496,17 +410,14 @@ impl TaskState {
 /// more flexible ways to run a task
 #[tracing::instrument(skip(toolbox, observer, config))]
 pub async fn run_to_the_end(
-    toolbox: toolbox::Toolbox,
     config: SapiensConfig,
+    toolbox: Toolbox,
     task: String,
-    observer: WeakStepObserver,
+    observer: WeakRuntimeObserver,
 ) -> Result<Vec<TerminationMessage>, Error> {
-    let max_steps = config.max_steps;
-    let chain = Chain::new(toolbox, config).await;
+    let task_state = TaskState::with_observer(config, toolbox, task, observer).await?;
 
-    let task_state = TaskState::with_observer(chain, task, observer).await?;
-
-    let stop = task_state.run(max_steps).await?;
+    let stop = task_state.run().await?;
 
     Ok(stop.termination_messages)
 }

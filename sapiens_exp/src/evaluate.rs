@@ -82,7 +82,7 @@ impl Trial {
                     event.event,
                     Event::ToolInvocationSucceeded { .. }
                         | Event::ToolInvocationFailed { .. }
-                        | Event::ToolInvocationFailedAndChatNotUpdated { .. }
+                        | Event::InvalidInvocation { .. }
                 )
             })
             .count() as u32;

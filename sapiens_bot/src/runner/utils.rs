@@ -1,6 +1,7 @@
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::{cmark_resume, State};
-use sapiens::context::{ChatEntry, ChatEntryFormatter};
+use sapiens::chain::Message;
+use sapiens::context::{ChatEntry, ChatEntryFormatter, MessageFormatter};
 use sapiens::models::Role;
 
 /// Chat entry formatter that renders the chat entry in markdown
@@ -14,6 +15,12 @@ impl ChatEntryFormatter for Formatter {
             Role::Assistant => format!(":robot:\n{}", msg),
             Role::System => format!(":rooster:\n{}", msg),
         }
+    }
+}
+
+impl MessageFormatter for Formatter {
+    fn format(&self, msg: &Message) -> String {
+        msg.to_string()
     }
 }
 

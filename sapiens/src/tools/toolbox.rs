@@ -74,6 +74,11 @@ impl Toolbox {
             .insert(name, Box::new(tool));
     }
 
+    /// Check if the toolbox has at least one terminal tool
+    pub async fn has_terminal_tools(&self) -> bool {
+        !self.terminal_tools.read().await.is_empty()
+    }
+
     /// Add a tool
     ///
     /// A [`Tool`] can be invoked by an [`AdvancedTool`].
@@ -269,7 +274,7 @@ pub enum InvokeResult {
     /// Successful invocation
     Success {
         /// The number of invocations found in the message
-        available_invocation_count: usize,
+        invocation_count: usize,
         /// The name of the tool that was invoked
         tool_name: String,
         /// The extracted input for the tool
@@ -349,7 +354,7 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
             InvokeResult::Success {
                 tool_name,
                 extracted_input,
-                available_invocation_count: invocation_count,
+                invocation_count,
                 result,
             }
         }

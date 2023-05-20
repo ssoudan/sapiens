@@ -2,11 +2,13 @@ use std::fmt::{Debug, Formatter};
 use std::ops::Add;
 use std::sync::Arc;
 
-use sapiens::context::{ChatEntry, ChatHistoryDump};
+use sapiens::chain::Message;
+use sapiens::context::{ChatEntry, ContextDump};
 use sapiens::models::Role;
 use sapiens::{
-    InvalidInvocationNotification, InvocationFailureNotification, InvocationSuccessNotification,
-    ModelUpdateNotification, StepObserver, TerminationNotification,
+    InvalidInvocationNotification, InvocationFailureNotification, InvocationResultNotification,
+    InvocationSuccessNotification, MessageNotification, ModelNotification, RuntimeObserver,
+    TerminationNotification,
 };
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
@@ -120,77 +122,42 @@ pub enum Event {
         /// Initial prompt
         initial_prompt: Vec<PromptEntry>,
     },
-    /// A tool was invoked
+    /// A tool was successfully invoked
     ToolInvocationSucceeded {
         /// The name of the tool
         tool_name: String,
-        /// The input of the tool - split into lines
-        assistant_message: Vec<String>,
-        /// Result of the tool invocation
-        result: InvocationResult,
-        /// Token usage
-        token_usage: Option<Usage>,
         /// Number of invocation blocks in the message
-        available_invocation_count: usize,
+        invocation_count: usize,
         /// The input that was extracted from the message and passed to
         /// `tool_name` - split into lines
         extracted_input: Vec<String>,
+        /// The output of the tool - split into lines
+        result: Vec<String>,
     },
-    /// Invalid tool invocation
+    /// Invoked tool failed
     ToolInvocationFailed {
         /// The name of the tool
         tool_name: String,
         /// The input of the tool - split into lines
-        tool_input: Vec<String>,
+        extracted_input: Vec<String>,
+        /// Number of invocation blocks in the message
+        invocation_count: usize,
         /// The error message - split into lines
         error: Vec<String>,
-        /// Token usage
-        token_usage: Option<Usage>,
-        /// Number of invocation blocks in the message
-        available_invocation_count: usize,
-        /// The input that was extracted from the message and passed to
-        /// `tool_name` - split into lines
-        extracted_input: Vec<String>,
     },
-    /// The chat was not updated after a tool invocation failed
-    ToolInvocationFailedAndChatNotUpdated {
-        /// The name of the tool
-        tool_name: String,
-        /// The input of the tool - split into lines
-        tool_input: Vec<String>,
-        /// The error message - split into lines
-        error: Vec<String>,
-        /// Token usage
-        token_usage: Option<Usage>,
-        /// Number of invocation blocks in the message
-        available_invocation_count: usize,
-        /// The input that was extracted from the message and passed to
-        /// `tool_name` - split into lines
-        extracted_input: Vec<String>,
+    /// Message
+    Message {
+        /// The message
+        message: Message,
     },
     /// The task chain succeeded
     End(CompletionStatus),
     /// Invalid invocation
     InvalidInvocation {
-        /// The input of the tool - split into lines
-        tool_input: Vec<String>,
         /// The error message - split into lines
         error: Vec<String>,
-        /// Token usage
-        token_usage: Option<Usage>,
         /// Number of invocation blocks in the message
-        available_invocation_count: usize,
-    },
-    /// Invalid invocation
-    InvalidInvocationAndChatNotUpdated {
-        /// The input of the tool - split into lines
-        tool_input: Vec<String>,
-        /// The error message - split into lines
-        error: Vec<String>,
-        /// Token usage
-        token_usage: Option<Usage>,
-        /// Number of invocation blocks in the message
-        available_invocation_count: usize,
+        invocation_count: usize,
     },
 }
 
@@ -208,15 +175,15 @@ pub struct EventAndState {
 impl Event {
     /// Get the token usage
     pub fn tokens(&self) -> Option<Usage> {
+        // TODO(ssoudan) implement this
         match &self {
             Event::Prompt { .. } => None,
             Event::Start { .. } => None,
-            Event::ToolInvocationSucceeded { token_usage, .. } => token_usage.clone(),
-            Event::ToolInvocationFailed { token_usage, .. } => token_usage.clone(),
-            Event::ToolInvocationFailedAndChatNotUpdated { token_usage, .. } => token_usage.clone(),
-            Event::InvalidInvocation { token_usage, .. } => token_usage.clone(),
-            Event::InvalidInvocationAndChatNotUpdated { token_usage, .. } => token_usage.clone(),
             Event::End(_) => None,
+            Event::ToolInvocationSucceeded { .. } => None,
+            Event::ToolInvocationFailed { .. } => None,
+            Event::InvalidInvocation { .. } => None,
+            Event::Message { .. } => None,
         }
     }
 
@@ -232,7 +199,7 @@ pub struct TraceObserver {
     trace: Trace,
     /// Temporary store for the input
     /// of the tool invocation
-    tool_input: Option<ModelUpdateNotification>,
+    tool_input: Option<ModelNotification>,
     /// Termination event
     termination: Option<TerminationNotification>,
     /// Whether the trace is finalized
@@ -323,38 +290,17 @@ impl TraceObserver {
 impl From<InvocationSuccessNotification> for Event {
     fn from(notification: InvocationSuccessNotification) -> Self {
         let InvocationSuccessNotification {
+            invocation_count,
             tool_name,
-            res,
-            usage,
-            assistant_message,
-            available_invocation_count,
             extracted_input,
+            result,
         } = notification;
 
-        match res {
-            // The invocation was successful
-            Ok(res) => Event::ToolInvocationSucceeded {
-                tool_name,
-                assistant_message: to_lines(assistant_message.msg),
-                result: InvocationResult::Success {
-                    output: to_lines(res.msg),
-                },
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-                extracted_input: to_lines(extracted_input),
-            },
-            // The invocation was successful, but the output could not be
-            // passed to the chat history
-            Err(err) => Event::ToolInvocationSucceeded {
-                tool_name,
-                assistant_message: to_lines(assistant_message.msg),
-                result: InvocationResult::Failure {
-                    error: to_lines(format!("{}", err)),
-                },
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-                extracted_input: to_lines(extracted_input),
-            },
+        Event::ToolInvocationSucceeded {
+            tool_name,
+            invocation_count,
+            extracted_input: to_lines(extracted_input),
+            result: to_lines(result),
         }
     }
 }
@@ -362,34 +308,17 @@ impl From<InvocationSuccessNotification> for Event {
 impl From<InvocationFailureNotification> for Event {
     fn from(notification: InvocationFailureNotification) -> Self {
         let InvocationFailureNotification {
+            invocation_count,
             tool_name,
-            res,
-            usage,
-            assistant_message,
-            available_invocation_count,
             extracted_input,
+            e,
         } = notification;
 
-        match res {
-            // The invocation was unsuccessful
-            Ok(res) => Event::ToolInvocationFailed {
-                tool_name,
-                tool_input: to_lines(assistant_message.msg),
-                error: to_lines(res.msg),
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-                extracted_input: to_lines(extracted_input),
-            },
-            // The invocation was unsuccessful, and the error message could
-            // not be passed to the chat history
-            Err(err) => Event::ToolInvocationFailedAndChatNotUpdated {
-                tool_name,
-                tool_input: to_lines(assistant_message.msg),
-                error: to_lines(format!("{}", err)),
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-                extracted_input: to_lines(extracted_input),
-            },
+        Event::ToolInvocationFailed {
+            tool_name,
+            invocation_count,
+            extracted_input: to_lines(extracted_input),
+            error: to_lines(format!("{}", e)),
         }
     }
 }
@@ -397,34 +326,37 @@ impl From<InvocationFailureNotification> for Event {
 impl From<InvalidInvocationNotification> for Event {
     fn from(notification: InvalidInvocationNotification) -> Self {
         let InvalidInvocationNotification {
-            res,
-            assistant_message,
-            available_invocation_count,
-            usage,
+            e,
+            invocation_count,
         } = notification;
 
-        match res {
-            // The invocation was invalid
-            Ok(res) => Event::InvalidInvocation {
-                tool_input: to_lines(assistant_message.msg),
-                error: to_lines(res.msg),
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-            },
-            // No valid invocation found, and the error message could
-            // not be passed to the chat history
-            Err(err) => Event::InvalidInvocationAndChatNotUpdated {
-                tool_input: to_lines(assistant_message.msg),
-                error: to_lines(format!("{}", err)),
-                token_usage: usage.map(Into::into),
-                available_invocation_count,
-            },
+        Event::InvalidInvocation {
+            invocation_count,
+            error: to_lines(format!("{}", e)),
+        }
+    }
+}
+
+impl From<MessageNotification> for Event {
+    fn from(notification: MessageNotification) -> Self {
+        Event::Message {
+            message: notification.message,
+        }
+    }
+}
+
+impl From<InvocationResultNotification> for Event {
+    fn from(notification: InvocationResultNotification) -> Self {
+        match notification {
+            InvocationResultNotification::InvocationSuccess(x) => x.into(),
+            InvocationResultNotification::InvocationFailure(x) => x.into(),
+            InvocationResultNotification::InvalidInvocation(x) => x.into(),
         }
     }
 }
 
 #[async_trait::async_trait]
-impl StepObserver for TraceObserver {
+impl RuntimeObserver for TraceObserver {
     async fn on_task(&mut self, task: &str) {
         let state = self.get_state().await;
 
@@ -436,38 +368,21 @@ impl StepObserver for TraceObserver {
         );
     }
 
-    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
+    async fn on_message(&mut self, event: MessageNotification) {
         let state = self.get_state().await;
 
-        self.trace.events.push(
-            Event::Prompt {
-                initial_prompt: chat_history.messages.iter().map(|msg| msg.into()).collect(),
-            }
-            .into_event_and_state(state),
-        );
+        self.trace
+            .events
+            .push(Event::from(event).into_event_and_state(state));
     }
 
-    async fn on_model_update(&mut self, model_update: ModelUpdateNotification) {
+    async fn on_start(&mut self, _context: ContextDump) {}
+
+    async fn on_model_update(&mut self, model_update: ModelNotification) {
         self.tool_input = Some(model_update);
     }
 
-    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
-        let state = self.get_state().await;
-
-        self.trace
-            .events
-            .push(Event::from(event).into_event_and_state(state));
-    }
-
-    async fn on_invalid_invocation(&mut self, event: InvalidInvocationNotification) {
-        let state = self.get_state().await;
-
-        self.trace
-            .events
-            .push(Event::from(event).into_event_and_state(state));
-    }
-
-    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
+    async fn on_invocation_result(&mut self, event: InvocationResultNotification) {
         let state = self.get_state().await;
 
         self.trace

@@ -167,7 +167,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let task = args.task.clone();
 
-    match run_to_the_end(toolbox.clone(), config, task.clone(), w_trace_observer).await {
+    match run_to_the_end(config, toolbox.clone(), task.clone(), w_trace_observer).await {
         Ok(_) => {
             info!("Task completed");
         }
