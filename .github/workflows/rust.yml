@@ -20,7 +20,7 @@ jobs:
       with:
         toolchain: nightly
     - name: Install protoc and protoc-gen-rust
-      uses: arduino/setup-protoc@v1
+      run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
     - name: Checkout
       uses: actions/checkout@v3
     - name: Build
@@ -44,7 +44,7 @@ jobs:
         toolchain: nightly
         components: clippy
     - name: Install protoc and protoc-gen-rust
-      uses: arduino/setup-protoc@v1
+      run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
     - name: Install cargo-all-features
       run: cargo install cargo-all-features
     - name: Checkout
