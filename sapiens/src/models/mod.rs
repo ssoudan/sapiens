@@ -103,7 +103,7 @@ pub struct ModelResponse {
 }
 
 /// Token usage
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
     /// The number of tokens used for the prompt
     pub prompt_tokens: u32,

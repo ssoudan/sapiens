@@ -251,7 +251,7 @@ impl Model for OpenAI {
 
         Ok(ModelResponse {
             msg,
-            usage: res.usage.map(Into::into),
+            usage: res.usage.as_ref().map(Into::into),
             finish_reason: first.finish_reason.clone(),
         })
     }
@@ -296,8 +296,8 @@ impl From<async_openai::types::Role> for Role {
     }
 }
 
-impl From<async_openai::types::Usage> for Usage {
-    fn from(usage: async_openai::types::Usage) -> Self {
+impl From<&async_openai::types::Usage> for Usage {
+    fn from(usage: &async_openai::types::Usage) -> Self {
         Self {
             prompt_tokens: usage.prompt_tokens,
             completion_tokens: usage.completion_tokens,

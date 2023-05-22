@@ -7,7 +7,7 @@ pub mod agents;
 #[cfg(test)]
 mod tests;
 
-// TODO(ssoudan) more chains:
+// FUTURE(ssoudan) more chains:
 // - OODA - Observe, Orient, Decide, Act
 //  - in one shot
 //  - in several steps
@@ -18,6 +18,7 @@ mod tests;
 // - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
 // - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
 // - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
+// - 2305.10601 - Tree of Thoughts - May 2023
 
 use std::fmt::Display;
 
@@ -26,6 +27,7 @@ use serde::{Deserialize, Serialize};
 use crate::chain::agents::OODAAgent;
 use crate::chain::schedulers::SingleAgentScheduler;
 use crate::context::ContextDump;
+use crate::models::Usage;
 use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
 use crate::tools::{TerminationMessage, ToolUseError};
@@ -68,21 +70,29 @@ pub enum Message {
     Observation {
         /// The observation
         content: String,
+        /// Token usage
+        usage: Option<Usage>,
     },
     /// A new orientation
     Orientation {
         /// The orientation
         content: String,
+        /// Token usage
+        usage: Option<Usage>,
     },
     /// A new decision
     Decision {
         /// The decision
         content: String,
+        /// Token usage
+        usage: Option<Usage>,
     },
     /// A new action
     Action {
         /// The action
         content: String,
+        /// Token usage
+        usage: Option<Usage>,
     },
     /// A new result
     ActionResult {
@@ -101,10 +111,10 @@ impl Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Message::Task { content } => write!(f, "Task: {}", content),
-            Message::Observation { content } => write!(f, "Observation: {}", content),
-            Message::Orientation { content } => write!(f, "Orientation: {}", content),
-            Message::Decision { content } => write!(f, "Decision: {}", content),
-            Message::Action { content } => write!(f, "Action: {}", content),
+            Message::Observation { content,.. } => write!(f, "Observation: {}", content),
+            Message::Orientation { content ,..} => write!(f, "Orientation: {}", content),
+            Message::Decision { content,.. } => write!(f, "Decision: {}", content),
+            Message::Action { content ,..} => write!(f, "Action: {}", content),
             Message::ActionResult {
                 invocation_count,
                 tool_name,
@@ -282,7 +292,7 @@ impl Runtime {
         }
 
         // any action?
-        if let Message::Action { content } = message {
+        if let Message::Action { content, .. } = message {
             let res = invoke_tool(self.toolbox.clone(), &content).await;
 
             if let Some(observer) = self.observer.upgrade() {
@@ -307,13 +317,6 @@ pub struct OODAChain {
 }
 
 impl OODAChain {
-    /// Dump the current context
-    pub fn dump(&self) -> ContextDump {
-        self.runtime.context.dump()
-    }
-}
-
-impl OODAChain {
     /// Create a new [`OODAChain`]
     pub async fn new(
         config: SapiensConfig,
@@ -329,11 +332,6 @@ impl OODAChain {
         })
     }
 
-    /// Execute a single step of the OODA chain
-    pub async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error> {
-        self.runtime.step().await
-    }
-
     /// Add a new task to the OODA chain
     pub fn with_task(mut self, task: String) -> Self {
         self.runtime
@@ -342,5 +340,15 @@ impl OODAChain {
             .push(Message::Task { content: task });
 
         self
+    }
+
+    /// Dump the current context
+    pub fn dump(&self) -> ContextDump {
+        self.runtime.context.dump()
+    }
+
+    /// Execute a single step of the OODA chain
+    pub async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error> {
+        self.runtime.step().await
     }
 }

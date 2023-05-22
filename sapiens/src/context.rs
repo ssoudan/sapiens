@@ -1,7 +1,7 @@
 //! Maintain the context for the bot.
 use std::fmt::{Debug, Formatter};
 
-use tracing::debug;
+use tracing::trace;
 
 use crate::chain::Message;
 use crate::models::{ChatInput, Role};
@@ -137,7 +137,7 @@ impl ChatHistory {
             return Ok(0);
         }
 
-        debug!(
+        trace!(
             max_token = self.max_token,
             min_token_for_completion = self.min_token_for_completion,
             "purging history"
@@ -147,7 +147,7 @@ impl ChatHistory {
         while !self.examples.is_empty() {
             let input = self.make_input();
             let num_tokens = self.config.model.num_tokens(input).await;
-            debug!(
+            trace!(
                 max_token = self.max_token,
                 min_token_for_completion = self.min_token_for_completion,
                 len = self.examples.len(),
@@ -166,7 +166,7 @@ impl ChatHistory {
         while self.chitchat.len() > 1 {
             let input = self.make_input();
             let num_tokens = self.config.model.num_tokens(input).await;
-            debug!(
+            trace!(
                 max_token = self.max_token,
                 min_token_for_completion = self.min_token_for_completion,
                 len = self.chitchat.len(),

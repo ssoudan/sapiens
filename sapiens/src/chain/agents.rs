@@ -76,7 +76,7 @@ impl OODAAgent {
         // - get the actions and (results|errors)
         for m in &context.messages {
             match m {
-                Message::Action { content } => {
+                Message::Action { content, .. } => {
                     // Add the action to the chat history as a message from the Assistant
                     chat_history
                         .add_chitchat(ChatEntry {
@@ -207,6 +207,9 @@ impl Agent for OODAAgent {
         }
 
         // Return the response as an Action message
-        Ok(Message::Action { content: res.msg })
+        Ok(Message::Action {
+            content: res.msg,
+            usage: res.usage,
+        })
     }
 }

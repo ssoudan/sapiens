@@ -28,6 +28,16 @@ pub struct Usage {
     pub total_tokens: u32,
 }
 
+impl From<&sapiens::models::Usage> for Usage {
+    fn from(usage: &sapiens::models::Usage) -> Self {
+        Self {
+            prompt_tokens: usage.prompt_tokens,
+            completion_tokens: usage.completion_tokens,
+            total_tokens: usage.total_tokens,
+        }
+    }
+}
+
 fn to_lines(s: impl AsRef<str>) -> Vec<String> {
     s.as_ref().split('\n').map(|s| s.to_string()).collect()
 }
@@ -175,7 +185,6 @@ pub struct EventAndState {
 impl Event {
     /// Get the token usage
     pub fn tokens(&self) -> Option<Usage> {
-        // TODO(ssoudan) implement this
         match &self {
             Event::Prompt { .. } => None,
             Event::Start { .. } => None,
@@ -183,7 +192,14 @@ impl Event {
             Event::ToolInvocationSucceeded { .. } => None,
             Event::ToolInvocationFailed { .. } => None,
             Event::InvalidInvocation { .. } => None,
-            Event::Message { .. } => None,
+            Event::Message { message, .. } => match message {
+                Message::Task { .. } => None,
+                Message::Observation { usage, .. } => usage.as_ref().map(|x| x.into()),
+                Message::Orientation { usage, .. } => usage.as_ref().map(|x| x.into()),
+                Message::Decision { usage, .. } => usage.as_ref().map(|x| x.into()),
+                Message::Action { usage, .. } => usage.as_ref().map(|x| x.into()),
+                Message::ActionResult { .. } => None,
+            },
         }
     }
 

@@ -23,6 +23,7 @@ impl Agent for SimpleAgent {
     async fn act(&self, _context: &Context) -> Result<Message, ()> {
         Ok(Message::Observation {
             content: "Hello".to_string(),
+            usage: None,
         })
     }
 }
@@ -122,6 +123,7 @@ impl Agent for NoAsSimpleAgent {
         if context.messages.is_empty() {
             Ok(Message::Observation {
                 content: "Hello".to_string(),
+                usage: None,
             })
         } else {
             Ok(Message::Action {
@@ -134,6 +136,7 @@ impl Agent for NoAsSimpleAgent {
                 "#
                 }
                 .to_string(),
+                usage: None,
             })
         }
     }
