@@ -5,7 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.0 (2023-05-23)
+
+### Chore
+
+ - <csr-id-bf9a7b53c0d3095c083fe553a18227a52d2d6a1f/> update
+
+### New Features
+
+ - <csr-id-6ad490ab669568e1af013b5464ceca3e922da175/> more readable console outputs
+ - <csr-id-22e3c7a25050fa820a0d368ba323ae0e218dfa46/> token consumption
+
+### New Features (BREAKING)
+
+ - <csr-id-53c7d7ddf901709715543e76f780a8f39e334625/> multi-step OODA chain
+ - <csr-id-102a2f9d1bc2e81af2745c7cdc42b6db0f428ccb/> more flexible definition of chains
+ - <csr-id-67ea659fcc5ca60a4372014ff5af8aa2b00d7dfa/> examples are pairs of entries
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 7 commits contributed to the release over the course of 5 calendar days.
+ - 5 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #25 from ssoudan/more_steps ([`cb9a704`](https://github.com/ssoudan/sapiens/commit/cb9a70490ced60abd5bb12d2559d40464f3a3213))
+    - More readable console outputs ([`6ad490a`](https://github.com/ssoudan/sapiens/commit/6ad490ab669568e1af013b5464ceca3e922da175))
+    - Multi-step OODA chain ([`53c7d7d`](https://github.com/ssoudan/sapiens/commit/53c7d7ddf901709715543e76f780a8f39e334625))
+    - Update ([`bf9a7b5`](https://github.com/ssoudan/sapiens/commit/bf9a7b53c0d3095c083fe553a18227a52d2d6a1f))
+    - Token consumption ([`22e3c7a`](https://github.com/ssoudan/sapiens/commit/22e3c7a25050fa820a0d368ba323ae0e218dfa46))
+    - More flexible definition of chains ([`102a2f9`](https://github.com/ssoudan/sapiens/commit/102a2f9d1bc2e81af2745c7cdc42b6db0f428ccb))
+    - Examples are pairs of entries ([`67ea659`](https://github.com/ssoudan/sapiens/commit/67ea659fcc5ca60a4372014ff5af8aa2b00d7dfa))
+</details>
+
 ## 0.7.0 (2023-05-17)
+
+<csr-id-099c611a319519c44b62274627e35b01746ce37e/>
 
 ### Chore
 
@@ -29,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release over the course of 6 calendar days.
+ - 5 commits contributed to the release over the course of 6 calendar days.
  - 6 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -41,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.9.0, sapiens_tools v0.9.0, sapiens_bot v0.7.0, sapiens_cli v0.8.0, sapiens_exp v0.7.0, safety bump 4 crates ([`a6639bd`](https://github.com/ssoudan/sapiens/commit/a6639bd1fc913081d653662be98d15672be6d140))
     - Merge pull request #24 from ssoudan/more_steps ([`e28fdf3`](https://github.com/ssoudan/sapiens/commit/e28fdf388d24fbf084b15314e922bdf6bc386479))
     - Support for Palm chat-bison-001 ([`14eb667`](https://github.com/ssoudan/sapiens/commit/14eb667de00ddb53c5162dca550d8a0d35f094e4))
     - Merge pull request #19 from ssoudan/dependabot/cargo/serde-1.0.163 ([`d6497e5`](https://github.com/ssoudan/sapiens/commit/d6497e564aa66cfa80500b8f91bc5e0b4447f689))

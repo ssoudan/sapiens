@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.10.0 (2023-05-23)
+
+### Bug Fixes
+
+ - <csr-id-4e4a0229533a317255978b9de0cb45a69f57c4e2/> import
+
+### New Features (BREAKING)
+
+ - <csr-id-53c7d7ddf901709715543e76f780a8f39e334625/> multi-step OODA chain
+ - <csr-id-67ea659fcc5ca60a4372014ff5af8aa2b00d7dfa/> examples are pairs of entries
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 5 calendar days.
+ - 5 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #25 from ssoudan/more_steps ([`cb9a704`](https://github.com/ssoudan/sapiens/commit/cb9a70490ced60abd5bb12d2559d40464f3a3213))
+    - Multi-step OODA chain ([`53c7d7d`](https://github.com/ssoudan/sapiens/commit/53c7d7ddf901709715543e76f780a8f39e334625))
+    - Import ([`4e4a022`](https://github.com/ssoudan/sapiens/commit/4e4a0229533a317255978b9de0cb45a69f57c4e2))
+    - Examples are pairs of entries ([`67ea659`](https://github.com/ssoudan/sapiens/commit/67ea659fcc5ca60a4372014ff5af8aa2b00d7dfa))
+</details>
+
 ## 0.9.0 (2023-05-17)
+
+<csr-id-099c611a319519c44b62274627e35b01746ce37e/>
 
 ### Chore
 
@@ -30,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 5 commits contributed to the release over the course of 6 calendar days.
+ - 6 commits contributed to the release over the course of 6 calendar days.
  - 6 days passed between releases.
  - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -42,6 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.9.0, sapiens_tools v0.9.0, sapiens_bot v0.7.0, sapiens_cli v0.8.0, sapiens_exp v0.7.0, safety bump 4 crates ([`a6639bd`](https://github.com/ssoudan/sapiens/commit/a6639bd1fc913081d653662be98d15672be6d140))
     - Merge pull request #19 from ssoudan/dependabot/cargo/serde-1.0.163 ([`d6497e5`](https://github.com/ssoudan/sapiens/commit/d6497e564aa66cfa80500b8f91bc5e0b4447f689))
     - Bump serde from 1.0.162 to 1.0.163 ([`099c611`](https://github.com/ssoudan/sapiens/commit/099c611a319519c44b62274627e35b01746ce37e))
     - Allow dependabot-triggered CI to complete successfully - take 2 ([`34bf58b`](https://github.com/ssoudan/sapiens/commit/34bf58ba79af2aaa84ab3e79ba565d73ae2f8266))
