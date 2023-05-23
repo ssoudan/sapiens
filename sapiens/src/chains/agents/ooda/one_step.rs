@@ -14,8 +14,6 @@ pub struct Agent {
     observer: WeakRuntimeObserver,
 }
 
-// FUTURE(ssoudan) parameterize the prompt manager
-
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed iteratively using an OODA loop.
 
@@ -243,13 +241,15 @@ impl chains::Agent for Agent {
             input.chat.len()
         );
 
+        trace!("Querying model:\n{:#?}", input);
+
         let res = self
             .config
             .model
             .query(input, self.config.max_tokens)
             .await?;
 
-        trace!(res = ?res, "Got model response");
+        trace!("Got model response:\n{:#?}", res);
 
         // Show the message from the assistant
         if let Some(observer) = self.observer.upgrade() {

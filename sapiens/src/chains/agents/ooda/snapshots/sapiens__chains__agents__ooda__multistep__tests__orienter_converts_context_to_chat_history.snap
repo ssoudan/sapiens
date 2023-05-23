@@ -12,50 +12,102 @@ Ok(
         },
         max_token: 4096,
         context: [
-            ChatEntry {
-                role: System,
-                msg: "You are part of Sapiens agents and your role is to orient the other agents based on the observations. Guide the WORLD",
-            },
-            ChatEntry {
-                role: User,
-                msg: "You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.\nYou will proceed iteratively using an OODA loop.\n\n- Action result will be provided to you. \n- Never produce the result of an Action. \n- The loop will repeated until you have the answer to the original question. \n- No task is complete until the Conclude Tool is used to provide the answer.\n- You cannot use jinja2 templating in your response. Be concise. \n\n# Format of your response\n\nYou must use the following format for your response. Comments are in bold and should be removed from your response.\n====================\n## Orientation: \n**Plan the intermediate objectives to answer complete the original task. Maintain a list of current objectives updated as you go.**\n- <...>\n```\n====================\n\n# The following are the ONLY Tools one can use for the Actions:\n[]",
-            },
+            [system]: You are part of Sapiens agents and your role is to orient the other agents based on the observations.,
+            [user]: You are part of a group of cooperating assistants named Sapiens. Use available tools to answer the question as best as you can.
+            You will collectively proceed iteratively using an OODA loop. Don't overstep your role.
+            
+            - Action result will be provided. 
+            - Never produce the result of an Action. 
+            - The loop will repeated until you have the answer to the original question. 
+            - No task is complete until the Conclude Tool is used to provide the answer. 
+            
+            # Format of your response
+            
+            You must use the following format for your response. Comments are in bold and should be removed from your response.
+            ====================
+            ## Orientation: 
+            **Plan the intermediate objectives to answer complete the original task. Maintain a list of current objectives updated as you go.**
+            - <...>
+            ```
+            ====================
+            
+            # The following are the ONLY Tools one can use for the Actions:
+            [],
         ],
         examples: [
             (
-                ChatEntry {
-                    role: User,
-                    msg: "# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nOrientation?",
-                },
-                ChatEntry {
-                    role: Assistant,
-                    msg: "## Orientation:\n- SandboxedPython can be used to sort the list.\n- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.\n- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.\n- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.",
-                },
+                [user]: # Your turn
+                Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+                What is your orientation?,
+                [assistant]: ## Orientation:
+                - SandboxedPython can be used to sort the list.
+                - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
+                - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+                - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.,
             ),
             (
-                ChatEntry {
-                    role: User,
-                    msg: "## Decision:\n- We can use the sorted() function of Python to sort the list.\n## The ONLY Action:\n```yaml\ntool_name: SandboxedPython\nparameters:\n  code: |\n    lst = [2, 3, 1, 4, 5]\n    sorted_list = sorted(lst)\n    print(f\"The sorted list is {sorted_list}\")\n```\nWe will take further action based on the result.\n# Action SandboxedPython result:\n```yaml\nstdout: |\n  The sorted list is [1, 2, 3, 4, 5]\nstderr: ''\n```\n## Observations:\n- We needed to sort the list in ascending order.\n- We have the result of the Action.\n- We have the sorted list: [1, 2, 3, 4, 5].# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nOrientation?",
-                },
-                ChatEntry {
-                    role: Assistant,
-                    msg: "## Orientation:\n- I know the answer to the original question.\n- I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.",
-                },
+                [user]: ## Decision:
+                - We can use the sorted() function of Python to sort the list.
+                ## The ONLY Action:
+                ```yaml
+                tool_name: SandboxedPython
+                parameters:
+                  code: |
+                    lst = [2, 3, 1, 4, 5]
+                    sorted_list = sorted(lst)
+                    print(f"The sorted list is {sorted_list}")
+                ```
+                We will take further action based on the result.
+                # Action SandboxedPython result:
+                ```yaml
+                stdout: |
+                  The sorted list is [1, 2, 3, 4, 5]
+                stderr: ''
+                ```
+                ## Observations:
+                - We needed to sort the list in ascending order.
+                - We have the result of the Action.
+                - We have the sorted list: [1, 2, 3, 4, 5].# Your turn
+                Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+                What is your orientation?,
+                [assistant]: ## Orientation:
+                - I know the answer to the original question.
+                - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.,
             ),
         ],
         chitchat: [
-            ChatEntry {
-                role: User,
-                msg: "## Observations:\n- The given list to sort is [2, 3, 1, 4, 5].\n- I need to sort this list in ascending order.",
-            },
-            ChatEntry {
-                role: Assistant,
-                msg: "## Orientation:\n- SandboxedPython can be used to sort the list.\n- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.\n- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.\n- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.",
-            },
-            ChatEntry {
-                role: User,
-                msg: "## Decision:\n- We can use the sorted() function of Python to sort the list.\n## The ONLY Action:\n```yaml\ntool_name: SandboxedPython\nparameters:\n  code: |\n    lst = [2, 3, 1, 4, 5]\n    sorted_list = sorted(lst)\n    print(f\"The sorted list is {sorted_list}\")\n```\nWe will take further action based on the result.\n# Action SandboxedPython result: \n```yaml\nstdout: |\n  The sorted list is [1, 2, 3, 4, 5]\nstderr: ''```\n# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nOrientation?\n## Observations:\n- We needed to sort the list in ascending order.\n- We have the result of the Action.\n- We have the sorted list: [1, 2, 3, 4, 5].",
-            },
+            [user]: ## Observations:
+            - The given list to sort is [2, 3, 1, 4, 5].
+            - I need to sort this list in ascending order.,
+            [assistant]: ## Orientation:
+            - SandboxedPython can be used to sort the list.
+            - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
+            - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+            - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.,
+            [user]: ## Decision:
+            - We can use the sorted() function of Python to sort the list.
+            ## The ONLY Action:
+            ```yaml
+            tool_name: SandboxedPython
+            parameters:
+              code: |
+                lst = [2, 3, 1, 4, 5]
+                sorted_list = sorted(lst)
+                print(f"The sorted list is {sorted_list}")
+            ```
+            That's it for now. We will take further action based on the result.
+            # Action SandboxedPython result: 
+            ```yaml
+            stdout: |
+              The sorted list is [1, 2, 3, 4, 5]
+            stderr: ''```
+            # Your turn
+            Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+            What is your orientation?
+            ## Observations:
+            - We needed to sort the list in ascending order.
+            - We have the result of the Action.
+            - We have the sorted list: [1, 2, 3, 4, 5].,
         ],
     },
 )

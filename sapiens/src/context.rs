@@ -22,12 +22,18 @@ pub enum Error {
 }
 
 /// A history entry
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ChatEntry {
     /// The role
     pub role: Role,
     /// The message
     pub msg: String,
+}
+
+impl Debug for ChatEntry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{}]: {}", self.role, self.msg)
+    }
 }
 
 /// Maintain a chat history that can be truncated (from the head) to ensure

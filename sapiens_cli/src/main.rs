@@ -17,9 +17,6 @@ use tracing_subscriber::EnvFilter;
 // Usability:
 // FUTURE(ssoudan) Richer interaction
 // FUTURE(ssoudan) More tools: wx, negotiate
-// FUTURE(ssoudan) Settings
-// FUTURE(ssoudan) Token budget management and completion termination reason
-// FUTURE(ssoudan) Model parameters
 // FUTURE(ssoudan) allow the bot to share its doubt and ask for help
 // FUTURE(ssoudan) Crontab-like scheduling: get a summary of the news daily
 // FUTURE(ssoudan) better errors for python code
@@ -37,7 +34,6 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) vector stores?
 // FUTURE(ssoudan) prompt optimization
 // FUTURE(ssoudan) multiple models - critic?
-// FUTURE(ssoudan) multi-stage evaluation
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]

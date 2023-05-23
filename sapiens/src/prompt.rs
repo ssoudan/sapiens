@@ -154,8 +154,8 @@ impl Task {
         if available_invocation_count != 1 {
             format!(
                 "# Action {} result: \nYou must give only one Action at a time. There was {}. Only the first one was considered.\n```yaml\n{}```",
-                available_invocation_count,
                 tool_name.as_ref(),
+                available_invocation_count,
                 result.as_ref(),
 
             )

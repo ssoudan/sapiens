@@ -1,12 +1,3 @@
-// FUTURE(ssoudan) more agent types
-// ------
-// Researcher: Observation + Direction to investigate
-// Decider: Decision
-// User: Propose Tasks - expect Conclusion
-// Assistant: Observe, Orient, Decide, Act
-// Reporter: from the env, the user, the tools,
-// Introspecter: ?
-
 /// OODA agents
 pub mod ooda;
 

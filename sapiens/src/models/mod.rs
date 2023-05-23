@@ -92,7 +92,7 @@ pub trait Model: ChatEntryTokenNumber + Send + Sync {
 }
 
 /// Response from a language model
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ModelResponse {
     /// The message
     pub msg: String,
@@ -100,6 +100,20 @@ pub struct ModelResponse {
     pub usage: Option<Usage>,
     /// Finish reason
     pub finish_reason: Option<String>,
+}
+
+impl Debug for ModelResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "ModelResponse {{ ")?;
+        write!(f, "msg: \n{}, \n", &self.msg)?;
+        if let Some(usage) = &self.usage {
+            writeln!(f, "usage: {:#?}, ", usage)?;
+        }
+        if let Some(finish_reason) = &self.finish_reason {
+            writeln!(f, "finish_reason: {}, ", &finish_reason)?;
+        }
+        write!(f, "}}")
+    }
 }
 
 /// Token usage

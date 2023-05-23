@@ -9,14 +9,13 @@ use crate::models::Role;
 use crate::tools::toolbox::Toolbox;
 use crate::{chains, prompt, SapiensConfig, WeakRuntimeObserver};
 
-const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
-You will proceed iteratively using an OODA loop.
+const PREFIX: &str = r"You are part of a group of cooperating assistants named Sapiens. Use available tools to answer the question as best as you can.
+You will collectively proceed iteratively using an OODA loop. Don't overstep your role.
 
-- Action result will be provided to you. 
+- Action result will be provided. 
 - Never produce the result of an Action. 
 - The loop will repeated until you have the answer to the original question. 
-- No task is complete until the Conclude Tool is used to provide the answer.
-- You cannot use jinja2 templating in your response. Be concise. 
+- No task is complete until the Conclude Tool is used to provide the answer. 
 ";
 
 const TOOL_PREFIX: &str = r"
@@ -55,10 +54,6 @@ You must use the following format for your response. Comments are in bold and sh
 **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
 - <...>
 ====================
-
-Notes: 
-- `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
-- One Action at a time. No more. No less.
 ";
 
 const ACTOR_RESPONSE_FORMAT: &str = r"
@@ -79,7 +74,6 @@ We will take further action based on the result.
 Notes: 
 - Action has the following fields: `tool_name` and `parameters` ONLY.
 - `parameters` uses the format specified for the Tool.
-- `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
 - One Action at a time. No more. No less.
 ";
 
@@ -207,7 +201,7 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-We will take further action based on the result.
+That's it for now. We will take further action based on the result.
 "#;
 
 const ACTOR_PROTO_SECOND_INPUT: &str = r#"
@@ -417,8 +411,6 @@ impl AgentRole {
                                 user_msg.clear();
                             }
 
-                            // Add the observation to the chat history as a message from the
-                            // Observer
                             chat_history
                                 .add_chitchat(ChatEntry {
                                     msg: content.to_string(),
@@ -471,8 +463,6 @@ impl AgentRole {
                                 user_msg.clear();
                             }
 
-                            // Add the observation to the chat history as a message from the
-                            // Observer
                             chat_history
                                 .add_chitchat(ChatEntry {
                                     msg: content.to_string(),
@@ -593,7 +583,6 @@ impl AgentRole {
                 let warmup_task =
                     prompt_manager.build_task_prompt("Sort in ascending order: [2, 3, 1, 4, 5]");
 
-                // TODO(ssoudan) make this prettier
                 vec![
                     (
                         warmup_task.to_prompt(),
@@ -630,9 +619,9 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are part of Sapiens agents and your role is to observe and report. Observe to the WORLD!".to_string();
+            "You are part of Sapiens agents and your role is to observe and report.".to_string();
 
-        let prompt = "Observations?".to_string();
+        let prompt = "What are your observations?".to_string();
 
         let prompt_manager = prompt::Manager::new(
             toolbox,
@@ -657,10 +646,10 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are part of Sapiens agents and your role is to orient the other agents based on the observations. Guide the WORLD"
+            "You are part of Sapiens agents and your role is to orient the other agents based on the observations."
                 .to_string();
 
-        let prompt = "Orientation?".to_string();
+        let prompt = "What is your orientation?".to_string();
 
         let prompt_manager = prompt::Manager::new(
             toolbox,
@@ -685,10 +674,10 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are part of Sapiens agents and your role is to decide what need to be done based on the observations and guidance you got. Act upon the WORLD!"
+            "You are part of Sapiens agents and your role is to decide what need to be done based on the observations and guidance you got."
                 .to_string();
 
-        let prompt = "Decision?".to_string();
+        let prompt = "What is your decision?".to_string();
 
         let prompt_manager = prompt::Manager::new(
             toolbox,
@@ -713,10 +702,10 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are part of Sapiens agents and your role is to act on the world as it has been decided. Change the WORLD!"
+            "You are part of Sapiens agents and your role is to act on the world as it has been decided."
                 .to_string();
 
-        let prompt = "Action?".to_string();
+        let prompt = "What is your action?".to_string();
 
         let prompt_manager = prompt::Manager::new(
             toolbox,
@@ -766,13 +755,15 @@ impl chains::Agent for Agent {
             input.chat.len()
         );
 
+        trace!("Querying model:\n{:#?}", input);
+
         let res = self
             .config
             .model
             .query(input, self.config.max_tokens)
             .await?;
 
-        trace!(res = ?res, "Got model response");
+        trace!("Got model response:\n{:#?}", res);
 
         // Show the message from the assistant
         if let Some(observer) = self.observer.upgrade() {
@@ -1000,7 +991,7 @@ mod tests {
                 sorted_list = sorted(lst)
                 print(f"The sorted list is {sorted_list}")
             ```
-            We will take further action based on the result.            
+            That's it for now. We will take further action based on the result.            
             "#
             }
             .trim()

@@ -1,24 +1,24 @@
-/// Schedulers are responsible for deciding which agent to run next.
-pub mod schedulers;
+//! Execution chains
+//! - [x] OODA - Observe, Orient, Decide, Act
+//!   - [x] in single step - See [`SingleStepOODAChain`]
+//!   - [x] in several steps - See [`MultiStepOODAChain`]
+//! - [ ] 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
+//! - [ ] 2207.05608 - Inner monologue - Different types of feedbacks - 2022
+//! - [ ] 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
+//! - [ ] 2210.03629 - ReAct - Reasoning + Action - Mar 2023
+//! - [ ] 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
+//! - [ ] 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
+//! - [ ] 2305.10601 - Tree of Thoughts - May 2023
+
+// FUTURE(ssoudan) more chains
 
 /// Agents
 pub mod agents;
+/// Schedulers are responsible for deciding which agent to run next.
+pub mod schedulers;
 
 #[cfg(test)]
 mod tests;
-
-// FUTURE(ssoudan) more chains:
-// - [ ] OODA - Observe, Orient, Decide, Act
-//  - [x] in one shot
-//  - [ ] in several steps
-// - [ ] 2201.11903 - Chain of thought prompting - 2022
-// - [ ] 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
-// - [ ] 2207.05608 - Inner monologue - Different types of feedbacks - 2022
-// - [ ] 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
-// - [ ] 2210.03629 - ReAct - Reasoning + Action - Mar 2023
-// - [ ] 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
-// - [ ] 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
-// - [ ] 2305.10601 - Tree of Thoughts - May 2023
 
 use std::fmt::Display;
 
@@ -329,13 +329,13 @@ pub trait Chain: Send + Sync {
     async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error>;
 }
 
-/// An OODA chain
-pub struct OODAChain {
+/// A single-step OODA chain
+pub struct SingleStepOODAChain {
     runtime: Runtime,
 }
 
-impl OODAChain {
-    /// Create a new [`OODAChain`]
+impl SingleStepOODAChain {
+    /// Create a new [`SingleStepOODAChain`]
     pub async fn new(
         config: SapiensConfig,
         toolbox: Toolbox,
@@ -362,7 +362,7 @@ impl OODAChain {
 }
 
 #[async_trait::async_trait]
-impl Chain for OODAChain {
+impl Chain for SingleStepOODAChain {
     fn dump(&self) -> ContextDump {
         self.runtime.context.dump()
     }

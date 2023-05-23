@@ -39,12 +39,18 @@ An experiment with handing over the tools to the machine.
 This will probably try to take over the world and if it doesn't succeed, 
 empty your bank account and kill all the remaining polar bears trying to do so.
 
-More seriously, this code allows chatGPT-generated code to be executed, 
+More seriously, this program allows chatGPT-generated code to be executed, 
 you might want to consider some sandboxing before running it on your machine.
 
 ## What is this?
 
 Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for my to do list.
+
+`sapiens/src/chains/` contains different prompting chains that can be used to interact with the world.
+`SingleStepOODAChain` queries the underlying LM in a single step to get the Observation, Orientation, Decision and Action while
+`MultiStepOODAChain` splits the query in multiple steps to get the same information. 
+
+`SapiensConfig::chain_type` controls which chain is used. `SapiensConfig::model` controls which language model is used.
 
 ## Tools
 

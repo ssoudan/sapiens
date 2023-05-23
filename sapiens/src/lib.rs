@@ -28,7 +28,6 @@ pub mod tools;
 /// Language models
 pub mod models;
 
-/// Execution chains
 pub mod chains;
 
 use std::fmt::Debug;
@@ -39,7 +38,7 @@ use clap::builder::PossibleValue;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use crate::chains::{Chain, Message, MultiStepOODAChain, OODAChain};
+use crate::chains::{Chain, Message, MultiStepOODAChain, SingleStepOODAChain};
 use crate::context::{ChatEntry, ContextDump};
 use crate::models::openai::OpenAI;
 use crate::models::{ModelRef, ModelResponse, Role, Usage};
@@ -110,7 +109,6 @@ pub struct SapiensConfig {
     pub model: ModelRef,
     /// The maximum number of steps
     pub max_steps: usize,
-
     /// The type of chain to use
     pub chain_type: ChainType,
     /// The minimum number of tokens that need to be available for completion
@@ -393,7 +391,7 @@ impl TaskState {
 
         let task_chain = match config.chain_type {
             ChainType::SingleStepOODA => {
-                let chain = OODAChain::new(config, toolbox, observer.clone())
+                let chain = SingleStepOODAChain::new(config, toolbox, observer.clone())
                     .await?
                     .with_task(task);
                 Box::new(chain) as Box<dyn Chain>

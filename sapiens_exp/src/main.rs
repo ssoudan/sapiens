@@ -100,7 +100,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let _ = dotenv_override();
 
     tracing_subscriber::fmt()
-        .compact()
+        .pretty()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
     // Prepare config
