@@ -14,11 +14,11 @@ Ok(
         context: [
             ChatEntry {
                 role: System,
-                msg: "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!",
+                msg: "You are part of Sapiens agents and your role is to orient the other agents based on the observations. Guide the WORLD",
             },
             ChatEntry {
                 role: User,
-                msg: "You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.\nYou will proceed iteratively using an OODA loop.\n\n- Action result will be provided to you. \n- Never produce the result of an Action. \n- The loop will repeated until you have the answer to the original question. \n- No task is complete until the Conclude Tool is used to provide the answer.\n- You cannot use jinja2 templating in your response. Be concise. \n\n# Format of your response\n\nYou must use the following format for your response. Comments are in bold and should be removed from your response.\n====================\n## Orientation: \n**Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**\n- <...>\n```\n====================\n\n# The following are the ONLY Tools one can use for the Actions:\n[]",
+                msg: "You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.\nYou will proceed iteratively using an OODA loop.\n\n- Action result will be provided to you. \n- Never produce the result of an Action. \n- The loop will repeated until you have the answer to the original question. \n- No task is complete until the Conclude Tool is used to provide the answer.\n- You cannot use jinja2 templating in your response. Be concise. \n\n# Format of your response\n\nYou must use the following format for your response. Comments are in bold and should be removed from your response.\n====================\n## Orientation: \n**Plan the intermediate objectives to answer complete the original task. Maintain a list of current objectives updated as you go.**\n- <...>\n```\n====================\n\n# The following are the ONLY Tools one can use for the Actions:\n[]",
             },
         ],
         examples: [

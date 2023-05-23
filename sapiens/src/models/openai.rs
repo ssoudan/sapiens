@@ -9,7 +9,7 @@ use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequ
 use lazy_static::lazy_static;
 pub use tiktoken_rs::async_openai::num_tokens_from_messages;
 pub use tiktoken_rs::model::get_context_size;
-use tracing::{debug, error};
+use tracing::{error, trace};
 
 use crate::context::ChatEntry;
 use crate::models::{
@@ -237,13 +237,13 @@ impl Model for OpenAI {
     ) -> Result<ModelResponse, Error> {
         let input = self.prepare_chat_completion_request(input, max_tokens);
 
-        debug!("Sending request to the model");
+        trace!("Sending request to the model");
         let res = self.client.chat().create(input).await;
         if let Err(e) = &res {
             error!(error = ?e, "Error from the model");
         }
         let res = res?;
-        debug!(usage = ?res.usage, "Got a response from the model");
+        trace!(usage = ?res.usage, "Got a response from the model");
 
         let first = res.choices.first().ok_or(Error::NoResponseFromModel)?;
 

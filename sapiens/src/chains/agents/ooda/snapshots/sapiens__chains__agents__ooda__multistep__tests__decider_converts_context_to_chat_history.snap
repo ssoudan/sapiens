@@ -14,7 +14,7 @@ Ok(
         context: [
             ChatEntry {
                 role: System,
-                msg: "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!",
+                msg: "You are part of Sapiens agents and your role is to decide what need to be done based on the observations and guidance you got. Act upon the WORLD!",
             },
             ChatEntry {
                 role: User,

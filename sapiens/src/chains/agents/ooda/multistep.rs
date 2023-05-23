@@ -40,7 +40,7 @@ const ORIENTER_RESPONSE_FORMAT: &str = r"
 You must use the following format for your response. Comments are in bold and should be removed from your response.
 ====================
 ## Orientation: 
-**Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**
+**Plan the intermediate objectives to answer complete the original task. Maintain a list of current objectives updated as you go.**
 - <...>
 ```
 ====================
@@ -630,8 +630,7 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
-                .to_string();
+            "You are part of Sapiens agents and your role is to observe and report. Observe to the WORLD!".to_string();
 
         let prompt = "Observations?".to_string();
 
@@ -658,7 +657,7 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
+            "You are part of Sapiens agents and your role is to orient the other agents based on the observations. Guide the WORLD"
                 .to_string();
 
         let prompt = "Orientation?".to_string();
@@ -686,7 +685,7 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
+            "You are part of Sapiens agents and your role is to decide what need to be done based on the observations and guidance you got. Act upon the WORLD!"
                 .to_string();
 
         let prompt = "Decision?".to_string();
@@ -714,7 +713,7 @@ impl Agent {
         observer: WeakRuntimeObserver,
     ) -> Self {
         let system_prompt =
-            "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
+            "You are part of Sapiens agents and your role is to act on the world as it has been decided. Change the WORLD!"
                 .to_string();
 
         let prompt = "Action?".to_string();
