@@ -4,12 +4,12 @@ use std::sync::Arc;
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::chain::Message;
+use sapiens::chains::Message;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, ContextDump, MessageFormatter};
 use sapiens::models::{Role, SupportedModel};
 use sapiens::{
-    models, run_to_the_end, wrap_observer, InvocationResultNotification, ModelNotification,
-    RuntimeObserver, SapiensConfig,
+    models, run_to_the_end, wrap_observer, ChainType, InvocationResultNotification,
+    ModelNotification, RuntimeObserver, SapiensConfig,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -43,6 +43,10 @@ use tracing_subscriber::EnvFilter;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// The type of chain to use
+    #[arg(long, default_value_t = ChainType::SingleStepOODA, value_enum, env)]
+    chain: ChainType,
+
     /// Model to use
     #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
     model: SupportedModel,
@@ -185,6 +189,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let task = args.task.clone();
     let config = SapiensConfig {
         model,
+        chain_type: args.chain,
         max_steps: args.max_steps,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,

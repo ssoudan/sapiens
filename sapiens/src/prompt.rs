@@ -1,4 +1,5 @@
 use std::fmt;
+use std::fmt::{Debug, Formatter};
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::models::Role;
@@ -8,120 +9,40 @@ use crate::tools::{ToolDescription, ToolUseError};
 
 // FUTURE(ssoudan) prompt a-la: "below are a series of dialogues between..." for
 // non-instruct models
-
-const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
-You will proceed iteratively using an OODA loop.
-
-- Action result will be provided to you. 
-- Never produce the result of an Action. 
-- The loop will repeated until you have the answer to the original question. 
-- No task is complete until the Conclude Tool is used to provide the answer.
-- You cannot use jinja2 templating in your response. Be concise. 
-";
-
-const TOOL_PREFIX: &str = r"
-# The following are the ONLY Tools you can use for your Actions:
-";
-
-const FORMAT: &str = r"
-# Format of your response
-
-You must use the following format for your response. Comments are in bold and should be removed from your response.
-====================
-## Observations: 
-**What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**
-- <...>
-## Orientation: 
-**Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**
-- <...>
-## Decision: 
-**Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
-- <...>
-## The ONLY Action: 
-**Take a single Action consisting of exactly one pair of `tool_name` and `parameters`. Never give more than one YAML. **
-```yaml
-tool_name: <ToolName>
-parameters:
-    <...>  
-```
-We will take further action based on the result.
-====================
-
-Notes: 
-- Action has the following fields: `tool_name` and `parameters` ONLY.
-- `parameters` uses the format specified for the Tool.
-- `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
-- One Action at a time. No more. No less.
-";
-
-const PROTO_EXCHANGE_2: &str = r#"
-## Observations:
-- The given list to sort is [2, 3, 1, 4, 5].
-- I need to sort this list in ascending order.
-## Orientation:
-- SandboxedPython can be used to sort the list.
-- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
-- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
-## Decision:
-- We can use the sorted() function of Python to sort the list.
-## The ONLY Action:
-```yaml
-tool_name: SandboxedPython
-parameters:
-  code: |
-    lst = [2, 3, 1, 4, 5]
-    sorted_list = sorted(lst)
-    print(f"The sorted list is {sorted_list}")
-```
-We will take further action based on the result.
-"#;
-
-const PROTO_EXCHANGE_3: &str = r"
-# Action SandboxedPython result:
-```yaml
-stdout: |
-  The sorted list is [1, 2, 3, 4, 5]
-stderr: ''
-```
-";
-
-const PROTO_EXCHANGE_4: &str = r"
-## Observations:
-- We needed to sort the list in ascending order.
-- We have the result of the Action.
-- We have the sorted list: [1, 2, 3, 4, 5].
-## Orientation:
-- I know the answer to the original question.
-- I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
-## Decision:
-- Use the Conclude Tool to terminate the task with the sorted list.
-## The ONLY Action:
-```yaml
-tool_name: Conclude
-parameters:
-  original_question: |
-    Sort in ascending order: [2, 3, 1, 4, 5]
-  conclusion: |
-    The ascending sorted list is [1, 2, 3, 4, 5].
-```
-";
-
 /// Prompt manager
 #[derive(Clone)]
 pub(crate) struct Manager {
     toolbox: Toolbox,
+    system_prompt: String,
+    prompt: String,
+    prefix: String,
+    tool_prefix: String,
+    response_format: String,
 }
 
 impl Manager {
     /// Create a new prompt manager
-    pub fn new(toolbox: Toolbox) -> Self {
-        Self { toolbox }
+    pub fn new(
+        toolbox: Toolbox,
+        system_prompt: String,
+        prompt: String,
+        prefix: String,
+        tool_prefix: String,
+        response_format: String,
+    ) -> Self {
+        Self {
+            toolbox,
+            system_prompt,
+            prompt,
+            prefix,
+            tool_prefix,
+            response_format,
+        }
     }
 
     /// Create the prompt describing the tools
     async fn create_tool_description(&self) -> String {
-        let prefix = TOOL_PREFIX.to_string();
+        let prefix = self.tool_prefix.to_string();
 
         let tool_desc = self.toolbox.describe().await;
 
@@ -138,31 +59,32 @@ impl Manager {
 
     /// Create the prompt describing the tools and how to use them
     async fn create_tool_warm_up(&self) -> String {
-        let prefix = PREFIX.to_string();
         let tool_prompt = self.create_tool_description().await;
-        prefix + FORMAT + &tool_prompt
+
+        format!("{}{}{}", self.prefix, self.response_format, tool_prompt)
     }
 
     /// Create the prompt for the task
     pub fn build_task_prompt(&self, task: &str) -> Task {
+        let prompt = format!("# Your turn\nOriginal question: {}\n{}", task, self.prompt,);
         Task {
             task: task.to_string(),
+            prompt,
         }
     }
 
     /// Create the 'system' prompt to describe the roles.
     fn create_system_prompt(&self) -> String {
-        "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
-            .to_string()
+        self.system_prompt.clone()
     }
 
-    pub(crate) async fn populate_chat_history(&self, chat_history: &mut ChatHistory) {
+    pub(crate) async fn populate_chat_history(
+        &self,
+        chat_history: &mut ChatHistory,
+        examples: Vec<(String, String)>,
+    ) {
         let warm_up_prompt = self.create_tool_warm_up().await;
         let system_prompt = self.create_system_prompt();
-
-        let warmup_task = Task {
-            task: "Sort in ascending order: [2, 3, 1, 4, 5]".to_string(),
-        };
 
         chat_history.set_context(vec![
             ChatEntry {
@@ -175,36 +97,30 @@ impl Manager {
             },
         ]);
 
-        chat_history
-            .add_example(warmup_task.to_prompt(), PROTO_EXCHANGE_2.trim().to_string())
-            .await;
-        chat_history
-            .add_example(
-                (format!("{}{}", PROTO_EXCHANGE_3, warmup_task.to_prompt()))
-                    .trim()
-                    .to_string(),
-                PROTO_EXCHANGE_4.trim().to_string(),
-            )
-            .await;
+        for (prompt, response) in examples {
+            chat_history.add_example(prompt, response).await;
+        }
     }
 }
 
 /// Task-related prompts
 ///
 /// Use [`Display`] to get the prompt.
-#[derive(Debug)]
 pub struct Task {
     task: String,
+    prompt: String,
+}
+
+impl Debug for Task {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Task").field("task", &self.task).finish()
+    }
 }
 
 impl Task {
     /// Create the prompt for the task
     pub fn to_prompt(&self) -> String {
-        // NOTE(ssoudan) what about bringing focus on the answer before the tool result?
-        format!(
-            "# Your turn\nOriginal question: {}\nDo you have the answer? Use the Conclude Tool to terminate the task.\nObservations, Orientation, Decision, The ONLY Action?",
-            self.task
-        )
+        self.prompt.clone()
     }
 
     /// Create the prompt to react to an action failure
@@ -214,19 +130,17 @@ impl Task {
         e: &ToolUseError,
     ) -> String {
         format!(
-            "# Action {} failed with:\n{:?}\nSomething was incorrect in previous response.\n{}",
+            "# Action {} failed with:\n{:?}\nSomething was incorrect in previous response.",
             tool_name.as_ref(),
             e,
-            self.to_prompt()
         )
     }
 
     /// Create the prompt to react to invalid action specification
     pub(crate) fn invalid_action_prompt(&self, e: &InvocationError) -> String {
         format!(
-            "# No valid Action found:\n{:?}\nSomething was incorrect in previous response.\n{}",
+            "# No valid Action found:\n{:?}\nSomething was incorrect in previous response.",
             e,
-            self.to_prompt()
         )
     }
 
@@ -239,18 +153,17 @@ impl Task {
     ) -> String {
         if available_invocation_count != 1 {
             format!(
-                "You must give only one Action at a time. There was {}. Only the first one was considered.\n# Action {} result: \n```yaml\n{}```\n{}",
+                "# Action {} result: \nYou must give only one Action at a time. There was {}. Only the first one was considered.\n```yaml\n{}```",
                 available_invocation_count,
                 tool_name.as_ref(),
                 result.as_ref(),
-                &self
+
             )
         } else {
             format!(
-                "# Action {} result: \n```yaml\n{}```\n{}",
+                "# Action {} result: \n```yaml\n{}```",
                 tool_name.as_ref(),
                 result.as_ref(),
-                &self
             )
         }
     }
@@ -272,22 +185,42 @@ mod tests {
         use crate::Toolbox;
 
         let toolbox = Toolbox::default();
-        let manager = Manager::new(toolbox);
+        let system_prompt =
+            "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
+                .to_string();
+
+        let prompt = "Do you have the answer? Use the Conclude Tool to terminate the task.\nObservations, Orientation, Decision, The ONLY Action?".to_string();
+
+        let prefix = "Sapiens:".to_string();
+        let tool_prefix = "Tool:".to_string();
+        let response_format =
+            "Something very long with Observations, Orientation, Decision, Action\n\n".to_string();
+
+        let manager = Manager::new(
+            toolbox,
+            system_prompt,
+            prompt,
+            prefix,
+            tool_prefix,
+            response_format,
+        );
 
         let config = crate::SapiensConfig::default();
 
-        let min_token_for_completion = config.min_tokens_for_completion;
         let max_token = config.model.context_size().await;
-        let mut chat_history =
-            ChatHistory::new(config.clone(), max_token, min_token_for_completion);
+        let mut chat_history = ChatHistory::new(config.clone(), max_token);
 
-        manager.populate_chat_history(&mut chat_history).await;
+        let examples = vec![];
+
+        manager
+            .populate_chat_history(&mut chat_history, examples)
+            .await;
 
         // let prompts: Vec<ChatEntry> = chat_history.iter().cloned().collect();
 
         // println!("{:?}", prompts);
         let tokens = config.model.num_tokens(chat_history.make_input()).await;
 
-        assert_eq!(tokens, 985)
+        assert_eq!(tokens, 59)
     }
 }

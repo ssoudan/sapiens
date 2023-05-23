@@ -2,7 +2,7 @@ use std::fmt::{Debug, Formatter};
 use std::ops::Add;
 use std::sync::Arc;
 
-use sapiens::chain::Message;
+use sapiens::chains::Message;
 use sapiens::context::{ChatEntry, ContextDump};
 use sapiens::models::Role;
 use sapiens::{

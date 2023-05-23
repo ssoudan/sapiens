@@ -29,14 +29,17 @@ pub mod tools;
 pub mod models;
 
 /// Execution chains
-pub mod chain;
+pub mod chains;
 
 use std::fmt::Debug;
+use std::str::FromStr;
 use std::sync::{Arc, Weak};
 
+use clap::builder::PossibleValue;
+use serde::{Deserialize, Serialize};
 use tokio::sync::Mutex;
 
-use crate::chain::{Message, OODAChain};
+use crate::chains::{Chain, Message, MultiStepOODAChain, OODAChain};
 use crate::context::{ChatEntry, ContextDump};
 use crate::models::openai::OpenAI;
 use crate::models::{ModelRef, ModelResponse, Role, Usage};
@@ -61,7 +64,43 @@ pub enum Error {
     ActionResponseTooLong(String),
     /// Error in the chain
     #[error("Chain error: {0}")]
-    ChainError(#[from] chain::Error),
+    ChainError(#[from] chains::Error),
+}
+
+/// Type of chain to use
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ChainType {
+    /// OODA single step chain
+    #[default]
+    SingleStepOODA,
+    /// OODA multi step chain
+    MultiStepOODA,
+}
+
+impl FromStr for ChainType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "single-step-ooda" => Ok(ChainType::SingleStepOODA),
+            "multi-step-ooda" => Ok(ChainType::MultiStepOODA),
+            _ => Err(format!("Unknown chain type: {}", s)),
+        }
+    }
+}
+
+#[cfg(feature = "clap")]
+impl clap::ValueEnum for ChainType {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[ChainType::SingleStepOODA, ChainType::MultiStepOODA]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        match self {
+            ChainType::SingleStepOODA => Some(PossibleValue::new("single-step-ooda")),
+            ChainType::MultiStepOODA => Some(PossibleValue::new("multi-step-ooda")),
+        }
+    }
 }
 
 /// Configuration for the bot
@@ -71,6 +110,9 @@ pub struct SapiensConfig {
     pub model: ModelRef,
     /// The maximum number of steps
     pub max_steps: usize,
+
+    /// The type of chain to use
+    pub chain_type: ChainType,
     /// The minimum number of tokens that need to be available for completion
     pub min_tokens_for_completion: usize,
     /// Maximum number of tokens for the model to generate
@@ -81,6 +123,7 @@ impl Debug for SapiensConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
             .field("max_steps", &self.max_steps)
+            .field("chain_type", &self.chain_type)
             .field("min_tokens_for_completion", &self.min_tokens_for_completion)
             .field("max_tokens", &self.max_tokens)
             .finish()
@@ -92,6 +135,7 @@ impl Default for SapiensConfig {
         Self {
             model: Arc::new(Box::<OpenAI>::default()),
             max_steps: 10,
+            chain_type: ChainType::SingleStepOODA,
             min_tokens_for_completion: 256,
             max_tokens: None,
         }
@@ -262,7 +306,7 @@ pub type WeakRuntimeObserver = Weak<Mutex<dyn RuntimeObserver>>;
 pub struct VoidTaskProgressUpdateObserver;
 
 #[cfg(test)]
-fn void_observer() -> StrongRuntimeObserver<VoidTaskProgressUpdateObserver> {
+pub(crate) fn void_observer() -> StrongRuntimeObserver<VoidTaskProgressUpdateObserver> {
     wrap_observer(VoidTaskProgressUpdateObserver)
 }
 
@@ -271,7 +315,7 @@ impl RuntimeObserver for VoidTaskProgressUpdateObserver {}
 
 /// A step in the task
 pub struct Step {
-    task_chain: OODAChain,
+    task_chain: Box<dyn Chain>,
     observer: WeakRuntimeObserver,
 }
 
@@ -329,16 +373,7 @@ impl TaskState {
         let observer = wrap_observer(VoidTaskProgressUpdateObserver {});
         let observer = Arc::downgrade(&observer);
 
-        let task_chain = OODAChain::new(config, toolbox, observer.clone())
-            .await?
-            .with_task(task);
-
-        Ok(TaskState::Step {
-            step: Step {
-                task_chain,
-                observer,
-            },
-        })
+        TaskState::with_observer(config, toolbox, task, observer).await
     }
 
     /// Create a new [`TaskState`] for a `task`.
@@ -356,9 +391,20 @@ impl TaskState {
             observer.lock().await.on_task(&task).await;
         }
 
-        let task_chain = OODAChain::new(config, toolbox, observer.clone())
-            .await?
-            .with_task(task);
+        let task_chain = match config.chain_type {
+            ChainType::SingleStepOODA => {
+                let chain = OODAChain::new(config, toolbox, observer.clone())
+                    .await?
+                    .with_task(task);
+                Box::new(chain) as Box<dyn Chain>
+            }
+            ChainType::MultiStepOODA => {
+                let chain = MultiStepOODAChain::new(config, toolbox, observer.clone())
+                    .await?
+                    .with_task(task);
+                Box::new(chain) as Box<dyn Chain>
+            }
+        };
 
         // call the observer
         if let Some(observer) = observer.upgrade() {

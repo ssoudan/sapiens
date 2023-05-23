@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use tracing::trace;
 
-use crate::chain::Message;
+use crate::chains::Message;
 use crate::models::{ChatInput, Role};
 use crate::SapiensConfig;
 
@@ -47,8 +47,6 @@ pub struct ChatHistory {
     config: SapiensConfig,
     /// The maximum number of tokens we can have in the input for the model
     max_token: usize,
-    /// The minimum number of tokens we need to complete the task
-    min_token_for_completion: usize,
     /// The 'context' - first messages.
     context: Vec<ChatEntry>,
     /// The examples
@@ -60,19 +58,21 @@ pub struct ChatHistory {
 impl Debug for ChatHistory {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ChatHistory")
+            .field("config", &self.config)
             .field("max_token", &self.max_token)
-            .field("min_token_for_completion", &self.min_token_for_completion)
+            .field("context", &self.context)
+            .field("examples", &self.examples)
+            .field("chitchat", &self.chitchat)
             .finish()
     }
 }
 
 impl ChatHistory {
     /// Create a new chat history
-    pub fn new(config: SapiensConfig, max_token: usize, min_token_for_completion: usize) -> Self {
+    pub fn new(config: SapiensConfig, max_token: usize) -> Self {
         Self {
             config,
             max_token,
-            min_token_for_completion,
             context: vec![],
             examples: vec![],
             chitchat: vec![],
@@ -101,7 +101,7 @@ impl ChatHistory {
 
     /// add a message to the chitchat history, and prune the history if needed
     /// returns the number of messages in the chitchat history
-    pub async fn add_chitchat(&mut self, entry: ChatEntry) -> Result<usize, Error> {
+    pub async fn add_chitchat(&mut self, entry: ChatEntry) {
         // ensure we don't have two consecutive messages from the same role
         if let Some(last) = self.chitchat.last() {
             if last.role == entry.role {
@@ -110,9 +110,6 @@ impl ChatHistory {
         }
 
         self.chitchat.push(entry);
-
-        // prune the history if needed
-        self.purge().await
     }
 
     /// Prepare the input for the model
@@ -132,14 +129,14 @@ impl ChatHistory {
     /// uses [tiktoken_rs::num_tokens_from_messages] prune
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
-    async fn purge(&mut self) -> Result<usize, Error> {
+    pub async fn purge(&mut self) -> Result<usize, Error> {
         if self.chitchat.is_empty() {
             return Ok(0);
         }
 
         trace!(
             max_token = self.max_token,
-            min_token_for_completion = self.min_token_for_completion,
+            min_tokens_for_completion = self.config.min_tokens_for_completion,
             "purging history"
         );
 
@@ -149,13 +146,13 @@ impl ChatHistory {
             let num_tokens = self.config.model.num_tokens(input).await;
             trace!(
                 max_token = self.max_token,
-                min_token_for_completion = self.min_token_for_completion,
+                min_tokens_for_completion = self.config.min_tokens_for_completion,
                 len = self.examples.len(),
                 num_tokens,
                 "purging history - examples"
             );
 
-            if num_tokens <= self.max_token - self.min_token_for_completion {
+            if num_tokens <= self.max_token - self.config.min_tokens_for_completion {
                 return Ok(self.chitchat.len());
             }
             // remove oldest message
@@ -168,17 +165,25 @@ impl ChatHistory {
             let num_tokens = self.config.model.num_tokens(input).await;
             trace!(
                 max_token = self.max_token,
-                min_token_for_completion = self.min_token_for_completion,
+                min_tokens_for_completion = self.config.min_tokens_for_completion,
                 len = self.chitchat.len(),
                 num_tokens,
                 "purging history - loop"
             );
 
-            if num_tokens <= self.max_token - self.min_token_for_completion {
+            if num_tokens <= self.max_token - self.config.min_tokens_for_completion {
                 return Ok(self.chitchat.len());
             }
+
             // remove oldest message
             self.chitchat.remove(0);
+        }
+
+        let input = self.make_input();
+        let num_tokens = self.config.model.num_tokens(input).await;
+
+        if num_tokens <= self.max_token - self.config.min_tokens_for_completion {
+            return Ok(self.chitchat.len());
         }
 
         Err(Error::PromptTooLong)

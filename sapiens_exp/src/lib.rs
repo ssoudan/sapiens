@@ -1,6 +1,7 @@
 //! Sapiens CLI library
 
 use sapiens::models::SupportedModel;
+use sapiens::ChainType;
 use serde::{Deserialize, Serialize};
 
 /// Tools related to experimentation.
@@ -137,6 +138,8 @@ pub mod evaluate;
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     // FUTURE(ssoudan) more feature flags
+    /// Chain type
+    pub chain: ChainType,
     /// Model to use
     pub model: SupportedModel,
     /// Maximum number of steps to execute

@@ -1,0 +1,57 @@
+---
+source: sapiens/src/chains/agents/ooda_multistep.rs
+expression: chat_history
+---
+Ok(
+    ChatHistory {
+        config: Config {
+            max_steps: 10,
+            chain_type: SingleStepOODA,
+            min_tokens_for_completion: 256,
+            max_tokens: None,
+        },
+        max_token: 4096,
+        context: [
+            ChatEntry {
+                role: System,
+                msg: "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!",
+            },
+            ChatEntry {
+                role: User,
+                msg: "You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.\nYou will proceed iteratively using an OODA loop.\n\n- Action result will be provided to you. \n- Never produce the result of an Action. \n- The loop will repeated until you have the answer to the original question. \n- No task is complete until the Conclude Tool is used to provide the answer.\n- You cannot use jinja2 templating in your response. Be concise. \n\n# Format of your response\n\nYou must use the following format for your response. Comments are in bold and should be removed from your response.\n====================\n## Observations: \n**What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**\n- <...>\n====================\n\n# The following are the ONLY Tools one can use for the Actions:\n[]",
+            },
+        ],
+        examples: [
+            (
+                ChatEntry {
+                    role: User,
+                    msg: "# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nObservations?",
+                },
+                ChatEntry {
+                    role: Assistant,
+                    msg: "## Observations:\n- The given list to sort is [2, 3, 1, 4, 5].\n- I need to sort this list in ascending order.",
+                },
+            ),
+            (
+                ChatEntry {
+                    role: User,
+                    msg: "## Orientation:\n- SandboxedPython can be used to sort the list.\n- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.\n- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.\n- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.\n## Decision:\n- We can use the sorted() function of Python to sort the list.\n## The ONLY Action:\n```yaml\ntool_name: SandboxedPython\nparameters:\n  code: |\n    lst = [2, 3, 1, 4, 5]\n    sorted_list = sorted(lst)\n    print(f\"The sorted list is {sorted_list}\")\n```\nWe will take further action based on the result.\n# Action SandboxedPython result:\n```yaml\nstdout: |\n  The sorted list is [1, 2, 3, 4, 5]\nstderr: ''\n```# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nObservations?",
+                },
+                ChatEntry {
+                    role: Assistant,
+                    msg: "## Observations:\n- We needed to sort the list in ascending order.\n- We have the result of the Action.\n- We have the sorted list: [1, 2, 3, 4, 5].",
+                },
+            ),
+        ],
+        chitchat: [
+            ChatEntry {
+                role: Assistant,
+                msg: "## Observations:\n- The given list to sort is [2, 3, 1, 4, 5].\n- I need to sort this list in ascending order.",
+            },
+            ChatEntry {
+                role: User,
+                msg: "## Orientation:\n- SandboxedPython can be used to sort the list.\n- I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.\n- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.\n- I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.\n## Decision:\n- We can use the sorted() function of Python to sort the list.\n## The ONLY Action:\n```yaml\ntool_name: SandboxedPython\nparameters:\n  code: |\n    lst = [2, 3, 1, 4, 5]\n    sorted_list = sorted(lst)\n    print(f\"The sorted list is {sorted_list}\")\n```\nWe will take further action based on the result.\n# Action SandboxedPython result: \n```yaml\nstdout: |\n  The sorted list is [1, 2, 3, 4, 5]\nstderr: ''```\n# Your turn\nOriginal question: Sort in ascending order: [2, 3, 1, 4, 5]\nObservations?",
+            },
+        ],
+    },
+)

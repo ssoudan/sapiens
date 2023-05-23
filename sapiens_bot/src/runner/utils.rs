@@ -1,6 +1,6 @@
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
 use pulldown_cmark_to_cmark::{cmark_resume, State};
-use sapiens::chain::Message;
+use sapiens::chains::Message;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, MessageFormatter};
 use sapiens::models::Role;
 

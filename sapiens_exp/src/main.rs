@@ -6,7 +6,7 @@ use std::sync::Arc;
 use clap::{Parser, ValueEnum};
 use dotenvy::dotenv_override;
 use sapiens::models::SupportedModel;
-use sapiens::{models, run_to_the_end, wrap_observer};
+use sapiens::{models, run_to_the_end, wrap_observer, ChainType};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
@@ -36,6 +36,10 @@ impl Display for Scenario {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// The type of chain to use
+    #[arg(long, default_value_t = ChainType::SingleStepOODA, value_enum, env)]
+    chain: ChainType,
+
     /// Model to use
     #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
     model: SupportedModel,
@@ -78,6 +82,7 @@ struct Args {
 impl From<&Args> for Config {
     fn from(args: &Args) -> Self {
         Self {
+            chain: args.chain,
             model: args.model.clone(),
             max_steps: args.max_steps,
             min_tokens_for_completion: args.min_tokens_for_completion,
@@ -146,6 +151,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let config = sapiens::SapiensConfig {
         max_steps: args.max_steps,
+        chain_type: args.chain,
         model,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,

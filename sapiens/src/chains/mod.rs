@@ -8,24 +8,24 @@ pub mod agents;
 mod tests;
 
 // FUTURE(ssoudan) more chains:
-// - OODA - Observe, Orient, Decide, Act
-//  - in one shot
-//  - in several steps
-// - 2201.11903 - Chain of thought prompting - 2022
-// - 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
-// - 2207.05608 - Inner monologue - Different types of feedbacks - 2022
-// - 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
-// - 2210.03629 - ReAct - Reasoning + Action - Mar 2023
-// - 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
-// - 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
-// - 2305.10601 - Tree of Thoughts - May 2023
+// - [ ] OODA - Observe, Orient, Decide, Act
+//  - [x] in one shot
+//  - [ ] in several steps
+// - [ ] 2201.11903 - Chain of thought prompting - 2022
+// - [ ] 2205.11916 - Zeroshot reasoners - "Let's think step by step" - 2022
+// - [ ] 2207.05608 - Inner monologue - Different types of feedbacks - 2022
+// - [ ] 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
+// - [ ] 2210.03629 - ReAct - Reasoning + Action - Mar 2023
+// - [ ] 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
+// - [ ] 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
+// - [ ] 2305.10601 - Tree of Thoughts - May 2023
 
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::chain::agents::OODAAgent;
-use crate::chain::schedulers::SingleAgentScheduler;
+use crate::chains::agents::ooda::{multistep, one_step};
+use crate::chains::schedulers::{MultiAgentScheduler, SingleAgentScheduler};
 use crate::context::ContextDump;
 use crate::models::Usage;
 use crate::tools::invocation::InvocationError;
@@ -183,21 +183,29 @@ pub struct Context {
 }
 
 impl Context {
+    /// Create a new context
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Dump the context into a [`ContextDump`]
     pub fn dump(&self) -> ContextDump {
         ContextDump {
             messages: self.messages.clone(),
         }
     }
-}
 
-impl Context {
     /// Returns the latest task
-    pub(crate) fn get_latest_task(&self) -> Option<String> {
+    pub fn get_latest_task(&self) -> Option<String> {
         self.messages.iter().rev().find_map(|m| match m {
             Message::Task { content } => Some(content.clone()),
             _ => None,
         })
+    }
+
+    /// Add a message to the context
+    pub fn add_message(&mut self, message: Message) {
+        self.messages.push(message);
     }
 }
 
@@ -212,7 +220,7 @@ pub enum Error {
     MaxStepsReached,
     /// Agent failed
     #[error("Agent failed: {0}")]
-    AgentFailed(#[from] <OODAAgent as Agent>::Error),
+    AgentFailed(#[from] agents::Error),
 }
 
 /// An agent for sapiens
@@ -233,7 +241,7 @@ pub trait Scheduler: Send + Sync {
     async fn schedule(&mut self, context: &Context) -> Result<Message, Error>;
 }
 
-/// A runtime of for sapiens
+/// A runtime for sapiens
 pub struct Runtime {
     context: Context,
     toolbox: Toolbox,
@@ -311,6 +319,16 @@ impl Runtime {
     }
 }
 
+/// a chain of steps to perform a task.
+#[async_trait::async_trait]
+pub trait Chain: Send + Sync {
+    /// Dump the current context
+    fn dump(&self) -> ContextDump;
+
+    /// Execute a single step of the chain
+    async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error>;
+}
+
 /// An OODA chain
 pub struct OODAChain {
     runtime: Runtime,
@@ -323,7 +341,7 @@ impl OODAChain {
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
     ) -> Result<Self, Error> {
-        let agent = OODAAgent::new(config.clone(), toolbox.clone(), observer.clone()).await;
+        let agent = one_step::Agent::new(config.clone(), toolbox.clone(), observer.clone()).await;
 
         let scheduler =
             SingleAgentScheduler::new(config.max_steps, Box::new(agent), observer.clone());
@@ -341,14 +359,67 @@ impl OODAChain {
 
         self
     }
+}
 
-    /// Dump the current context
-    pub fn dump(&self) -> ContextDump {
+#[async_trait::async_trait]
+impl Chain for OODAChain {
+    fn dump(&self) -> ContextDump {
         self.runtime.context.dump()
     }
 
-    /// Execute a single step of the OODA chain
-    pub async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error> {
+    async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error> {
+        self.runtime.step().await
+    }
+}
+
+/// Multistep OODA chain
+pub struct MultiStepOODAChain {
+    runtime: Runtime,
+}
+
+impl MultiStepOODAChain {
+    /// Create a new [`MultiStepOODAChain`]
+    pub async fn new(
+        config: SapiensConfig,
+        toolbox: Toolbox,
+        observer: WeakRuntimeObserver,
+    ) -> Result<Self, Error> {
+        let agents = vec![
+            multistep::Agent::new_observer(config.clone(), toolbox.clone(), observer.clone()).await,
+            multistep::Agent::new_orienter(config.clone(), toolbox.clone(), observer.clone()).await,
+            multistep::Agent::new_decider(config.clone(), toolbox.clone(), observer.clone()).await,
+            multistep::Agent::new_actor(config.clone(), toolbox.clone(), observer.clone()).await,
+        ];
+
+        let agents = agents
+            .into_iter()
+            .map(|a| Box::new(a) as Box<dyn Agent<Error = agents::Error>>)
+            .collect();
+
+        let scheduler = MultiAgentScheduler::new(config.max_steps, agents, observer.clone());
+        Ok(Self {
+            runtime: Runtime::new(toolbox, Box::new(scheduler), observer).await?,
+        })
+    }
+
+    /// Add a new task to the OODA chain
+    pub fn with_task(mut self, task: String) -> Self {
+        self.runtime
+            .context
+            .messages
+            .push(Message::Task { content: task });
+
+        self
+    }
+}
+
+#[async_trait::async_trait]
+impl Chain for MultiStepOODAChain {
+    fn dump(&self) -> ContextDump {
+        self.runtime.context.dump()
+    }
+
+    async fn step(&mut self) -> Result<Vec<TerminationMessage>, Error> {
         self.runtime.step().await
     }
 }
