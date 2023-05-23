@@ -27,7 +27,7 @@ lazy_static = "1.4.0"
 serde = { version = "1.0.163", features = ["derive"] }
 serde_yaml = "0.9.21"
 
-regex = "1.8.1"
+regex = "1.8.2"
 
 clap = { version = "4.2.7", optional = true }
 
