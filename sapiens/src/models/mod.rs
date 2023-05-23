@@ -27,6 +27,9 @@ pub enum Error {
     /// Vertex AI error
     #[error("Vertex AI error: {0}")]
     VertexAIError(#[from] gcp_vertex_ai_generative_language::Error),
+    /// Filtered output
+    #[error("Filtered output")]
+    Filtered,
 }
 
 /// Roles in the conversation
@@ -72,7 +75,7 @@ pub struct ChatInput {
     /// The context
     pub(crate) context: Vec<ChatEntry>,
     /// The examples
-    pub(crate) examples: Vec<ChatEntry>,
+    pub(crate) examples: Vec<(ChatEntry, ChatEntry)>,
     /// The chat history
     pub(crate) chat: Vec<ChatEntry>,
 }
@@ -89,7 +92,7 @@ pub trait Model: ChatEntryTokenNumber + Send + Sync {
 }
 
 /// Response from a language model
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct ModelResponse {
     /// The message
     pub msg: String,
@@ -99,8 +102,22 @@ pub struct ModelResponse {
     pub finish_reason: Option<String>,
 }
 
+impl Debug for ModelResponse {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "ModelResponse {{ ")?;
+        write!(f, "msg: \n{}, \n", &self.msg)?;
+        if let Some(usage) = &self.usage {
+            writeln!(f, "usage: {:#?}, ", usage)?;
+        }
+        if let Some(finish_reason) = &self.finish_reason {
+            writeln!(f, "finish_reason: {}, ", &finish_reason)?;
+        }
+        write!(f, "}}")
+    }
+}
+
 /// Token usage
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Usage {
     /// The number of tokens used for the prompt
     pub prompt_tokens: u32,

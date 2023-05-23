@@ -3,13 +3,14 @@ use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use sapiens::context::{ChatEntryFormatter, ChatHistoryDump};
+use sapiens::context::{ChatEntryFormatter, ContextDump, MessageFormatter};
 use sapiens::models::SupportedModel;
-use sapiens::runner::Chain;
+use sapiens::tools::toolbox::Toolbox;
 use sapiens::tools::TerminationMessage;
 use sapiens::{
-    models, wrap_observer, Error, InvocationFailureNotification, InvocationSuccessNotification,
-    ModelUpdateNotification, SapiensConfig, StepObserver, StepOrStop, WeakStepObserver,
+    models, wrap_observer, Error, InvalidInvocationNotification, InvocationFailureNotification,
+    InvocationResultNotification, InvocationSuccessNotification, MessageNotification,
+    ModelNotification, RuntimeObserver, SapiensConfig, TaskState, WeakRuntimeObserver,
 };
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
@@ -22,7 +23,8 @@ pub mod utils;
 
 /// Sapiens bot
 pub struct SapiensBot {
-    chain: Chain,
+    toolbox: Toolbox,
+    config: SapiensConfig,
 }
 
 impl SapiensBot {
@@ -70,19 +72,18 @@ impl SapiensBot {
             model,
             ..SapiensConfig::default()
         };
-        let chain = Chain::new(toolbox, config).await;
 
-        Self { chain }
+        Self { toolbox, config }
     }
 
     /// Start a new task
     pub async fn start_task(
         &mut self,
         task: String,
-        observer: WeakStepObserver,
-    ) -> Result<StepOrStop, Error>
+        observer: WeakRuntimeObserver,
+    ) -> Result<TaskState, Error>
 where {
-        StepOrStop::with_observer(self.chain.clone(), task, observer).await
+        TaskState::with_observer(self.config.clone(), self.toolbox.clone(), task, observer).await
     }
 }
 
@@ -92,6 +93,7 @@ pub struct ProgressObserver {
     pub show_warmup_prompt: bool,
     pub job_tx: mpsc::Sender<JobUpdate>,
     entry_format: Box<dyn ChatEntryFormatter + 'static + Send + Sync>,
+    message_format: Box<dyn MessageFormatter + 'static + Send + Sync>,
 }
 
 impl Debug for ProgressObserver {
@@ -105,10 +107,10 @@ impl Debug for ProgressObserver {
 }
 
 #[async_trait::async_trait]
-impl StepObserver for ProgressObserver {
-    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
-        let format = self.entry_format.as_ref();
-        let msgs = chat_history.format(format);
+impl RuntimeObserver for ProgressObserver {
+    async fn on_start(&mut self, context: ContextDump) {
+        let format = self.message_format.as_ref();
+        let msgs = context.format(format);
         let last_msg = msgs.last();
         debug!(last_msg = ?last_msg, "on_start");
 
@@ -126,7 +128,7 @@ impl StepObserver for ProgressObserver {
         }
     }
 
-    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
+    async fn on_model_update(&mut self, event: ModelNotification) {
         let msg = self.entry_format.format(&event.chat_entry);
         debug!(msg = ?event.chat_entry, "on_model_update");
 
@@ -134,51 +136,35 @@ impl StepObserver for ProgressObserver {
         self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
     }
 
-    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
-        let res = event.res;
-        let tool_name = event.tool_name;
-
-        debug!(res = ?res, tool_name, "on_invocation_success");
-
-        match res {
-            Ok(tool_output) => {
-                let msg = self.entry_format.format(&tool_output);
-
-                let msgs = sanitize_msgs_for_discord(vec![msg]);
-
-                self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
-            }
-            Err(error) => {
-                let msg = format!("*Error*: {}", error);
-
-                let msgs = sanitize_msgs_for_discord(vec![msg]);
-
-                self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
-            }
-        }
+    async fn on_message(&mut self, _event: MessageNotification) {
+        todo!()
     }
 
-    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
-        let res = event.res;
-        let tool_name = event.tool_name;
-
-        debug!(res = ?res, tool_name, "on_invocation_failure");
-
-        match res {
-            Ok(tool_output) => {
-                let msg = self.entry_format.format(&tool_output);
+    async fn on_invocation_result(&mut self, event: InvocationResultNotification) {
+        match event {
+            InvocationResultNotification::InvocationSuccess(InvocationSuccessNotification {
+                result,
+                ..
+            }) => {
+                let msg = result;
 
                 let msgs = sanitize_msgs_for_discord(vec![msg]);
 
                 self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
             }
-            Err(error) => {
-                let msg = format!("*Error*: {}", error);
+            InvocationResultNotification::InvocationFailure(InvocationFailureNotification {
+                e,
+                ..
+            }) => {
+                let msg = format!("*Error*: {}", e);
 
                 let msgs = sanitize_msgs_for_discord(vec![msg]);
 
                 self.job_tx.send(JobUpdate::ToolError(msgs)).await.unwrap();
             }
+            InvocationResultNotification::InvalidInvocation(InvalidInvocationNotification {
+                ..
+            }) => {}
         }
     }
 }
@@ -240,6 +226,7 @@ impl Runner {
                 show_warmup_prompt: job.show_warmup_prompt,
                 job_tx: job.tx,
                 entry_format: Box::new(Formatter {}),
+                message_format: Box::new(Formatter {}),
             };
 
             let observer = wrap_observer(observer);
@@ -255,12 +242,12 @@ impl Runner {
                     let mut step = step;
                     loop {
                         match step.step().await {
-                            Ok(s @ StepOrStop::Step { .. }) => {
+                            Ok(s @ TaskState::Step { .. }) => {
                                 step = s;
                                 // update is going to come through the handler
                                 debug!("Step for: {}", task);
                             }
-                            Ok(StepOrStop::Stop { stop }) => {
+                            Ok(TaskState::Stop { stop }) => {
                                 info!("Task finished: {}", task);
 
                                 let messages = stop

@@ -12,7 +12,7 @@ use sapiens::tools::{
 use sapiens_derive::{Describe, ProtoToolDescribe};
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
-use tracing::debug;
+use tracing::trace;
 
 /// Conversion tools
 pub(crate) mod utils;
@@ -188,7 +188,7 @@ impl PythonTool {
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
-        debug!(code, "Running code");
+        trace!("Running code:\n{}", code);
 
         // FIXME(ssoudan) got to set a limit on the execution time
         // https://docs.python.org/3/library/asyncio-task.html#timeouts

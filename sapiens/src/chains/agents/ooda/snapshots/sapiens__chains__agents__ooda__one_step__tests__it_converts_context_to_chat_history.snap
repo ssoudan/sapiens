@@ -1,0 +1,149 @@
+---
+source: sapiens/src/chains/agents/ooda/one_step.rs
+expression: chat_history
+---
+Ok(
+    ChatHistory {
+        config: Config {
+            max_steps: 10,
+            chain_type: SingleStepOODA,
+            min_tokens_for_completion: 256,
+            max_tokens: None,
+        },
+        max_token: 4096,
+        context: [
+            [system]: You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!,
+            [user]: You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
+            You will proceed iteratively using an OODA loop.
+            
+            - Action result will be provided to you. 
+            - Never produce the result of an Action. 
+            - The loop will repeated until you have the answer to the original question. 
+            - No task is complete until the Conclude Tool is used to provide the answer.
+            - You cannot use jinja2 templating in your response. Be concise. 
+            
+            # Format of your response
+            
+            You must use the following format for your response. Comments are in bold and should be removed from your response.
+            ====================
+            ## Observations: 
+            **What do you know to be true? What do you you don't know? What are your sources? Note down important information for later.**
+            - <...>
+            ## Orientation: 
+            **Plan the intermediate objectives to answer the original question. Maintain a list of current objectives updated as you go.**
+            - <...>
+            ## Decision: 
+            **Decide what to do first to answer the question. Why? How will you if it succeeds? How will you if it fails?**
+            - <...>
+            ## The ONLY Action: 
+            **Take a single Action consisting of exactly one pair of `tool_name` and `parameters`. Never give more than one YAML. **
+            ```yaml
+            tool_name: <ToolName>
+            parameters:
+                <...>  
+            ```
+            We will take further action based on the result.
+            ====================
+            
+            Notes: 
+            - Action has the following fields: `tool_name` and `parameters` ONLY.
+            - `parameters` uses the format specified for the Tool.
+            - `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
+            - One Action at a time. No more. No less.
+            
+            # The following are the ONLY Tools you can use for your Actions:
+            [],
+        ],
+        examples: [
+            (
+                [user]: # Your turn
+                Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+                Do you have the answer? Use the Conclude Tool to terminate the task.
+                Observations, Orientation, Decision, The ONLY Action?,
+                [assistant]: ## Observations:
+                - The given list to sort is [2, 3, 1, 4, 5].
+                - I need to sort this list in ascending order.
+                ## Orientation:
+                - SandboxedPython can be used to sort the list.
+                - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
+                - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+                - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
+                ## Decision:
+                - We can use the sorted() function of Python to sort the list.
+                ## The ONLY Action:
+                ```yaml
+                tool_name: SandboxedPython
+                parameters:
+                  code: |
+                    lst = [2, 3, 1, 4, 5]
+                    sorted_list = sorted(lst)
+                    print(f"The sorted list is {sorted_list}")
+                ```
+                We will take further action based on the result.,
+            ),
+            (
+                [user]: # Action SandboxedPython result:
+                ```yaml
+                stdout: |
+                  The sorted list is [1, 2, 3, 4, 5]
+                stderr: ''
+                ```
+                # Your turn
+                Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+                Do you have the answer? Use the Conclude Tool to terminate the task.
+                Observations, Orientation, Decision, The ONLY Action?,
+                [assistant]: ## Observations:
+                - We needed to sort the list in ascending order.
+                - We have the result of the Action.
+                - We have the sorted list: [1, 2, 3, 4, 5].
+                ## Orientation:
+                - I know the answer to the original question.
+                - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
+                ## Decision:
+                - Use the Conclude Tool to terminate the task with the sorted list.
+                ## The ONLY Action:
+                ```yaml
+                tool_name: Conclude
+                parameters:
+                  original_question: |
+                    Sort in ascending order: [2, 3, 1, 4, 5]
+                  conclusion: |
+                    The ascending sorted list is [1, 2, 3, 4, 5].
+                ```,
+            ),
+        ],
+        chitchat: [
+            [assistant]: ## Observations:
+            - The given list to sort is [2, 3, 1, 4, 5].
+            - I need to sort this list in ascending order.
+            ## Orientation:
+            - SandboxedPython can be used to sort the list.
+            - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
+            - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+            - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
+            ## Decision:
+            - We can use the sorted() function of Python to sort the list.
+            ## The ONLY Action:
+            ```yaml
+            tool_name: SandboxedPython
+            parameters:
+              code: |
+                lst = [2, 3, 1, 4, 5]
+                sorted_list = sorted(lst)
+                print(f"The sorted list is {sorted_list}")
+            ```
+            We will take further action based on the result.            
+            ,
+            [user]: # Action SandboxedPython result: 
+            ```yaml
+            stdout: |
+              The sorted list is [1, 2, 3, 4, 5]
+            stderr: ''
+            ```
+            # Your turn
+            Original question: Sort in ascending order: [2, 3, 1, 4, 5]
+            Do you have the answer? Use the Conclude Tool to terminate the task.
+            Observations, Orientation, Decision, The ONLY Action?,
+        ],
+    },
+)

@@ -4,11 +4,12 @@ use std::sync::Arc;
 use clap::Parser;
 use colored::Colorize;
 use dotenvy::dotenv_override;
-use sapiens::context::{ChatEntry, ChatEntryFormatter, ChatHistoryDump};
+use sapiens::chains::Message;
+use sapiens::context::{ChatEntry, ChatEntryFormatter, ContextDump, MessageFormatter};
 use sapiens::models::{Role, SupportedModel};
 use sapiens::{
-    models, run_to_the_end, wrap_observer, InvocationFailureNotification,
-    InvocationSuccessNotification, ModelUpdateNotification, SapiensConfig, StepObserver,
+    models, run_to_the_end, wrap_observer, ChainType, InvocationResultNotification,
+    ModelNotification, RuntimeObserver, SapiensConfig,
 };
 use tracing::info;
 use tracing_subscriber::EnvFilter;
@@ -16,9 +17,6 @@ use tracing_subscriber::EnvFilter;
 // Usability:
 // FUTURE(ssoudan) Richer interaction
 // FUTURE(ssoudan) More tools: wx, negotiate
-// FUTURE(ssoudan) Settings
-// FUTURE(ssoudan) Token budget management and completion termination reason
-// FUTURE(ssoudan) Model parameters
 // FUTURE(ssoudan) allow the bot to share its doubt and ask for help
 // FUTURE(ssoudan) Crontab-like scheduling: get a summary of the news daily
 // FUTURE(ssoudan) better errors for python code
@@ -36,12 +34,15 @@ use tracing_subscriber::EnvFilter;
 // FUTURE(ssoudan) vector stores?
 // FUTURE(ssoudan) prompt optimization
 // FUTURE(ssoudan) multiple models - critic?
-// FUTURE(ssoudan) multi-stage evaluation
 
 /// A bot that can do things - or at least try to.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// The type of chain to use
+    #[arg(long, default_value_t = ChainType::SingleStepOODA, value_enum, env)]
+    chain: ChainType,
+
     /// Model to use
     #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
     model: SupportedModel,
@@ -51,7 +52,7 @@ struct Args {
     max_steps: usize,
 
     /// Minimum tokens for completion
-    #[arg(long, default_value_t = 512)]
+    #[arg(long, default_value_t = 256)]
     min_tokens_for_completion: usize,
 
     /// Max tokens for the model to generate
@@ -86,6 +87,12 @@ impl ChatEntryFormatter for ColorFormatter {
     }
 }
 
+impl MessageFormatter for ColorFormatter {
+    fn format(&self, msg: &Message) -> String {
+        msg.to_string().yellow().to_string()
+    }
+}
+
 #[derive(Debug)]
 struct Observer {
     /// Whether to show the warm-up prompt
@@ -93,8 +100,8 @@ struct Observer {
 }
 
 #[async_trait::async_trait]
-impl StepObserver for Observer {
-    async fn on_start(&mut self, chat_history: ChatHistoryDump) {
+impl RuntimeObserver for Observer {
+    async fn on_start(&mut self, chat_history: ContextDump) {
         if self.show_warmup_prompt {
             let formatter = ColorFormatter {};
             let msgs = chat_history.format(&formatter);
@@ -106,40 +113,29 @@ impl StepObserver for Observer {
         } else {
             // Show only the last message
             let last_msg = chat_history.messages.last().unwrap();
-            let msg = ColorFormatter.format(last_msg);
+            let msg = MessageFormatter::format(&ColorFormatter, last_msg);
             println!("{}", msg);
             println!("=============");
         }
     }
 
-    async fn on_model_update(&mut self, event: ModelUpdateNotification) {
-        let msg = ColorFormatter.format(&event.chat_entry);
+    async fn on_model_update(&mut self, event: ModelNotification) {
+        let msg = ChatEntryFormatter::format(&ColorFormatter, &event.chat_entry);
         println!("{}", msg);
         println!("=============");
     }
 
-    async fn on_invocation_success(&mut self, event: InvocationSuccessNotification) {
-        match event.res {
-            Ok(tool_output) => {
-                let msg = ColorFormatter.format(&tool_output);
-                println!("{}", msg);
+    async fn on_invocation_result(&mut self, event: InvocationResultNotification) {
+        match event {
+            InvocationResultNotification::InvocationSuccess(i) => {
+                println!("{}", i.result.green());
             }
-            Err(e) => {
-                println!("{}", e.to_string().red());
+            InvocationResultNotification::InvocationFailure(i) => {
+                println!("{}", i.extracted_input.magenta());
+                println!("{}", i.e.to_string().red());
             }
-        }
-
-        println!("=============");
-    }
-
-    async fn on_invocation_failure(&mut self, event: InvocationFailureNotification) {
-        match event.res {
-            Ok(tool_output) => {
-                let msg = tool_output.msg.yellow();
-                println!("{}", msg);
-            }
-            Err(e) => {
-                println!("{}", e.to_string().red());
+            InvocationResultNotification::InvalidInvocation(i) => {
+                println!("{}", i.e.to_string().yellow());
             }
         }
 
@@ -189,6 +185,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let task = args.task.clone();
     let config = SapiensConfig {
         model,
+        chain_type: args.chain,
         max_steps: args.max_steps,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,
@@ -212,7 +209,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let w_observer = Arc::downgrade(&observer);
 
-    let termination_messages = run_to_the_end(toolbox, config, task, w_observer).await;
+    let termination_messages = run_to_the_end(config, toolbox, task, w_observer).await;
 
     if let Err(e) = termination_messages {
         println!("{}", e.to_string().red());

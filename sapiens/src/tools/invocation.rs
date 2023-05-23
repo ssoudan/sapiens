@@ -1,11 +1,11 @@
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 use crate::tools::ToolInvocationInput;
 
 /// Error while extracting tool invocations
-#[derive(Debug, thiserror::Error, Clone)]
+#[derive(Debug, thiserror::Error, Clone, Serialize, Deserialize)]
 pub enum InvocationError {
     /// Invalid yaml
     #[error("Invalid yaml: {0}")]

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use clap::{Parser, ValueEnum};
 use dotenvy::dotenv_override;
 use sapiens::models::SupportedModel;
-use sapiens::{models, run_to_the_end, wrap_observer};
+use sapiens::{models, run_to_the_end, wrap_observer, ChainType};
 use sapiens_exp::evaluate::Trial;
 use sapiens_exp::tools::scenario_0;
 use sapiens_exp::traces::TraceObserver;
@@ -36,6 +36,10 @@ impl Display for Scenario {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// The type of chain to use
+    #[arg(long, default_value_t = ChainType::SingleStepOODA, value_enum, env)]
+    chain: ChainType,
+
     /// Model to use
     #[arg(long, default_value_t = SupportedModel::GPT3_5Turbo, value_enum, env)]
     model: SupportedModel,
@@ -45,7 +49,7 @@ struct Args {
     max_steps: usize,
 
     /// Minimum tokens for completion
-    #[arg(long, default_value_t = 512)]
+    #[arg(long, default_value_t = 256)]
     min_tokens_for_completion: usize,
 
     /// Max tokens for the model to generate
@@ -78,6 +82,7 @@ struct Args {
 impl From<&Args> for Config {
     fn from(args: &Args) -> Self {
         Self {
+            chain: args.chain,
             model: args.model.clone(),
             max_steps: args.max_steps,
             min_tokens_for_completion: args.min_tokens_for_completion,
@@ -95,7 +100,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     let _ = dotenv_override();
 
     tracing_subscriber::fmt()
-        .compact()
+        .pretty()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
     // Prepare config
@@ -146,6 +151,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let config = sapiens::SapiensConfig {
         max_steps: args.max_steps,
+        chain_type: args.chain,
         model,
         min_tokens_for_completion: args.min_tokens_for_completion,
         max_tokens: args.max_tokens,
@@ -167,7 +173,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
 
     let task = args.task.clone();
 
-    match run_to_the_end(toolbox.clone(), config, task.clone(), w_trace_observer).await {
+    match run_to_the_end(config, toolbox.clone(), task.clone(), w_trace_observer).await {
         Ok(_) => {
             info!("Task completed");
         }

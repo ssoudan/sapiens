@@ -9,7 +9,7 @@ use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequ
 use lazy_static::lazy_static;
 pub use tiktoken_rs::async_openai::num_tokens_from_messages;
 pub use tiktoken_rs::model::get_context_size;
-use tracing::{debug, error};
+use tracing::{error, trace};
 
 use crate::context::ChatEntry;
 use crate::models::{
@@ -188,10 +188,16 @@ impl OpenAI {
             name: None,
         });
 
-        for example in input.examples {
+        for (user, bot) in input.examples {
             messages.push(ChatCompletionRequestMessage {
-                role: example.role.into(),
-                content: example.msg,
+                role: Role::User.into(),
+                content: user.msg,
+                name: None,
+            });
+
+            messages.push(ChatCompletionRequestMessage {
+                role: Role::Assistant.into(),
+                content: bot.msg,
                 name: None,
             });
         }
@@ -231,13 +237,13 @@ impl Model for OpenAI {
     ) -> Result<ModelResponse, Error> {
         let input = self.prepare_chat_completion_request(input, max_tokens);
 
-        debug!("Sending request to the model");
+        trace!("Sending request to the model");
         let res = self.client.chat().create(input).await;
         if let Err(e) = &res {
             error!(error = ?e, "Error from the model");
         }
         let res = res?;
-        debug!(usage = ?res.usage, "Got a response from the model");
+        trace!(usage = ?res.usage, "Got a response from the model");
 
         let first = res.choices.first().ok_or(Error::NoResponseFromModel)?;
 
@@ -245,7 +251,7 @@ impl Model for OpenAI {
 
         Ok(ModelResponse {
             msg,
-            usage: res.usage.map(Into::into),
+            usage: res.usage.as_ref().map(Into::into),
             finish_reason: first.finish_reason.clone(),
         })
     }
@@ -290,8 +296,8 @@ impl From<async_openai::types::Role> for Role {
     }
 }
 
-impl From<async_openai::types::Usage> for Usage {
-    fn from(usage: async_openai::types::Usage) -> Self {
+impl From<&async_openai::types::Usage> for Usage {
+    fn from(usage: &async_openai::types::Usage) -> Self {
         Self {
             prompt_tokens: usage.prompt_tokens,
             completion_tokens: usage.completion_tokens,
