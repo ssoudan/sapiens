@@ -153,7 +153,7 @@ impl Task {
     ) -> String {
         if available_invocation_count != 1 {
             format!(
-                "# Action {} result: \nYou must give only one Action at a time. There was {}. Only the first one was considered.\n```yaml\n{}```",
+                "# Action {} response: \nYou must give only one Action at a time. There was {}. Only the first one was considered.\n```yaml\n{}```",
                 tool_name.as_ref(),
                 available_invocation_count,
                 result.as_ref(),
@@ -161,7 +161,7 @@ impl Task {
             )
         } else {
             format!(
-                "# Action {} result: \n```yaml\n{}```",
+                "# Action {} response: \n```yaml\n{}```",
                 tool_name.as_ref(),
                 result.as_ref(),
             )

@@ -16,8 +16,9 @@ Ok(
             [user]: You are part of a group of cooperating assistants named Sapiens. Use available tools to answer the question as best as you can.
             You will collectively proceed iteratively using an OODA loop. Don't overstep your role.
             
-            - Action result will be provided. 
-            - Never produce the result of an Action. 
+            - Action response will be provided. 
+            - Never produce the response of an Action. 
+            - Only use YAML for the Action.
             - The loop will repeated until you have the answer to the original question. 
             - No task is complete until the Conclude Tool is used to provide the answer. 
             
@@ -42,7 +43,7 @@ Ok(
                 [assistant]: ## Orientation:
                 - SandboxedPython can be used to sort the list.
                 - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-                - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+                - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
                 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.,
             ),
             (
@@ -57,8 +58,8 @@ Ok(
                     sorted_list = sorted(lst)
                     print(f"The sorted list is {sorted_list}")
                 ```
-                We will take further action based on the result.
-                # Action SandboxedPython result:
+                We will take further action based on the response.
+                # Action SandboxedPython response:
                 ```yaml
                 stdout: |
                   The sorted list is [1, 2, 3, 4, 5]
@@ -66,7 +67,7 @@ Ok(
                 ```
                 ## Observations:
                 - We needed to sort the list in ascending order.
-                - We have the result of the Action.
+                - We have the response of the Action.
                 - We have the sorted list: [1, 2, 3, 4, 5].# Your turn
                 Original question: Sort in ascending order: [2, 3, 1, 4, 5]
                 What is your orientation?,
@@ -82,7 +83,7 @@ Ok(
             [assistant]: ## Orientation:
             - SandboxedPython can be used to sort the list.
             - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-            - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+            - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
             - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.,
             [user]: ## Decision:
             - We can use the sorted() function of Python to sort the list.
@@ -95,8 +96,8 @@ Ok(
                 sorted_list = sorted(lst)
                 print(f"The sorted list is {sorted_list}")
             ```
-            That's it for now. We will take further action based on the result.
-            # Action SandboxedPython result: 
+            That's it for now. We will take further action based on the response.
+            # Action SandboxedPython response: 
             ```yaml
             stdout: |
               The sorted list is [1, 2, 3, 4, 5]
@@ -106,7 +107,7 @@ Ok(
             What is your orientation?
             ## Observations:
             - We needed to sort the list in ascending order.
-            - We have the result of the Action.
+            - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].,
         ],
     },

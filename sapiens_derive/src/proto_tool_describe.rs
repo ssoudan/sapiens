@@ -80,7 +80,7 @@ impl ToTokens for DeriveReceiver {
                         name: #name.to_string(),
                         description: #doc.to_string(),
                         parameters: #input_ty::describe(),
-                        result_fields: #output_ty::describe(),
+                        responses_content: #output_ty::describe(),
                     }
                 }
             }

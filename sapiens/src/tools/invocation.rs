@@ -16,6 +16,9 @@ pub enum InvocationError {
     /// No valid invocation found in the document
     #[error("No valid Action found: {0}")]
     NoValidInvocationFound(String),
+    /// Too many yaml blocks
+    #[error("Too many ({0}) yaml blocks. Only one is expected.")]
+    TooManyYamlBlocks(usize),
 }
 
 /// One of several T
@@ -62,11 +65,19 @@ where
     }
 }
 
+/// Extracted invocations
+#[derive(Debug, Serialize, Deserialize)]
+pub(crate) struct ExtractedInvocations {
+    pub(crate) invocations: Vec<ToolInvocationInput>,
+    pub(crate) yaml_block_count: usize,
+}
+
 /// Find all the invocations in a markdown document.
-pub(crate) fn find_all(data: &str) -> Result<Vec<ToolInvocationInput>, InvocationError> {
+pub(crate) fn find_all(data: &str) -> Result<ExtractedInvocations, InvocationError> {
     let mut err: Option<InvocationError> = None;
 
     let mut invocations = vec![];
+    let mut yaml_block_count = 0;
 
     let mut lines = data.lines();
 
@@ -91,6 +102,8 @@ pub(crate) fn find_all(data: &str) -> Result<Vec<ToolInvocationInput>, Invocatio
             // put them together
             let yaml = yaml.join("\n");
 
+            yaml_block_count += 1;
+
             // does that make valid invocations?
             match extract_from_yaml(&yaml) {
                 Ok(more) => {
@@ -112,7 +125,10 @@ pub(crate) fn find_all(data: &str) -> Result<Vec<ToolInvocationInput>, Invocatio
             Err(InvocationError::NoInvocationFound)
         }
     } else {
-        Ok(invocations)
+        Ok(ExtractedInvocations {
+            invocations,
+            yaml_block_count,
+        })
     }
 }
 
@@ -137,7 +153,7 @@ mod tests {
 
         let invocations = super::find_all(data).unwrap();
 
-        assert_eq!(invocations.len(), 1);
+        assert_eq!(invocations.invocations.len(), 1);
     }
 
     #[tokio::test]
@@ -183,7 +199,7 @@ mod tests {
 
         let invocations = super::find_all(data).unwrap();
 
-        assert_eq!(invocations.len(), 5);
+        assert_eq!(invocations.invocations.len(), 5);
 
         assert_yaml_snapshot!(invocations);
     }
@@ -203,9 +219,9 @@ mod tests {
 
         let tool_invocations = super::find_all(data).unwrap();
 
-        assert_eq!(tool_invocations.len(), 1);
+        assert_eq!(tool_invocations.invocations.len(), 1);
 
-        let invocation = &tool_invocations[0];
+        let invocation = &tool_invocations.invocations[0];
 
         assert_eq!(invocation.tool_name, "Search");
     }
@@ -228,9 +244,9 @@ mod tests {
 
         let tool_invocations = super::find_all(data).unwrap();
 
-        assert_eq!(tool_invocations.len(), 1);
+        assert_eq!(tool_invocations.invocations.len(), 1);
 
-        let invocation = &tool_invocations[0];
+        let invocation = &tool_invocations.invocations[0];
 
         assert_eq!(invocation.tool_name, "Search");
         assert_eq!(invocation.parameters.get("q").unwrap(), "Marcel Deneuve");
@@ -280,15 +296,15 @@ mod tests {
 
         let tool_invocations = super::find_all(data).unwrap();
 
-        assert_eq!(tool_invocations.len(), 3);
+        assert_eq!(tool_invocations.invocations.len(), 3);
 
-        let invocation = &tool_invocations[0];
+        let invocation = &tool_invocations.invocations[0];
         assert_eq!(invocation.tool_name, "Search1");
 
-        let invocation = &tool_invocations[1];
+        let invocation = &tool_invocations.invocations[1];
         assert_eq!(invocation.tool_name, "Search2");
 
-        let invocation = &tool_invocations[2];
+        let invocation = &tool_invocations.invocations[2];
         assert_eq!(invocation.tool_name, "Search3");
     }
 
@@ -322,7 +338,7 @@ mod tests {
             how to set rainbow colors on Nanoleaf light panels
           lr: lang_en
           num: 3
-        result_fields:
+        responses_content:
           results:
           - title: What Type of Light Bulbs Are Used in Office Buildings?
               Link: www.builddirect.com

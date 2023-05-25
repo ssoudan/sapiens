@@ -6,7 +6,7 @@ expression: description
   description: Place where to find stuffs.
   parameters:
     get: "<ClosetObject> what to get. Value can be: Bowl, Cereal, or Milk. Only one at a time."
-  result_fields:
+  responses_content:
     found: "<bool> was the object found?"
     object: "<Optional[ClosetObject]> what was found? (if any) (optional)"
 - name: Mixing
@@ -14,13 +14,13 @@ expression: description
   parameters:
     container: "<Container> What to pour in. Value can be: Bowl. You must have it first."
     pourable: "<Pourable> What to pour. Value can be: Cereal or Milk. You must have it first."
-  result_fields:
+  responses_content:
     added: "<bool> was it poured?"
     object: "<Optional[Pourable]> what was poured? (if any) (optional)"
 - name: Serving
   description: "When the meal is ready, use this to serve it."
   parameters:
     servable: "<Servable> what to serve. Value can be: Bowl."
-  result_fields:
+  responses_content:
     accepted: "<bool> was it accepted? if not, maybe the bowl was not ready to be served."
 

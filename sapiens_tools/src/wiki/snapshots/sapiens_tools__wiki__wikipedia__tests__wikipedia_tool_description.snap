@@ -7,6 +7,6 @@ description: "A Tool to query Wikipedia using SPARQL.\n\nWikipedia is a free onl
 parameters:
   parameters: "<dict[str,Any]> query parameters. E.g.\n```yaml\nparameters:\naction: query\nprop:\n- extracts\n- exintro\n- explaintext\ntitles: Albert Einstein\n```\n- Values can be either strings or numbers. Or lists of them.\n- The result size is limited. Be specific and use limits where possible."
   limit: "<Optional[usize]> maximum number of results to return - if not specified, all results are\nreturned. (optional)"
-result_fields:
+responses_content:
   result: "<str> query result - in JSON."
 

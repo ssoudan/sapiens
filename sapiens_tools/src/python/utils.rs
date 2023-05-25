@@ -177,7 +177,7 @@ pub(crate) struct SimpleToolDescription {
     /// Input format of the tool
     pub parameters: Vec<SimpleFormat>,
     /// Output format of the tool
-    pub result_fields: Vec<SimpleFormat>,
+    pub responses_content: Vec<SimpleFormat>,
 }
 
 impl From<ToolDescription> for SimpleToolDescription {
@@ -188,8 +188,8 @@ impl From<ToolDescription> for SimpleToolDescription {
             .into_iter()
             .map(|x| x.into())
             .collect();
-        let result_fields = desc
-            .result_fields
+        let responses_content = desc
+            .responses_content
             .fields
             .into_iter()
             .map(|x| x.into())
@@ -199,7 +199,7 @@ impl From<ToolDescription> for SimpleToolDescription {
             name: desc.name,
             description: desc.description,
             parameters,
-            result_fields,
+            responses_content,
         }
     }
 }
@@ -212,7 +212,7 @@ impl ToPyObject for SimpleToolDescription {
             .unwrap();
         dict.set_item("parameters", self.parameters.clone())
             .unwrap();
-        dict.set_item("result_fields", self.result_fields.clone())
+        dict.set_item("responses_content", self.responses_content.clone())
             .unwrap();
         dict.into()
     }

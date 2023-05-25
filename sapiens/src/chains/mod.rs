@@ -9,6 +9,7 @@
 //! - [ ] 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
 //! - [ ] 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
 //! - [ ] 2305.10601 - Tree of Thoughts - May 2023
+// TODO(ssoudan) + LLM self-consistency
 
 // FUTURE(ssoudan) more chains
 

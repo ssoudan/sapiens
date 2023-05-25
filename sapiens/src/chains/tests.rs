@@ -47,7 +47,7 @@ impl Tool for ConcludeTool {
                     description: "The conclusion".to_string(),
                 }],
             },
-            result_fields: Format::default(),
+            responses_content: Format::default(),
         }
     }
 
