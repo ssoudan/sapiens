@@ -94,6 +94,7 @@ pub trait Model: ChatEntryTokenNumber + Send + Sync {
 /// Response from a language model
 #[derive(Clone)]
 pub struct ModelResponse {
+    // TODO(ssoudan) support getting multiple candidates
     /// The message
     pub msg: String,
     /// The usage
