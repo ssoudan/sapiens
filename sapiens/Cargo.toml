@@ -19,17 +19,17 @@ default = ["clap"]
 clap = ["dep:clap"]
 
 [dependencies]
-tokio = { version = "1.28.2" }
+tokio = { version = "1.28.1" }
 tracing = "0.1.37"
 async-trait = "0.1.68"
 lazy_static = "1.4.0"
 
-serde = { version = "1.0.164", features = ["derive"] }
+serde = { version = "1.0.163", features = ["derive"] }
 serde_yaml = "0.9.21"
 
-regex = "1.8.4"
+regex = "1.8.3"
 
-clap = { version = "4.3.4", optional = true }
+clap = { version = "4.3.2", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
 tiktoken-rs = { version = "0.4.2", features = ["async-openai"] }
