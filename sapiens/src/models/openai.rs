@@ -95,7 +95,9 @@ impl ChatEntryTokenNumber for OpenAI {
         let req = self.prepare_chat_completion_request(input, None);
 
         match &self.model {
-            SupportedModel::GPT3_5Turbo => {
+            SupportedModel::GPT3_5Turbo
+            | SupportedModel::GPT3_5Turbo0613
+            | SupportedModel::GPT3_5Turbo16k => {
                 let messages = req.messages;
                 num_tokens_from_messages(&self.model.to_string(), messages.as_slice())
                     .expect("model not supported")
@@ -159,7 +161,10 @@ impl ChatEntryTokenNumber for OpenAI {
 
     async fn context_size(&self) -> usize {
         match &self.model {
-            SupportedModel::GPT3_5Turbo => get_context_size(&self.model.to_string()),
+            SupportedModel::GPT3_5Turbo | SupportedModel::GPT3_5Turbo0613 => {
+                get_context_size(&self.model.to_string())
+            }
+            SupportedModel::GPT3_5Turbo16k => 16384,
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => 2048,
             _ => panic!("model not supported"),
         }
@@ -174,6 +179,8 @@ impl OpenAI {
         max_tokens: Option<usize>,
     ) -> CreateChatCompletionRequest {
         let mut messages = vec![];
+
+        // TODO(ssoudan) support https://platform.openai.com/docs/api-reference/chat/create#chat/create-function_call
 
         for m in input.context {
             messages.push(ChatCompletionRequestMessage {

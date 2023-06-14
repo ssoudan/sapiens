@@ -134,6 +134,10 @@ pub enum SupportedModel {
     /// GPT 3.5 Turbo
     #[default]
     GPT3_5Turbo,
+    /// GPT 3.5 Turbo 0613
+    GPT3_5Turbo0613,
+    /// GPT 3.5 Turbo 16k
+    GPT3_5Turbo16k,
     /// Vicuna 7B 1.1
     Vicuna7B1_1,
     /// Vicuna 13B 1.1
@@ -146,6 +150,8 @@ impl Display for SupportedModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            SupportedModel::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
+            SupportedModel::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
             SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
@@ -157,6 +163,8 @@ impl Debug for SupportedModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            SupportedModel::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
+            SupportedModel::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
             SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
@@ -170,6 +178,8 @@ impl FromStr for SupportedModel {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "gpt-3.5-turbo" => Ok(Self::GPT3_5Turbo),
+            "gpt-3.5-turbo-0613" => Ok(Self::GPT3_5Turbo0613),
+            "gpt-3.5-turbo-16k" => Ok(Self::GPT3_5Turbo16k),
             "vicuna-7b-1.1" => Ok(Self::Vicuna7B1_1),
             "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
             "chat-bison-001" => Ok(Self::ChatBison001),
@@ -183,6 +193,8 @@ impl clap::ValueEnum for SupportedModel {
     fn value_variants<'a>() -> &'a [Self] {
         &[
             SupportedModel::GPT3_5Turbo,
+            SupportedModel::GPT3_5Turbo0613,
+            SupportedModel::GPT3_5Turbo16k,
             SupportedModel::Vicuna7B1_1,
             SupportedModel::Vicuna13B1_1,
             SupportedModel::ChatBison001,
@@ -192,6 +204,12 @@ impl clap::ValueEnum for SupportedModel {
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
             SupportedModel::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
+            SupportedModel::GPT3_5Turbo0613 => {
+                Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-0613"))
+            }
+            SupportedModel::GPT3_5Turbo16k => {
+                Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-16k"))
+            }
             SupportedModel::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
             SupportedModel::Vicuna13B1_1 => {
                 Some(clap::builder::PossibleValue::new("vicuna-13b-1.1"))
