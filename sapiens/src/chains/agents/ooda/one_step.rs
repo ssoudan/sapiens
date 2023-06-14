@@ -17,8 +17,9 @@ pub struct Agent {
 const PREFIX: &str = r"You are Sapiens, a large language model assisting the WORLD. Use available tools to answer the question as best as you can.
 You will proceed iteratively using an OODA loop.
 
-- Action result will be provided to you. 
-- Never produce the result of an Action. 
+- Action response will be provided to you. 
+- Never produce the response of an Action. 
+- Only use YAML for the Action.
 - The loop will repeated until you have the answer to the original question. 
 - No task is complete until the Conclude Tool is used to provide the answer.
 - You cannot use jinja2 templating in your response. Be concise. 
@@ -49,13 +50,13 @@ tool_name: <ToolName>
 parameters:
     <...>  
 ```
-We will take further action based on the result.
+We will take further action based on the response.
 ====================
 
 Notes: 
 - Action has the following fields: `tool_name` and `parameters` ONLY.
 - `parameters` uses the format specified for the Tool.
-- `result_fields` is the format you can expect of the result of the Action. You can use this to orient yourself but never use it in your response.
+- `responses_content` is the format you can expect of the response of the Action. You can use this to orient yourself but never use it in your response.
 - One Action at a time. No more. No less.
 ";
 
@@ -66,7 +67,7 @@ const PROTO_EXCHANGE_2: &str = r#"
 ## Orientation:
 - SandboxedPython can be used to sort the list.
 - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+- I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
@@ -79,11 +80,11 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-We will take further action based on the result.
+We will take further action based on the response.
 "#;
 
 const PROTO_EXCHANGE_3: &str = r"
-# Action SandboxedPython result:
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
@@ -94,7 +95,7 @@ stderr: ''
 const PROTO_EXCHANGE_4: &str = r"
 ## Observations:
 - We needed to sort the list in ascending order.
-- We have the result of the Action.
+- We have the response of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
@@ -198,7 +199,7 @@ impl Agent {
                         role: Role::User,
                     };
 
-                    // Add the result to the chat history
+                    // Add the response to the chat history
                     chat_history.add_chitchat(entry).await;
                 }
                 _ => {
@@ -295,7 +296,7 @@ mod tests {
             ## Orientation:
             - SandboxedPython can be used to sort the list.
             - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-            - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+            - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
             - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
             ## Decision:
             - We can use the sorted() function of Python to sort the list.
@@ -308,7 +309,7 @@ mod tests {
                 sorted_list = sorted(lst)
                 print(f"The sorted list is {sorted_list}")
             ```
-            We will take further action based on the result.            
+            We will take further action based on the response.            
             "#
             }.to_string(),
             usage: None,

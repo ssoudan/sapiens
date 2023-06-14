@@ -1,6 +1,7 @@
 use indoc::indoc;
 use insta::assert_display_snapshot;
 use pyo3::PyResult;
+use sapiens::tools::invocation::InvocationError;
 use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
 use sapiens_tools::conclude::ConcludeTool;
 use sapiens_tools::dummy::DummyTool;
@@ -30,7 +31,7 @@ async fn test_tool_invocation() -> PyResult<()> {
             assert_eq!(tool_name, "SandboxedPython");
             assert_eq!(result, "stdout: |\n  Hello world!\nstderr: ''\n");
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -63,7 +64,7 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
             assert_eq!(tool_name, "Conclude");
             assert_display_snapshot!(result);
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -98,7 +99,7 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
             assert_eq!(tool_name, "SandboxedPython");
             assert_display_snapshot!(result);
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -128,7 +129,7 @@ async fn test_exit_in_python() -> PyResult<()> {
             assert_eq!(tool_name, "SandboxedPython");
             assert_display_snapshot!(e);
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -168,13 +169,13 @@ async fn test_multiple_tool_invocations() -> PyResult<()> {
     let res = invoke_tool(toolbox, data).await;
 
     match res {
-        InvokeResult::Success {
-            tool_name, result, ..
+        InvokeResult::NoValidInvocationsFound {
+            e: InvocationError::TooManyYamlBlocks(2),
+            invocation_count: 2,
         } => {
-            assert_eq!(tool_name, "SandboxedPython");
-            assert_display_snapshot!(result);
+            // This is expected
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -210,7 +211,7 @@ async fn test_python() -> PyResult<()> {
             assert_eq!(tool_name, "SandboxedPython");
             assert_display_snapshot!(result);
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())
@@ -240,7 +241,7 @@ async fn test_python_docstring() -> PyResult<()> {
             assert_eq!(tool_name, "SandboxedPython");
             assert_display_snapshot!(result);
         }
-        _ => panic!("Unexpected result: {:?}", res),
+        _ => panic!("Unexpected response: {:?}", res),
     }
 
     Ok(())

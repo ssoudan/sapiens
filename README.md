@@ -50,7 +50,7 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 `SingleStepOODAChain` queries the underlying LM in a single step to get the Observation, Orientation, Decision and Action while
 `MultiStepOODAChain` splits the query in multiple steps to get the same information. 
 
-`SapiensConfig::chain_type` controls which chain is used. `SapiensConfig::model` controls which language model is used.
+`SapiensConfig::chain_type` controls which chain is used. `SapiensConfig::model` controls which language model is used.t
 
 ## Tools
 
@@ -146,7 +146,7 @@ parameters:
 ```
 
 =============
-# Action SandboxedPython result:
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The solution to x^2 - 5x + 6 = 0 is [2, 3]
@@ -235,7 +235,7 @@ parameters:
 ```
 
 =============   2 messages in the chat history =============
-# Action result:
+# Action response:
 ```yaml
 stdout: |
   The temperature in San Jose, California, USA is 12.78°C and 10 Day Weather-San Jose, CA ; Mon 17 · 59°. 1%. NW 13 mph. Cloudy. High 59F. Winds NW at 10 to 15 mph. ; Tue 18 · 61°. 7%. NW 14 mph. Partly cloudy. High 61F. Winds ...
@@ -373,7 +373,7 @@ parameters:
 
 WORLD:
 <pre><code>
-# Action result:
+# Action response:
 ```yaml
 status: 0
 stdout: |
@@ -432,7 +432,7 @@ parameters:
 
 WORLD:
 <pre><code> 
-# Action result: 
+# Action response: 
 ```yaml
 rooms: []
 ```
@@ -462,7 +462,7 @@ parameters:
 
 WORLD:
 <pre><code> 
-# Action result: 
+# Action response: 
 ```yaml
 rooms:
 - name: Living
@@ -530,7 +530,7 @@ parameters:
 
 WORLD:
 <pre><code> 
-# Action result: 
+# Action response: 
 ```yaml
 lights:
 - id: '23'
@@ -781,7 +781,7 @@ parameters:
 
 WORLD:
 <pre><code> 
-# Action result: 
+# Action response: 
 ```yaml
 rooms:
 - name: Kitchen
@@ -847,7 +847,7 @@ input:
 
 WORLD:
 <pre><code> 
-# Action result: 
+# Action response: 
 ```yaml
 lights:
 - id: '26'

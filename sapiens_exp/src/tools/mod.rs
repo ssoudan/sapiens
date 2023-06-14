@@ -80,7 +80,7 @@ impl<I: Describe, S, O: Describe> GenericTool<I, S, O> {
                 name,
                 description,
                 parameters: I::describe(),
-                result_fields: O::describe(),
+                responses_content: O::describe(),
             },
             state,
         )

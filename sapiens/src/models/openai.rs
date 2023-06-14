@@ -95,7 +95,9 @@ impl ChatEntryTokenNumber for OpenAI {
         let req = self.prepare_chat_completion_request(input, None);
 
         match &self.model {
-            SupportedModel::GPT3_5Turbo => {
+            SupportedModel::GPT3_5Turbo
+            | SupportedModel::GPT3_5Turbo0613
+            | SupportedModel::GPT3_5Turbo16k => {
                 let messages = req.messages;
                 num_tokens_from_messages(&self.model.to_string(), messages.as_slice())
                     .expect("model not supported")
@@ -159,7 +161,10 @@ impl ChatEntryTokenNumber for OpenAI {
 
     async fn context_size(&self) -> usize {
         match &self.model {
-            SupportedModel::GPT3_5Turbo => get_context_size(&self.model.to_string()),
+            SupportedModel::GPT3_5Turbo | SupportedModel::GPT3_5Turbo0613 => {
+                get_context_size(&self.model.to_string())
+            }
+            SupportedModel::GPT3_5Turbo16k => 16384,
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => 2048,
             _ => panic!("model not supported"),
         }
@@ -175,6 +180,8 @@ impl OpenAI {
     ) -> CreateChatCompletionRequest {
         let mut messages = vec![];
 
+        // TODO(ssoudan) support https://platform.openai.com/docs/api-reference/chat/create#chat/create-function_call
+
         for m in input.context {
             messages.push(ChatCompletionRequestMessage {
                 role: m.role.into(),
@@ -184,7 +191,7 @@ impl OpenAI {
         }
         messages.push(ChatCompletionRequestMessage {
             role: Role::Assistant.into(),
-            content: "Understood.".to_string(),
+            content: "Got it.".to_string(),
             name: None,
         });
 
@@ -344,6 +351,77 @@ mod tests {
     // }
     use super::*;
 
+    // #[tokio::test]
+    // async fn test_vicuna_sizes_from_api() {
+    //     let api_base = "http://hector:8000/v1".to_string();
+    //     let model = build(SupportedModel::Vicuna7B1_1, None, Some(api_base),
+    // None)         .await
+    //         .unwrap();
+    //
+    //     assert_eq!(model.context_size().await, 2048);
+    //
+    //     let input = ChatInput {
+    //         context: vec![
+    //             ChatEntry {
+    //                 role: Role::System,
+    //                 msg: "A chat between a user and an assistant.".to_string(),
+    //             },
+    //             ChatEntry {
+    //                 role: Role::User,
+    //                 msg: "Hello, my name is Marcel".to_string(),
+    //             },
+    //         ],
+    //         examples: vec![
+    //             (
+    //                 ChatEntry {
+    //                     role: Role::User,
+    //                     msg: "Hello, my name is Marcel".to_string(),
+    //                 },
+    //                 ChatEntry {
+    //                     role: Role::Assistant,
+    //                     msg: "Hi Marcel, how can I help you today?".to_string(),
+    //                 },
+    //             ),
+    //             (
+    //                 ChatEntry {
+    //                     role: Role::User,
+    //                     msg: "I would like to book a flight to
+    // London".to_string(),                 },
+    //                 ChatEntry {
+    //                     role: Role::Assistant,
+    //                     msg: "Sure, when would you like to go?".to_string(),
+    //                 },
+    //             ),
+    //         ],
+    //         chat: vec![
+    //             ChatEntry {
+    //                 role: Role::User,
+    //                 msg: "1".to_string(),
+    //             },
+    //             ChatEntry {
+    //                 role: Role::Assistant,
+    //                 msg: "2".to_string(),
+    //             },
+    //             ChatEntry {
+    //                 role: Role::User,
+    //                 msg: "3".to_string(),
+    //             },
+    //             ChatEntry {
+    //                 role: Role::Assistant,
+    //                 msg: "4".to_string(),
+    //             },
+    //         ],
+    //     };
+    //
+    //     let resp = model.query(input.clone(), None).await;
+    //
+    //     let token_sz = resp.unwrap().usage.unwrap().prompt_tokens as usize;
+    //
+    //     let token_num = model.num_tokens(input).await;
+    //
+    //     assert!(token_sz <= token_num);
+    // }
+
     #[tokio::test]
     async fn test_vicuna_sizes() {
         let model = build(SupportedModel::Vicuna7B1_1, None, None, None)
@@ -360,11 +438,15 @@ mod tests {
                 },
                 ChatEntry {
                     role: Role::User,
-                    msg: "Hello, my name is Marcel".to_string(),
+                    msg: "My name is Marcel".to_string(),
                 },
             ],
             examples: vec![],
             chat: vec![
+                ChatEntry {
+                    role: Role::User,
+                    msg: "Hello Assistant!".to_string(),
+                },
                 ChatEntry {
                     role: Role::Assistant,
                     msg: "Hello, Marcel, how are you doing today?".to_string(),
@@ -382,7 +464,7 @@ mod tests {
 
         let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 70);
+        assert_eq!(token_sz, 79);
     }
 
     #[tokio::test]
@@ -401,11 +483,15 @@ mod tests {
                 },
                 ChatEntry {
                     role: Role::User,
-                    msg: "Hello, my name is Marcel".to_string(),
+                    msg: "My name is Marcel".to_string(),
                 },
             ],
             examples: vec![],
             chat: vec![
+                ChatEntry {
+                    role: Role::User,
+                    msg: "Hello Assistant!".to_string(),
+                },
                 ChatEntry {
                     role: Role::Assistant,
                     msg: "Hello, Marcel, how are you doing today?".to_string(),
@@ -423,6 +509,6 @@ mod tests {
 
         let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 75);
+        assert_eq!(token_sz, 81);
     }
 }

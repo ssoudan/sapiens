@@ -55,7 +55,7 @@ mod hue_test {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         // collect the conclusion
@@ -112,7 +112,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         Ok(())
@@ -146,7 +146,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         Ok(())
@@ -181,7 +181,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         Ok(())
@@ -229,7 +229,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         let termination_messages = toolbox.termination_messages().await;
@@ -278,7 +278,7 @@ mod search {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_display_snapshot!(result);
             }
-            _ => panic!("Unexpected result: {:?}", res),
+            _ => panic!("Unexpected response: {:?}", res),
         }
 
         Ok(())
