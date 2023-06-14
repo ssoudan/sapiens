@@ -5,7 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.9.1 (2023-06-14)
+
+### Chore
+
+ - <csr-id-1f40bf57a197557d1abbde5f9885f86c56c5f153/> bump tokio from 1.28.1 to 1.28.2
+   Bumps [tokio](https://github.com/tokio-rs/tokio) from 1.28.1 to 1.28.2.
+   - [Release notes](https://github.com/tokio-rs/tokio/releases)
+   - [Commits](https://github.com/tokio-rs/tokio/compare/tokio-1.28.1...tokio-1.28.2)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: tokio
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+ - <csr-id-6afdb0be21326df8b1cfffef6d2b46ae287e000e/> bump clap from 4.3.0 to 4.3.2
+   Bumps [clap](https://github.com/clap-rs/clap) from 4.3.0 to 4.3.2.
+   - [Release notes](https://github.com/clap-rs/clap/releases)
+   - [Changelog](https://github.com/clap-rs/clap/blob/master/CHANGELOG.md)
+   - [Commits](https://github.com/clap-rs/clap/compare/clap_complete-v4.3.0...v4.3.2)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: clap
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+
+### New Features
+
+ - <csr-id-6d1524acbca7362b4eda081612a43005abc888cb/> gpt-3.5-turbo-0613 and more
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 6 commits contributed to the release over the course of 8 calendar days.
+ - 21 days passed between releases.
+ - 3 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #43 from ssoudan/upd ([`c8d2e5a`](https://github.com/ssoudan/sapiens/commit/c8d2e5ad69f7bed6cbd6d64dfa62a3d0c864c885))
+    - Gpt-3.5-turbo-0613 and more ([`6d1524a`](https://github.com/ssoudan/sapiens/commit/6d1524acbca7362b4eda081612a43005abc888cb))
+    - Merge pull request #33 from ssoudan/dependabot/cargo/tokio-1.28.2 ([`80ca726`](https://github.com/ssoudan/sapiens/commit/80ca726a909cc08a6ef60d1668ebecdac7693700))
+    - Bump tokio from 1.28.1 to 1.28.2 ([`1f40bf5`](https://github.com/ssoudan/sapiens/commit/1f40bf57a197557d1abbde5f9885f86c56c5f153))
+    - Merge pull request #38 from ssoudan/dependabot/cargo/clap-4.3.2 ([`1837ad5`](https://github.com/ssoudan/sapiens/commit/1837ad57c934c212da6596a9e77f3da4ddc9332f))
+    - Bump clap from 4.3.0 to 4.3.2 ([`6afdb0b`](https://github.com/ssoudan/sapiens/commit/6afdb0be21326df8b1cfffef6d2b46ae287e000e))
+</details>
+
 ## 0.9.0 (2023-05-23)
+
+<csr-id-bf9a7b53c0d3095c083fe553a18227a52d2d6a1f/>
 
 ### Chore
 
@@ -25,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 6 commits contributed to the release over the course of 5 calendar days.
+ - 7 commits contributed to the release over the course of 5 calendar days.
  - 5 days passed between releases.
  - 5 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -37,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.10.0, sapiens_tools v0.10.0, sapiens_bot v0.8.0, sapiens_cli v0.9.0, sapiens_exp v0.8.0, safety bump 4 crates ([`02f36bb`](https://github.com/ssoudan/sapiens/commit/02f36bbc35df5138c07fd1322030bb1bfeb01eb3))
     - Merge pull request #25 from ssoudan/more_steps ([`cb9a704`](https://github.com/ssoudan/sapiens/commit/cb9a70490ced60abd5bb12d2559d40464f3a3213))
     - More readable console outputs ([`6ad490a`](https://github.com/ssoudan/sapiens/commit/6ad490ab669568e1af013b5464ceca3e922da175))
     - Multi-step OODA chain ([`53c7d7d`](https://github.com/ssoudan/sapiens/commit/53c7d7ddf901709715543e76f780a8f39e334625))

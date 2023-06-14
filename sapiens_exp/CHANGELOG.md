@@ -5,7 +5,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.8.1 (2023-06-14)
+
+### Chore
+
+ - <csr-id-ee224850c5fce4235e3b51ae9f98a0648a80dafd/> update
+ - <csr-id-f4b88c4520574c841b055edd71c329a8195c7173/> bump serde from 1.0.163 to 1.0.164
+   Bumps [serde](https://github.com/serde-rs/serde) from 1.0.163 to 1.0.164.
+   - [Release notes](https://github.com/serde-rs/serde/releases)
+   - [Commits](https://github.com/serde-rs/serde/compare/v1.0.163...v1.0.164)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: serde
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+ - <csr-id-1f40bf57a197557d1abbde5f9885f86c56c5f153/> bump tokio from 1.28.1 to 1.28.2
+   Bumps [tokio](https://github.com/tokio-rs/tokio) from 1.28.1 to 1.28.2.
+   - [Release notes](https://github.com/tokio-rs/tokio/releases)
+   - [Commits](https://github.com/tokio-rs/tokio/compare/tokio-1.28.1...tokio-1.28.2)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: tokio
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+ - <csr-id-6afdb0be21326df8b1cfffef6d2b46ae287e000e/> bump clap from 4.3.0 to 4.3.2
+   Bumps [clap](https://github.com/clap-rs/clap) from 4.3.0 to 4.3.2.
+   - [Release notes](https://github.com/clap-rs/clap/releases)
+   - [Changelog](https://github.com/clap-rs/clap/blob/master/CHANGELOG.md)
+   - [Commits](https://github.com/clap-rs/clap/compare/clap_complete-v4.3.0...v4.3.2)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: clap
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+ - <csr-id-2d1bcb9f16518317903033e00d7cb8ca7ed3158f/> bump chrono from 0.4.24 to 0.4.26
+   Bumps [chrono](https://github.com/chronotope/chrono) from 0.4.24 to 0.4.26.
+   - [Release notes](https://github.com/chronotope/chrono/releases)
+   - [Changelog](https://github.com/chronotope/chrono/blob/main/CHANGELOG.md)
+   - [Commits](https://github.com/chronotope/chrono/compare/v0.4.24...v0.4.26)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: chrono
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+
+### New Features
+
+ - <csr-id-6d1524acbca7362b4eda081612a43005abc888cb/> gpt-3.5-turbo-0613 and more
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 11 commits contributed to the release over the course of 14 calendar days.
+ - 21 days passed between releases.
+ - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #43 from ssoudan/upd ([`c8d2e5a`](https://github.com/ssoudan/sapiens/commit/c8d2e5ad69f7bed6cbd6d64dfa62a3d0c864c885))
+    - Update ([`ee22485`](https://github.com/ssoudan/sapiens/commit/ee224850c5fce4235e3b51ae9f98a0648a80dafd))
+    - Gpt-3.5-turbo-0613 and more ([`6d1524a`](https://github.com/ssoudan/sapiens/commit/6d1524acbca7362b4eda081612a43005abc888cb))
+    - Merge pull request #39 from ssoudan/dependabot/cargo/serde-1.0.164 ([`e17e076`](https://github.com/ssoudan/sapiens/commit/e17e0766911c0ffab4df5c8b8d7213ea05275da7))
+    - Merge pull request #33 from ssoudan/dependabot/cargo/tokio-1.28.2 ([`80ca726`](https://github.com/ssoudan/sapiens/commit/80ca726a909cc08a6ef60d1668ebecdac7693700))
+    - Bump serde from 1.0.163 to 1.0.164 ([`f4b88c4`](https://github.com/ssoudan/sapiens/commit/f4b88c4520574c841b055edd71c329a8195c7173))
+    - Bump tokio from 1.28.1 to 1.28.2 ([`1f40bf5`](https://github.com/ssoudan/sapiens/commit/1f40bf57a197557d1abbde5f9885f86c56c5f153))
+    - Merge pull request #34 from ssoudan/dependabot/cargo/chrono-0.4.26 ([`672b402`](https://github.com/ssoudan/sapiens/commit/672b402a1d24224209ea2e2989671ba893520cd5))
+    - Merge pull request #38 from ssoudan/dependabot/cargo/clap-4.3.2 ([`1837ad5`](https://github.com/ssoudan/sapiens/commit/1837ad57c934c212da6596a9e77f3da4ddc9332f))
+    - Bump clap from 4.3.0 to 4.3.2 ([`6afdb0b`](https://github.com/ssoudan/sapiens/commit/6afdb0be21326df8b1cfffef6d2b46ae287e000e))
+    - Bump chrono from 0.4.24 to 0.4.26 ([`2d1bcb9`](https://github.com/ssoudan/sapiens/commit/2d1bcb9f16518317903033e00d7cb8ca7ed3158f))
+</details>
+
 ## 0.8.0 (2023-05-23)
+
+<csr-id-bf9a7b53c0d3095c083fe553a18227a52d2d6a1f/>
 
 ### Chore
 
@@ -26,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 7 commits contributed to the release over the course of 5 calendar days.
+ - 8 commits contributed to the release over the course of 5 calendar days.
  - 5 days passed between releases.
  - 6 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -38,6 +125,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.10.0, sapiens_tools v0.10.0, sapiens_bot v0.8.0, sapiens_cli v0.9.0, sapiens_exp v0.8.0, safety bump 4 crates ([`02f36bb`](https://github.com/ssoudan/sapiens/commit/02f36bbc35df5138c07fd1322030bb1bfeb01eb3))
     - Merge pull request #25 from ssoudan/more_steps ([`cb9a704`](https://github.com/ssoudan/sapiens/commit/cb9a70490ced60abd5bb12d2559d40464f3a3213))
     - More readable console outputs ([`6ad490a`](https://github.com/ssoudan/sapiens/commit/6ad490ab669568e1af013b5464ceca3e922da175))
     - Multi-step OODA chain ([`53c7d7d`](https://github.com/ssoudan/sapiens/commit/53c7d7ddf901709715543e76f780a8f39e334625))

@@ -5,7 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.3 (2023-06-14)
+
+### New Features
+
+ - <csr-id-6d1524acbca7362b4eda081612a43005abc888cb/> gpt-3.5-turbo-0613 and more
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 2 commits contributed to the release.
+ - 34 days passed between releases.
+ - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #43 from ssoudan/upd ([`c8d2e5a`](https://github.com/ssoudan/sapiens/commit/c8d2e5ad69f7bed6cbd6d64dfa62a3d0c864c885))
+    - Gpt-3.5-turbo-0613 and more ([`6d1524a`](https://github.com/ssoudan/sapiens/commit/6d1524acbca7362b4eda081612a43005abc888cb))
+</details>
+
 ## 0.4.2 (2023-05-11)
+
+<csr-id-c46990fe7b630ecc1e2698da5c168508da47fe34/>
+<csr-id-25661955e8aba7f9dee4a16e046c621c5ffd3fca/>
 
 ### Chore
 
@@ -16,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release over the course of 5 calendar days.
+ - 4 commits contributed to the release over the course of 5 calendar days.
  - 5 days passed between releases.
  - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -28,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.8.0, sapiens_derive v0.4.2, sapiens_tools v0.8.0, sapiens_bot v0.6.0, sapiens_cli v0.7.0, sapiens_exp v0.6.0, safety bump 4 crates ([`a18acd9`](https://github.com/ssoudan/sapiens/commit/a18acd9218045421957aff1c73c9f0a1597eb8d5))
     - Merge pull request #16 from ssoudan/decoupling ([`981d4d4`](https://github.com/ssoudan/sapiens/commit/981d4d4e1e6b625e17d7dcc2fc94e0709e11267c))
     - Renaming of fields to match the new visible names (`tool_name`, `parameters`) ([`c46990f`](https://github.com/ssoudan/sapiens/commit/c46990fe7b630ecc1e2698da5c168508da47fe34))
     - Badges, docs.rs links, ... ([`2566195`](https://github.com/ssoudan/sapiens/commit/25661955e8aba7f9dee4a16e046c621c5ffd3fca))
