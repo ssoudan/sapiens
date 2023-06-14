@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use toolbox::Toolbox;
 use tracing::warn;
 
-use crate::tools::invocation::InvocationError;
+use crate::tools::invocation::{ExtractedInvocations, InvocationError};
 
 /// Tools to extract Tool invocations from a messages
 pub mod invocation;
@@ -72,17 +72,22 @@ pub struct ToolDescription {
     /// Input format
     pub parameters: Format,
     /// Output format
-    pub result_fields: Format,
+    pub responses_content: Format,
 }
 
 impl ToolDescription {
     /// Create a new tool description
-    pub fn new(name: &str, description: &str, parameters: Format, result_fields: Format) -> Self {
+    pub fn new(
+        name: &str,
+        description: &str,
+        parameters: Format,
+        responses_content: Format,
+    ) -> Self {
         ToolDescription {
             name: name.to_string(),
             description: description.to_string(),
             parameters,
-            result_fields,
+            responses_content,
         }
     }
 }
@@ -195,15 +200,22 @@ pub trait AdvancedTool: Tool {
 }
 
 async fn choose_invocation(
-    tool_invocations: Vec<ToolInvocationInput>,
+    tool_invocations: ExtractedInvocations,
 ) -> Result<ToolInvocationInput, InvocationError> {
+    // TODO(ssoudan) customizable level of strictness
+    if tool_invocations.yaml_block_count > 1 {
+        return Err(InvocationError::TooManyYamlBlocks(
+            tool_invocations.yaml_block_count,
+        ));
+    }
+
     // if no tool_invocations are found, we return an error
-    if tool_invocations.is_empty() {
+    if tool_invocations.invocations.is_empty() {
         return Err(InvocationError::NoInvocationFound);
     }
 
     // We just take the first one
-    let mut invocation = tool_invocations.into_iter().next().unwrap();
+    let mut invocation = tool_invocations.invocations.into_iter().next().unwrap();
 
     // FUTURE(ssoudan) clean up the object and return this one instead
     // if any tool_invocations have an 'output' field, we return an error

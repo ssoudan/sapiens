@@ -12,8 +12,9 @@ use crate::{chains, prompt, SapiensConfig, WeakRuntimeObserver};
 const PREFIX: &str = r"You are part of a group of cooperating assistants named Sapiens. Use available tools to answer the question as best as you can.
 You will collectively proceed iteratively using an OODA loop. Don't overstep your role.
 
-- Action result will be provided. 
-- Never produce the result of an Action. 
+- Action response will be provided. 
+- Never produce the response of an Action. 
+- Only use YAML for the Action.
 - The loop will repeated until you have the answer to the original question. 
 - No task is complete until the Conclude Tool is used to provide the answer. 
 ";
@@ -68,7 +69,7 @@ tool_name: <ToolName>
 parameters:
     <...>  
 ```
-We will take further action based on the result.
+We will take further action based on the response.
 ====================
 
 Notes: 
@@ -87,7 +88,7 @@ const OBSERVER_PROTO_SECOND_INPUT: &str = r#"
 ## Orientation:
 - SandboxedPython can be used to sort the list.
 - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+- I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
@@ -100,8 +101,8 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-We will take further action based on the result.
-# Action SandboxedPython result:
+We will take further action based on the response.
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
@@ -112,7 +113,7 @@ stderr: ''
 const OBSERVER_PROTO_SECOND_RESPONSE: &str = r"
 ## Observations:
 - We needed to sort the list in ascending order.
-- We have the result of the Action.
+- We have the response of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
 ";
 
@@ -120,7 +121,7 @@ const ORIENTER_PROTO_INITIAL_RESPONSE: &str = r#"
 ## Orientation:
 - SandboxedPython can be used to sort the list.
 - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-- I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+- I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
 "#;
 
@@ -136,8 +137,8 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-We will take further action based on the result.
-# Action SandboxedPython result:
+We will take further action based on the response.
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
@@ -145,7 +146,7 @@ stderr: ''
 ```
 ## Observations:
 - We needed to sort the list in ascending order.
-- We have the result of the Action.
+- We have the response of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
 "#;
 
@@ -170,8 +171,8 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-We will take further action based on the result.
-# Action SandboxedPython result:
+We will take further action based on the response.
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
@@ -179,7 +180,7 @@ stderr: ''
 ```
 ## Observations:
 - We needed to sort the list in ascending order.
-- We have the result of the Action.
+- We have the response of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
@@ -201,11 +202,11 @@ parameters:
     sorted_list = sorted(lst)
     print(f"The sorted list is {sorted_list}")
 ```
-That's it for now. We will take further action based on the result.
+That's it for now. We will take further action based on the response.
 "#;
 
 const ACTOR_PROTO_SECOND_INPUT: &str = r#"
-# Action SandboxedPython result:
+# Action SandboxedPython response:
 ```yaml
 stdout: |
   The sorted list is [1, 2, 3, 4, 5]
@@ -213,7 +214,7 @@ stderr: ''
 ```
 ## Observations:
 - We needed to sort the list in ascending order.
-- We have the result of the Action.
+- We have the response of the Action.
 - We have the sorted list: [1, 2, 3, 4, 5].
 ## Orientation:
 - I know the answer to the original question.
@@ -830,7 +831,7 @@ mod tests {
             content: indoc! {r#"
             ## Observations:
             - We needed to sort the list in ascending order.
-            - We have the result of the Action.
+            - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
             "#
             }
@@ -858,7 +859,7 @@ mod tests {
             content: indoc! {r#"
             ## Observations:
             - We needed to sort the list in ascending order.
-            - We have the result of the Action.
+            - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
             "#
             }
@@ -898,7 +899,7 @@ mod tests {
             content: indoc! {r#"
             ## Observations:
             - We needed to sort the list in ascending order.
-            - We have the result of the Action.
+            - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
             "#
             }
@@ -964,7 +965,7 @@ mod tests {
             ## Orientation:
             - SandboxedPython can be used to sort the list.
             - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
-            - I expect the result of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
+            - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
             - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text."#
             }.trim().to_string(),
             usage: None,
@@ -991,7 +992,7 @@ mod tests {
                 sorted_list = sorted(lst)
                 print(f"The sorted list is {sorted_list}")
             ```
-            That's it for now. We will take further action based on the result.            
+            That's it for now. We will take further action based on the response.            
             "#
             }
             .trim()

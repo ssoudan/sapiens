@@ -305,8 +305,11 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
         Ok(invocations) => invocations,
         Err(e) => return InvokeResult::NoInvocationsFound { e },
     };
-    let invocation_count = tool_invocations.len();
-    info!("{} Tool invocations found", invocation_count);
+    let invocation_count = tool_invocations.invocations.len();
+    info!(
+        "{} YAML blocks and {} Tool invocations found",
+        tool_invocations.yaml_block_count, invocation_count
+    );
 
     // FUTURE(ssoudan) feature to control this
     // if more than one tool_invocations are found, we return an error
