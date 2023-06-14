@@ -50,7 +50,7 @@ Not quite sure yet. See [sapiens_cli/src/main.rs](sapiens_cli/src/main.rs) for m
 `SingleStepOODAChain` queries the underlying LM in a single step to get the Observation, Orientation, Decision and Action while
 `MultiStepOODAChain` splits the query in multiple steps to get the same information. 
 
-`SapiensConfig::chain_type` controls which chain is used. `SapiensConfig::model` controls which language model is used.t
+`SapiensConfig::chain_type` controls which chain is used. `SapiensConfig::model` controls which language model is used.
 
 ## Tools
 
