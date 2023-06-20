@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use async_openai::config::OpenAIConfig;
 pub use async_openai::error::OpenAIError;
 use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest};
 use lazy_static::lazy_static;
@@ -29,23 +30,24 @@ pub async fn build(
     api_base: Option<String>,
     temperature: Option<f32>,
 ) -> Result<ModelRef, Error> {
-    let mut openai_client = async_openai::Client::new();
+    let mut config = OpenAIConfig::new();
 
-    if let Some(api_key) = api_key {
-        openai_client = openai_client.with_api_key(api_key);
+    if let Some(api_key) = api_key.as_ref() {
+        config = config.with_api_key(api_key);
     }
 
-    if let Some(api_base) = api_base {
-        openai_client = openai_client.with_api_base(api_base);
+    if let Some(api_base) = api_base.as_ref() {
+        config = config.with_api_base(api_base.clone());
     }
 
-    let model = OpenAI::new(model, temperature, openai_client);
+    let openai_client = async_openai::Client::with_config(config);
+
+    let model = OpenAI::new(model, temperature, openai_client, api_base, api_key);
 
     Ok(Arc::new(Box::new(model)))
 }
 
 /// OpenAI model
-#[derive(Debug, Clone)]
 pub struct OpenAI {
     /// The model
     model: SupportedModel,
@@ -54,7 +56,46 @@ pub struct OpenAI {
     /// The higher the temperature, the crazier the text.
     pub temperature: Option<f32>,
     /// The client
-    client: async_openai::Client,
+    client: async_openai::Client<OpenAIConfig>,
+
+    /// API base
+    api_base: Option<String>,
+
+    /// API key
+    api_key: Option<String>,
+}
+
+impl Clone for OpenAI {
+    fn clone(&self) -> Self {
+        let mut config = OpenAIConfig::new();
+
+        if let Some(api_key) = &self.api_key {
+            config = config.with_api_key(api_key.clone());
+        }
+
+        if let Some(api_base) = &self.api_base {
+            config = config.with_api_base(api_base.clone());
+        }
+
+        let client = async_openai::Client::with_config(config);
+
+        Self {
+            model: self.model.clone(),
+            temperature: self.temperature,
+            client,
+            api_base: self.api_base.clone(),
+            api_key: self.api_key.clone(),
+        }
+    }
+}
+
+impl Debug for OpenAI {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("OpenAI")
+            .field("model", &self.model)
+            .field("temperature", &self.temperature)
+            .finish()
+    }
 }
 
 impl OpenAI {
@@ -62,12 +103,16 @@ impl OpenAI {
     pub fn new(
         model: SupportedModel,
         temperature: Option<f32>,
-        client: async_openai::Client,
+        client: async_openai::Client<OpenAIConfig>,
+        api_base: Option<String>,
+        api_key: Option<String>,
     ) -> Self {
         Self {
             model,
             temperature,
             client,
+            api_base,
+            api_key,
         }
     }
 }
@@ -77,7 +122,9 @@ impl Default for OpenAI {
         Self {
             model: SupportedModel::GPT3_5Turbo,
             temperature: Some(0.),
-            client: Default::default(),
+            client: async_openai::Client::new(),
+            api_base: None,
+            api_key: None,
         }
     }
 }
