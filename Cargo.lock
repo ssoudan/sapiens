@@ -131,9 +131,9 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.10.3"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5d5e93aca1b2f0ca772c76cadd43e965809df87ef98e25e47244c7f006c85d2"
+checksum = "207db2dadafe69aeab087dd54263e04ec9b01836a2d75335707b408eb7ad3f40"
 dependencies = [
  "backoff",
  "base64 0.21.2",
@@ -3234,9 +3234,9 @@ dependencies = [
 
 [[package]]
 name = "tiktoken-rs"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ba161c549e2c0686f35f5d920e63fad5cafba2c28ad2caceaf07e5d9fa6e8c4"
+checksum = "eaea81e057ef9e935bb8e92f03126f69379916fe3268cfafe56a3cd862421df6"
 dependencies = [
  "anyhow",
  "async-openai",
