@@ -44,7 +44,7 @@ serde_json = { version = "1.0.99", optional = true }
 
 tracing = "0.1.37"
 
-tokio = { version = "1.29.0", features = ["macros"] }
+tokio = { version = "1.29.1", features = ["macros"] }
 async-trait = "0.1.68"
 
 regex = "1.8.4"
@@ -62,7 +62,7 @@ thiserror = "1.0.40"
 indoc = "2"
 serde_json = "1.0.99"
 insta = { version = "1.30.0", features = ["yaml"] }
-tokio = { version = "1.29.0", features = ["macros"] }
+tokio = { version = "1.29.1", features = ["macros"] }
 pyo3-asyncio = { version = "0.18.0", features = ["attributes", "tokio-runtime", "testing"]  }
 dotenvy = "0.15.7"
 
