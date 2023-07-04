@@ -162,34 +162,38 @@ impl ChatEntryTokenNumber for OpenAI {
                         let sep = seps[(i + 1) % seps.len()];
                         match x.role {
                             async_openai::types::Role::System => {
-                                if x.content.is_empty() {
-                                    String::new()
+                                if let Some(content) = &x.content {
+                                    format!("{}{}", content, sep)
                                 } else {
-                                    format!("{}\n", x.content)
+                                    String::new()
                                 }
                             }
                             async_openai::types::Role::User => {
-                                if x.content.is_empty() {
-                                    format!("{}:\n", x.role.to_string().to_ascii_uppercase())
-                                } else {
+                                if let Some(content) = &x.content {
                                     format!(
                                         "{}: {}\n",
                                         x.role.to_string().to_ascii_uppercase(),
-                                        x.content
+                                        content
                                     )
+                                } else {
+                                    format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 }
                             }
                             async_openai::types::Role::Assistant => {
-                                if x.content.is_empty() {
-                                    format!("{}:\n", x.role.to_string().to_ascii_uppercase())
-                                } else {
+                                if let Some(content) = &x.content {
                                     format!(
                                         "{}: {}{}\n",
                                         x.role.to_string().to_ascii_uppercase(),
-                                        x.content,
+                                        content,
                                         sep
                                     )
+                                } else {
+                                    format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 }
+                            }
+                            async_openai::types::Role::Function => {
+                                error!("Function role not supported");
+                                String::new()
                             }
                         }
                     })
@@ -232,35 +236,40 @@ impl OpenAI {
         for m in input.context {
             messages.push(ChatCompletionRequestMessage {
                 role: m.role.into(),
-                content: m.msg,
+                content: Some(m.msg),
                 name: None,
+                function_call: None,
             });
         }
         messages.push(ChatCompletionRequestMessage {
             role: Role::Assistant.into(),
-            content: "Got it.".to_string(),
+            content: Some("Got it.".to_string()),
             name: None,
+            function_call: None,
         });
 
         for (user, bot) in input.examples {
             messages.push(ChatCompletionRequestMessage {
                 role: Role::User.into(),
-                content: user.msg,
+                content: Some(user.msg),
                 name: None,
+                function_call: None,
             });
 
             messages.push(ChatCompletionRequestMessage {
                 role: Role::Assistant.into(),
-                content: bot.msg,
+                content: Some(bot.msg),
                 name: None,
+                function_call: None,
             });
         }
 
         for message in input.chat {
             messages.push(ChatCompletionRequestMessage {
                 role: message.role.into(),
-                content: message.msg,
+                content: Some(message.msg),
                 name: None,
+                function_call: None,
             });
         }
 
@@ -268,6 +277,8 @@ impl OpenAI {
         CreateChatCompletionRequest {
             model: self.model.to_string(),
             messages,
+            functions: None,
+            function_call: None,
             temperature,
             top_p: None,
             n: Some(1),
@@ -304,7 +315,7 @@ impl Model for OpenAI {
         let msg = first.message.content.clone();
 
         Ok(ModelResponse {
-            msg,
+            msg: msg.unwrap_or_default(),
             usage: res.usage.as_ref().map(Into::into),
             finish_reason: first.finish_reason.clone(),
         })
@@ -315,8 +326,9 @@ impl From<&ChatEntry> for ChatCompletionRequestMessage {
     fn from(value: &ChatEntry) -> Self {
         Self {
             role: value.role.clone().into(),
-            content: value.msg.clone(),
+            content: Some(value.msg.clone()),
             name: None,
+            function_call: None,
         }
     }
 }
@@ -327,6 +339,7 @@ impl From<Role> for async_openai::types::Role {
             Role::User => Self::User,
             Role::System => Self::System,
             Role::Assistant => Self::Assistant,
+            Role::Function => Self::Function,
         }
     }
 }
@@ -335,7 +348,7 @@ impl From<&ChatCompletionRequestMessage> for ChatEntry {
     fn from(msg: &ChatCompletionRequestMessage) -> Self {
         Self {
             role: msg.role.clone().into(),
-            msg: msg.content.clone(),
+            msg: msg.content.clone().unwrap_or_default(),
         }
     }
 }
@@ -346,6 +359,7 @@ impl From<async_openai::types::Role> for Role {
             async_openai::types::Role::User => Self::User,
             async_openai::types::Role::System => Self::System,
             async_openai::types::Role::Assistant => Self::Assistant,
+            async_openai::types::Role::Function => Self::Function,
         }
     }
 }
@@ -511,7 +525,7 @@ mod tests {
 
         let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 79);
+        assert_eq!(token_sz, 80);
     }
 
     #[tokio::test]

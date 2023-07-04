@@ -14,6 +14,7 @@ impl ChatEntryFormatter for Formatter {
             Role::User => format!(":earth_americas:\n{}", msg),
             Role::Assistant => format!(":robot:\n{}", msg),
             Role::System => format!(":rooster:\n{}", msg),
+            Role::Function => format!(":gear:\n{}", msg),
         }
     }
 }

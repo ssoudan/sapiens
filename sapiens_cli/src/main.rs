@@ -83,6 +83,7 @@ impl ChatEntryFormatter for ColorFormatter {
             Role::System => msg.yellow().to_string(),
             Role::User => msg.green().to_string(),
             Role::Assistant => msg.blue().to_string(),
+            Role::Function => msg.red().to_string(),
         }
     }
 }

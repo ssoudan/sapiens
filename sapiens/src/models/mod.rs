@@ -43,6 +43,8 @@ pub enum Role {
     User,
     /// The assistant
     Assistant,
+    /// Function call
+    Function,
 }
 
 impl Display for Role {
@@ -51,6 +53,7 @@ impl Display for Role {
             Role::System => write!(f, "system"),
             Role::User => write!(f, "user"),
             Role::Assistant => write!(f, "assistant"),
+            Role::Function => write!(f, "function"),
         }
     }
 }
