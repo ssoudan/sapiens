@@ -39,7 +39,7 @@ tokenizers = { version = "0.13.3", features = [] }
 # GCP Vertex AI Generative Language Models
 gcp-vertex-ai-generative-language = "0.1.1"
 
-thiserror = "1.0.41"
+thiserror = "1.0.43"
 
 [dev-dependencies]
 indoc = "2"
