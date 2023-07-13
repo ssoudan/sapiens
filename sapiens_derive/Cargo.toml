@@ -16,7 +16,7 @@ documentation = "https://docs.rs/sapiens_derive"
 proc-macro2 = "1.0"
 quote = "1.0"
 syn = { version = "2.0" }
-darling = "0.20.1"
+darling = "0.20.3"
 darling_macro = "0.20.1"
 
 [lib]
