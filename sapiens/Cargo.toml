@@ -29,7 +29,7 @@ serde_yaml = "0.9.22"
 
 regex = "1.9.1"
 
-clap = { version = "4.3.11", optional = true }
+clap = { version = "4.3.12", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
 tiktoken-rs = { version = "0.5.0", features = ["async-openai"] }
