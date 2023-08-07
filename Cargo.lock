@@ -509,9 +509,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.3.11"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1640e5cc7fb47dbb8338fd471b105e7ed6c3cb2aeb00c2e067127ffd3764a05d"
+checksum = "5fd304a20bff958a57f04c4e96a2e7594cc4490a0e809cbd48bb6437edaa452d"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -520,9 +520,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.3.11"
+version = "4.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "98c59138d527eeaf9b53f35a77fcc1fad9d883116070c63d5de1c7dc7b00c72b"
+checksum = "01c6a3f08f1fe5662a35cfe393aec09c4df95f60ee93b7556505260f75eee9e1"
 dependencies = [
  "anstream",
  "anstyle",
@@ -532,9 +532,9 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.3.2"
+version = "4.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8cd2b2a819ad6eec39e8f1d6b53001af1e5469f8c177579cdaeb313115b825f"
+checksum = "54a9bb5758fc5dfe728d1019941681eccaf0cf8a4189b692a0ee2f2ecf90a050"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -2805,7 +2805,7 @@ version = "0.10.1"
 dependencies = [
  "async-openai",
  "async-trait",
- "clap 4.3.11",
+ "clap 4.3.19",
  "gcp-vertex-ai-generative-language",
  "indoc 2.0.2",
  "insta",
@@ -2846,7 +2846,7 @@ name = "sapiens_cli"
 version = "0.9.1"
 dependencies = [
  "async-trait",
- "clap 4.3.11",
+ "clap 4.3.19",
  "colored",
  "dotenvy",
  "huelib2",
@@ -2876,7 +2876,7 @@ version = "0.8.1"
 dependencies = [
  "async-trait",
  "chrono",
- "clap 4.3.11",
+ "clap 4.3.19",
  "dotenvy",
  "huelib2",
  "insta",
@@ -3378,7 +3378,7 @@ checksum = "5cf49017523bf0bc01c9966f172c5f120bbb7b96cccd1708772dd42e767fb9f5"
 dependencies = [
  "aho-corasick 0.7.20",
  "cached-path",
- "clap 4.3.11",
+ "clap 4.3.19",
  "derive_builder",
  "dirs",
  "esaxx-rs",
