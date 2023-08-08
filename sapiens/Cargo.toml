@@ -33,7 +33,7 @@ clap = { version = "4.3.19", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
 tiktoken-rs = { version = "0.5.0", features = ["async-openai"] }
-async-openai = "0.12.1"
+async-openai = "0.12.2"
 tokenizers = { version = "0.13.3", features = [] }
 
 # GCP Vertex AI Generative Language Models
