@@ -43,4 +43,4 @@ thiserror = "1.0.44"
 
 [dev-dependencies]
 indoc = "2"
-insta = { version = "1.30.0", features = ["yaml"] }
+insta = { version = "1.31.0", features = ["yaml"] }
