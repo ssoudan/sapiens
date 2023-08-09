@@ -161,6 +161,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-openai"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e50e3cbfb9fc7bf556cf75d866a7b73127c770a8869b8ea781b603136895ed69"
+dependencies = [
+ "backoff",
+ "base64 0.21.2",
+ "derive_builder",
+ "futures",
+ "rand",
+ "reqwest",
+ "reqwest-eventsource",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2803,7 +2825,7 @@ checksum = "fe232bdf6be8c8de797b22184ee71118d63780ea42ac85b61d1baa6d3b782ae9"
 name = "sapiens"
 version = "0.10.1"
 dependencies = [
- "async-openai",
+ "async-openai 0.13.0",
  "async-trait",
  "clap 4.3.21",
  "gcp-vertex-ai-generative-language",
@@ -2900,7 +2922,7 @@ name = "sapiens_tools"
 version = "0.10.1"
 dependencies = [
  "arxiv-rs",
- "async-openai",
+ "async-openai 0.13.0",
  "async-trait",
  "convert_case",
  "dotenvy",
@@ -3329,7 +3351,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a99d843674a3468b4a9200a565bbe909a0152f95e82a52feae71e6bf2d4b49d"
 dependencies = [
  "anyhow",
- "async-openai",
+ "async-openai 0.12.2",
  "base64 0.21.2",
  "bstr",
  "fancy-regex",
