@@ -38,14 +38,14 @@ arxiv-rs = { version = "0.1.5", optional = true }
 
 reqwest = { version = "0.11", features = ["json"], optional = true }
 
-serde = { version = "1.0.168", features = ["derive"] }
+serde = { version = "1.0.183", features = ["derive"] }
 serde_yaml = "0.9.25"
 serde_json = { version = "1.0.104", optional = true }
 
 tracing = "0.1.37"
 
 tokio = { version = "1.30.0", features = ["macros"] }
-async-trait = "0.1.71"
+async-trait = "0.1.72"
 
 regex = "1.9.3"
 lazy_static = "1.4.0"
