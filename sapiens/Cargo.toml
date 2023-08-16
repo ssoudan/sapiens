@@ -19,9 +19,9 @@ default = ["clap"]
 clap = ["dep:clap"]
 
 [dependencies]
-tokio = { version = "1.30.0" }
+tokio = { version = "1.31.0" }
 tracing = "0.1.37"
-async-trait = "0.1.72"
+async-trait = "0.1.73"
 lazy_static = "1.4.0"
 
 serde = { version = "1.0.183", features = ["derive"] }
@@ -32,14 +32,14 @@ regex = "1.9.3"
 clap = { version = "4.3.21", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
-tiktoken-rs = { version = "0.5.0", features = ["async-openai"] }
-async-openai = "0.12.2"
-tokenizers = { version = "0.13.3", features = [] }
+tiktoken-rs = { version = "0.5.1", features = ["async-openai"] }
+async-openai = "0.13.0"
+tokenizers = { version = "0.13.4", features = [] }
 
 # GCP Vertex AI Generative Language Models
 gcp-vertex-ai-generative-language = "0.1.1"
 
-thiserror = "1.0.44"
+thiserror = "1.0.46"
 
 [dev-dependencies]
 indoc = "2"
