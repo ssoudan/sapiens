@@ -40,30 +40,30 @@ reqwest = { version = "0.11", features = ["json"], optional = true }
 
 serde = { version = "1.0.183", features = ["derive"] }
 serde_yaml = "0.9.25"
-serde_json = { version = "1.0.104", optional = true }
+serde_json = { version = "1.0.105", optional = true }
 
 tracing = "0.1.37"
 
-tokio = { version = "1.30.0", features = ["macros"] }
-async-trait = "0.1.72"
+tokio = { version = "1.31.0", features = ["macros"] }
+async-trait = "0.1.73"
 
 regex = "1.9.3"
 lazy_static = "1.4.0"
 
-pyo3 = { version = "0.18.3", features = [] }
+pyo3 = { version = "0.19.2", features = [] }
 
-async-openai = { version = "0.12.2", optional = true }
+async-openai = { version = "0.13.0", optional = true }
 
 convert_case = "0.6.0"
 
-thiserror = "1.0.44"
+thiserror = "1.0.46"
 
 [dev-dependencies]
 indoc = "2"
-serde_json = "1.0.104"
+serde_json = "1.0.105"
 insta = { version = "1.31.0", features = ["yaml"] }
-tokio = { version = "1.30.0", features = ["macros"] }
-pyo3-asyncio = { version = "0.18.0", features = ["attributes", "tokio-runtime", "testing"]  }
+tokio = { version = "1.31.0", features = ["macros"] }
+pyo3-asyncio = { version = "0.19.0", features = ["attributes", "tokio-runtime", "testing"]  }
 dotenvy = "0.15.7"
 
 [package.metadata.cargo-udeps.ignore]
