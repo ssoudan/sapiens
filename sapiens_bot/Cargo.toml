@@ -37,7 +37,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
 
 serenity = { version = "0.11.6", default-features = false, features = ["client", "gateway", "rustls_backend", "model", "cache"] }
-tokio = { version = "1.31", features = ["macros", "rt-multi-thread", "sync"] }
+tokio = { version = "1.32", features = ["macros", "rt-multi-thread", "sync"] }
 async-trait = "0.1.73"
 
 pyo3 = { version = "0.19.2", features = [] }
