@@ -122,9 +122,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.72"
+version = "1.0.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b13c32d80ecc7ab747b80c3784bce54ee8a7a0cc4fbda9bf4cda2cf6fe90854"
+checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "arxiv-rs"
@@ -138,13 +138,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-convert"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d416feee97712e43152cd42874de162b8f9b77295b1c85e5d92725cc8310bae"
+dependencies = [
+ "async-trait",
+]
+
+[[package]]
 name = "async-openai"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0492edb15da150dc70353f69921ca5fd40e41761c5ee91c42509149d83a7d1d9"
 dependencies = [
  "backoff",
- "base64 0.21.2",
+ "base64 0.21.3",
+ "derive_builder",
+ "futures",
+ "rand",
+ "reqwest",
+ "reqwest-eventsource",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
+name = "async-openai"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7614373e1d24d44f7b57df2125c5253c7afbf927574f2695371e5589a0dd4937"
+dependencies = [
+ "async-convert",
+ "backoff",
+ "base64 0.21.3",
  "derive_builder",
  "futures",
  "rand",
@@ -307,9 +339,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.21.2"
+version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "604178f6c5c21f02dc555784810edfb88d34ac2c73b2eae109655649ee73ce3d"
+checksum = "414dcefbc63d77c526a76b3afcf6fbb9b5e2791c19c3aa2297733208750c6e53"
 
 [[package]]
 name = "base64ct"
@@ -355,13 +387,13 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "1.6.0"
+version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6798148dccfbff0fae41c7574d2fa8f1ef3492fba0face179de5d8d447d67b05"
+checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
 dependencies = [
+ "lazy_static",
  "memchr",
- "regex-automata 0.3.8",
- "serde",
+ "regex-automata 0.1.10",
 ]
 
 [[package]]
@@ -1684,7 +1716,7 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9634e2be056501031c2c5ed2050014293f9895bb327aed691543545b80c27d5d"
 dependencies = [
- "base64 0.21.2",
+ "base64 0.21.3",
  "config",
  "futures",
  "hmac",
@@ -2481,7 +2513,7 @@ version = "0.11.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e9ad3fe7488d7e34558a2033d45a0c90b72d97b4f80705666fea71472e2e6a1"
 dependencies = [
- "base64 0.21.2",
+ "base64 0.21.3",
  "bytes",
  "cookie",
  "cookie_store",
@@ -2661,7 +2693,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d3987094b1d07b653b7dfdc3f70ce9a1da9c51ac18c1b06b662e4f9a0e9f4b2"
 dependencies = [
- "base64 0.21.2",
+ "base64 0.21.3",
 ]
 
 [[package]]
@@ -2700,7 +2732,7 @@ checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 name = "sapiens"
 version = "0.10.1"
 dependencies = [
- "async-openai",
+ "async-openai 0.13.1",
  "async-trait",
  "clap 4.4.2",
  "gcp-vertex-ai-generative-language",
@@ -2797,7 +2829,7 @@ name = "sapiens_tools"
 version = "0.10.1"
 dependencies = [
  "arxiv-rs",
- "async-openai",
+ "async-openai 0.13.1",
  "async-trait",
  "convert_case",
  "dotenvy",
@@ -3202,13 +3234,13 @@ dependencies = [
 
 [[package]]
 name = "tiktoken-rs"
-version = "0.5.1"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bf14cb08d8fda6e484c75ec2bfb6bcef48347d47abcd011fa9d56ee995a3da0"
+checksum = "fdf6d1233fb3916cc4a19756df59472ef702ae82d1b4eda2dca8794911f9dc9d"
 dependencies = [
  "anyhow",
- "async-openai",
- "base64 0.21.2",
+ "async-openai 0.14.0",
+ "base64 0.21.3",
  "bstr",
  "fancy-regex",
  "lazy_static",
@@ -3409,7 +3441,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "axum",
- "base64 0.21.2",
+ "base64 0.21.3",
  "bytes",
  "futures-core",
  "futures-util",
@@ -3665,7 +3697,7 @@ version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b11c96ac7ee530603dcdf68ed1557050f374ce55a5a07193ebf8cbc9f8927e9"
 dependencies = [
- "base64 0.21.2",
+ "base64 0.21.3",
  "flate2",
  "log",
  "once_cell",
