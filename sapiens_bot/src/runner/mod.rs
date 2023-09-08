@@ -137,7 +137,7 @@ impl RuntimeObserver for ProgressObserver {
     }
 
     async fn on_message(&mut self, _event: MessageNotification) {
-        todo!()
+        // todo!()
     }
 
     async fn on_invocation_result(&mut self, event: InvocationResultNotification) {
