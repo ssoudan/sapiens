@@ -375,7 +375,7 @@ impl PythonTool {
                 .collect::<Vec<_>>()
                 .join(", ");
 
-            for cased_name in vec![name.to_case(Case::Snake), name.to_case(Case::Pascal)] {
+            for cased_name in [name.to_case(Case::Snake), name.to_case(Case::Pascal)] {
                 // in Pascal case
                 tool_class_code.push_str(&indent(
                     4,

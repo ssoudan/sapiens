@@ -15,6 +15,7 @@ pub(crate) enum PyConversionError {
 }
 
 // inspired from https://github.com/mozilla-services/python-canonicaljson-rs/blob/62599b246055a1c8a78e5777acdfe0fd594be3d8/src/lib.rs#L87-L167
+#[allow(clippy::redundant_closure_call)]
 pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionError> {
     macro_rules! return_cast {
         ($t:ty, $f:expr) => {

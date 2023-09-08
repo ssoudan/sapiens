@@ -151,7 +151,7 @@ impl ChatEntryTokenNumber for OpenAI {
             }
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => {
                 // See https://github.com/lm-sys/FastChat/blob/667c584ad437b4655f29ca99d480d96833470860/fastchat/conversation.py#LL62C24-L62C24
-                let seps = vec![" ", "</s>"];
+                let seps = [" ", "</s>"];
 
                 let chat = req
                     .messages
