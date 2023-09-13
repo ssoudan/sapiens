@@ -1,0 +1,59 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/rust
+{
+	"name": "rust-consensus",
+	"build": {
+		"context": "..",
+		"dockerfile": "./Dockerfile",
+		// "cacheFrom": "ghcr.io/ssoudan/consensus-devcontainer:latest",
+	},
+	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile	
+	// Use 'mounts' to make the cargo cache persistent in a Docker Volume.
+	// "mounts": [
+	// 	{
+	// 		"source": "devcontainer-cargo-cache-${devcontainerId}",
+	// 		"target": "/usr/local/cargo",
+	// 		"type": "volume"
+	// 	}
+	// ]
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+	// Configure tool-specific properties.
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"GitHub.copilot",
+				"github.copilot-chat",
+				"github.vscode-github-actions",
+				"github.vscode-github-actions",
+				"rust-lang.rust-analyzer",
+				"tamasfe.even-better-toml",
+				"serayuzgur.crates"
+			],
+			"settings": {
+				"files.associations": {
+					"*.rs": "rust"
+				},
+				"editor.quickSuggestions": {
+					"other": "on",
+					"comments": "on",
+					"strings": true
+				}
+			}
+		}
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"configureZshAsDefaultShell": true
+		},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {
+			"moby": true,
+			"installDockerBuildx": true,
+			"version": "latest",
+			"dockerDashComposeVersion": "v1"
+		},
+	},
+	// "postCreateCommand": "",
+	"remoteUser": "vscode"
+}
