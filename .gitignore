@@ -5,3 +5,4 @@ recipe.json
 .vscode/
 configuration.yaml
 experiments/data/
+**/.DS_Store
