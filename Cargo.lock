@@ -1362,9 +1362,9 @@ checksum = "bfa799dd5ed20a7e349f3b4639aa80d74549c81716d9ec4f994c9b5815598306"
 
 [[package]]
 name = "indoc"
-version = "2.0.3"
+version = "2.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c785eefb63ebd0e33416dfcb8d6da0bf27ce752843a45632a67bf10d4d4b5c4"
+checksum = "1e186cfbae8084e513daff4240b4797e342f988cecda4fb6c939150f96315fd8"
 
 [[package]]
 name = "insta"
@@ -2520,7 +2520,7 @@ dependencies = [
  "async-trait",
  "clap 4.4.4",
  "gcp-vertex-ai-generative-language",
- "indoc 2.0.3",
+ "indoc 2.0.4",
  "insta",
  "lazy_static",
  "regex",
@@ -2540,7 +2540,7 @@ dependencies = [
  "async-trait",
  "dotenvy",
  "huelib2",
- "indoc 2.0.3",
+ "indoc 2.0.4",
  "insta",
  "pulldown-cmark",
  "pulldown-cmark-to-cmark",
@@ -2618,7 +2618,7 @@ dependencies = [
  "convert_case",
  "dotenvy",
  "huelib2",
- "indoc 2.0.3",
+ "indoc 2.0.4",
  "insta",
  "lazy_static",
  "mediawiki",

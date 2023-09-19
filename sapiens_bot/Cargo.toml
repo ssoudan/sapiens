@@ -49,5 +49,5 @@ pulldown-cmark = "0.9.3"
 dotenvy = "0.15.7"
 
 [dev-dependencies]
-indoc = "2.0.3"
+indoc = "2.0.4"
 insta = "1.31.0"
