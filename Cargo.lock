@@ -143,7 +143,7 @@ checksum = "7150fb5d9cc4eb0184af43ce75a89620dc3747d3c816e8b0ba200682d0155c05"
 dependencies = [
  "async-convert",
  "backoff",
- "base64 0.21.3",
+ "base64 0.21.4",
  "derive_builder",
  "futures",
  "rand",
@@ -306,9 +306,9 @@ checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
-version = "0.21.3"
+version = "0.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "414dcefbc63d77c526a76b3afcf6fbb9b5e2791c19c3aa2297733208750c6e53"
+checksum = "9ba43ea6f343b788c8764558649e08df62f86c6ef251fdaeb1ffd010a9ae50a2"
 
 [[package]]
 name = "bit-set"
@@ -348,13 +348,13 @@ dependencies = [
 
 [[package]]
 name = "bstr"
-version = "0.2.17"
+version = "1.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba3569f383e8f1598449f1a423e72e99569137b47740b1da11ef19af3d5c3223"
+checksum = "4c2f7349907b712260e64b0afe2f84692af14a454be26187d9df565c7f69266a"
 dependencies = [
- "lazy_static",
  "memchr",
- "regex-automata 0.1.10",
+ "regex-automata 0.3.8",
+ "serde",
 ]
 
 [[package]]
@@ -1548,7 +1548,7 @@ version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9634e2be056501031c2c5ed2050014293f9895bb327aed691543545b80c27d5d"
 dependencies = [
- "base64 0.21.3",
+ "base64 0.21.4",
  "config",
  "futures",
  "hmac",
@@ -2297,7 +2297,7 @@ version = "0.11.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3e9ad3fe7488d7e34558a2033d45a0c90b72d97b4f80705666fea71472e2e6a1"
 dependencies = [
- "base64 0.21.3",
+ "base64 0.21.4",
  "bytes",
  "cookie",
  "cookie_store",
@@ -2477,7 +2477,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d3987094b1d07b653b7dfdc3f70ce9a1da9c51ac18c1b06b662e4f9a0e9f4b2"
 dependencies = [
- "base64 0.21.3",
+ "base64 0.21.4",
 ]
 
 [[package]]
@@ -3007,13 +3007,13 @@ dependencies = [
 
 [[package]]
 name = "tiktoken-rs"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdf6d1233fb3916cc4a19756df59472ef702ae82d1b4eda2dca8794911f9dc9d"
+checksum = "f9ae5a3c24361e5f038af22517ba7f8e3af4099e30e78a3d56f86b48238fce9d"
 dependencies = [
  "anyhow",
  "async-openai",
- "base64 0.21.3",
+ "base64 0.21.4",
  "bstr",
  "fancy-regex",
  "lazy_static",
@@ -3211,7 +3211,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "axum",
- "base64 0.21.3",
+ "base64 0.21.4",
  "bytes",
  "futures-core",
  "futures-util",
@@ -3467,7 +3467,7 @@ version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b11c96ac7ee530603dcdf68ed1557050f374ce55a5a07193ebf8cbc9f8927e9"
 dependencies = [
- "base64 0.21.3",
+ "base64 0.21.4",
  "flate2",
  "log",
  "once_cell",
