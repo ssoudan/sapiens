@@ -50,4 +50,4 @@ dotenvy = "0.15.7"
 
 [dev-dependencies]
 indoc = "2.0.4"
-insta = "1.32.0"
+insta = "1.33.0"
