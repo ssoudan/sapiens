@@ -37,7 +37,7 @@ async-openai = "0.14.3"
 tokenizers = { version = "0.14.1", features = [] }
 
 # GCP Vertex AI Generative Language Models
-gcp-vertex-ai-generative-language = "0.1.1"
+gcp-vertex-ai-generative-language = "0.1.2"
 
 thiserror = "1.0.49"
 

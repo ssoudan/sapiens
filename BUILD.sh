@@ -78,8 +78,8 @@ if [ "$FAST" = false ]; then
   echo -e "${BLUE}Licensing...${NORMAL}"
   cargo deny check || (echo -e "$RED [License check failed] $NORMAL" && exit 1)
 
-  echo -e "${BLUE}Udeps...${NORMAL}"
-  cargo +nightly udeps || (echo -e "$RED [Udep failed] $NORMAL" && exit 1)
+  echo -e "${BLUE}Machete...${NORMAL}"
+  cargo +nightly machete || (echo -e "$RED [Machete failed] $NORMAL" && exit 1)
 
   #echo -e "${BLUE}Benchmarking...${NORMAL}"
   #cargo criterion --all --features=unstable
