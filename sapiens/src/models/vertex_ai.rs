@@ -168,11 +168,14 @@ impl models::Model for LanguageModel {
                     if let Some(message) = f.message.as_ref() {
                         warn!(
                             "Filter: {:?} - {}",
-                            BlockedReason::from_i32(f.reason),
+                            BlockedReason::try_from(f.reason).unwrap_or(BlockedReason::Unspecified),
                             message
                         );
                     } else {
-                        warn!("Filter: {:?}", BlockedReason::from_i32(f.reason));
+                        warn!(
+                            "Filter: {:?}",
+                            BlockedReason::try_from(f.reason).unwrap_or(BlockedReason::Unspecified)
+                        )
                     }
                 });
                 return Err(Error::Filtered);

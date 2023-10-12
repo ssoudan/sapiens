@@ -24,4 +24,4 @@ RUN rustup update
 
 RUN rustup component add clippy rustfmt rust-src rust-analysis rls 
 
-RUN cargo install cargo-edit cargo-deny cargo-udeps cargo-audit cargo-update
+RUN cargo install cargo-edit cargo-machete cargo-update
