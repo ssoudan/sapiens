@@ -32,7 +32,7 @@ regex = "1.10.0"
 clap = { version = "4.4.6", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
-tiktoken-rs = { version = "0.5.4", features = ["async-openai"] }
+tiktoken-rs = { version = "0.5.5", features = ["async-openai"] }
 async-openai = "0.14.3"
 tokenizers = { version = "0.14.1", features = [] }
 
