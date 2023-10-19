@@ -42,7 +42,7 @@ serde = { version = "1.0.189", features = ["derive"] }
 serde_yaml = "0.9.25"
 serde_json = { version = "1.0.107", optional = true }
 
-tracing = "0.1.39"
+tracing = "0.1.40"
 
 tokio = { version = "1.33.0", features = ["macros"] }
 async-trait = "0.1.74"
