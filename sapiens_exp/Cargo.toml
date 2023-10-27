@@ -32,7 +32,7 @@ chrono = { version = "0.4.31", default-features = false, features = ["serde", "c
 
 serde = { version = "1.0.190", features = ["derive"] }
 serde_json = "1.0.107"
-serde_yaml = "0.9.25"
+serde_yaml = "0.9.27"
 
 rust-fsm = "0.6.1"
 
