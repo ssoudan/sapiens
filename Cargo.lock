@@ -150,6 +150,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-openai"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "716fd3fa452e27f7c820daab6f1d010cf3359f3ad6fad275d228505529f72199"
+dependencies = [
+ "async-convert",
+ "backoff",
+ "base64 0.21.4",
+ "derive_builder",
+ "futures",
+ "rand",
+ "reqwest",
+ "reqwest-eventsource",
+ "secrecy",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tracing",
+]
+
+[[package]]
 name = "async-stream"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2495,7 +2519,7 @@ checksum = "1ad4cc8da4ef723ed60bced201181d83791ad433213d8c24efffda1eec85d741"
 name = "sapiens"
 version = "0.10.1"
 dependencies = [
- "async-openai",
+ "async-openai 0.15.0",
  "async-trait",
  "clap 4.4.7",
  "gcp-vertex-ai-generative-language",
@@ -2592,7 +2616,7 @@ name = "sapiens_tools"
 version = "0.10.1"
 dependencies = [
  "arxiv-rs",
- "async-openai",
+ "async-openai 0.15.0",
  "async-trait",
  "convert_case",
  "dotenvy",
@@ -2638,6 +2662,16 @@ checksum = "d53dcdb7c9f8158937a7981b48accfd39a43af418591a5d008c7b22b5e1b7ca4"
 dependencies = [
  "ring",
  "untrusted",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "serde",
+ "zeroize",
 ]
 
 [[package]]
@@ -3012,7 +3046,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1e520ded49607c6b80a4ab517f564c05e2b34f2c549dbd7b6a528caa2009dda"
 dependencies = [
  "anyhow",
- "async-openai",
+ "async-openai 0.14.3",
  "base64 0.21.4",
  "bstr",
  "fancy-regex",
@@ -3871,3 +3905,9 @@ checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a0956f1ba7c7909bfb66c2e9e4124ab6f6482560f6628b5aaeba39207c9aad9"
