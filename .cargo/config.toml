@@ -7,9 +7,6 @@ fail-fast = false
 path = "junit.xml"
 
 [build]
-rustflags = ["-W", "missing_docs"]
-
-[target.'cfg(all())']
 rustflags = [
     "-Dunsafe_code",
     "-Wmissing_docs",
@@ -18,9 +15,4 @@ rustflags = [
     "-Wclippy::char_lit_as_u8",
     "-Arustdoc::invalid_rust_codeblocks",
     "-Arustdoc::bare_urls"
-]
-
-[target.'cfg(feature = "cargo-clippy")']
-rustflags = [
-    "-Wmissing_docs",
 ]
