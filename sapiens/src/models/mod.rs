@@ -45,6 +45,8 @@ pub enum Role {
     Assistant,
     /// Function call
     Function,
+    /// Tool call
+    Tool,
 }
 
 impl Display for Role {
@@ -54,6 +56,7 @@ impl Display for Role {
             Role::User => write!(f, "user"),
             Role::Assistant => write!(f, "assistant"),
             Role::Function => write!(f, "function"),
+            Role::Tool => write!(f, "tool"),
         }
     }
 }

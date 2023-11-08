@@ -15,6 +15,7 @@ impl ChatEntryFormatter for Formatter {
             Role::Assistant => format!(":robot:\n{}", msg),
             Role::System => format!(":rooster:\n{}", msg),
             Role::Function => format!(":gear:\n{}", msg),
+            Role::Tool => format!(":wrench:\n{}", msg),
         }
     }
 }
