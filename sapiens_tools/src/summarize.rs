@@ -69,7 +69,7 @@ impl SummarizeTool {
         &self,
         input: &SummarizeToolInput,
     ) -> Result<SummarizeToolOutput, ToolUseError> {
-        let prompt = Some(Prompt::String(format!("{}\n\nTl;dr", input.text)));
+        let prompt = Prompt::String(format!("{}\n\nTl;dr", input.text));
 
         if input.text.len() < 100 {
             return Ok(SummarizeToolOutput {

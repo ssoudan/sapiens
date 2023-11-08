@@ -6,10 +6,12 @@ use std::sync::Arc;
 
 use async_openai::config::OpenAIConfig;
 pub use async_openai::error::OpenAIError;
-use async_openai::types::{ChatCompletionRequestMessage, CreateChatCompletionRequest};
+use async_openai::types::{
+    ChatCompletionRequestAssistantMessage, ChatCompletionRequestMessage,
+    ChatCompletionRequestSystemMessage, ChatCompletionRequestUserMessage,
+    ChatCompletionRequestUserMessageContent, CreateChatCompletionRequest,
+};
 use lazy_static::lazy_static;
-pub use tiktoken_rs::async_openai::num_tokens_from_messages;
-pub use tiktoken_rs::model::get_context_size;
 use tracing::{error, trace};
 
 use crate::context::ChatEntry;
@@ -144,12 +146,9 @@ impl ChatEntryTokenNumber for OpenAI {
         match &self.model {
             SupportedModel::GPT3_5Turbo
             | SupportedModel::GPT3_5Turbo0613
-            | SupportedModel::GPT3_5Turbo16k => {
-                let messages = req.messages;
-                num_tokens_from_messages(&self.model.to_string(), messages.as_slice())
-                    .expect("model not supported")
-            }
-            SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => {
+            | SupportedModel::GPT3_5Turbo16k
+            | SupportedModel::Vicuna7B1_1
+            | SupportedModel::Vicuna13B1_1 => {
                 // See https://github.com/lm-sys/FastChat/blob/667c584ad437b4655f29ca99d480d96833470860/fastchat/conversation.py#LL62C24-L62C24
                 let seps = [" ", "</s>"];
 
@@ -160,26 +159,31 @@ impl ChatEntryTokenNumber for OpenAI {
                     .map(|(i, x)| {
                         // assumes the first is a 'System' message
                         let sep = seps[(i + 1) % seps.len()];
-                        match x.role {
-                            async_openai::types::Role::System => {
+                        match x {
+                            async_openai::types::ChatCompletionRequestMessage::System(x) => {
                                 if let Some(content) = &x.content {
                                     format!("{}{}", content, sep)
                                 } else {
                                     String::new()
                                 }
                             }
-                            async_openai::types::Role::User => {
+                            async_openai::types::ChatCompletionRequestMessage::User(x) => {
                                 if let Some(content) = &x.content {
                                     format!(
                                         "{}: {}\n",
                                         x.role.to_string().to_ascii_uppercase(),
-                                        content
+                                        match content {
+                                            ChatCompletionRequestUserMessageContent::Text(t) =>
+                                                t.clone(),
+                                            ChatCompletionRequestUserMessageContent::Array(_a) =>
+                                                "".to_string(),
+                                        }
                                     )
                                 } else {
                                     format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 }
                             }
-                            async_openai::types::Role::Assistant => {
+                            async_openai::types::ChatCompletionRequestMessage::Assistant(x) => {
                                 if let Some(content) = &x.content {
                                     format!(
                                         "{}: {}{}\n",
@@ -191,8 +195,8 @@ impl ChatEntryTokenNumber for OpenAI {
                                     format!("{}:\n", x.role.to_string().to_ascii_uppercase())
                                 }
                             }
-                            async_openai::types::Role::Function => {
-                                error!("Function role not supported");
+                            _ => {
+                                error!("role not supported");
                                 String::new()
                             }
                         }
@@ -212,9 +216,7 @@ impl ChatEntryTokenNumber for OpenAI {
 
     async fn context_size(&self) -> usize {
         match &self.model {
-            SupportedModel::GPT3_5Turbo | SupportedModel::GPT3_5Turbo0613 => {
-                get_context_size(&self.model.to_string())
-            }
+            SupportedModel::GPT3_5Turbo | SupportedModel::GPT3_5Turbo0613 => 4096,
             SupportedModel::GPT3_5Turbo16k => 16384,
             SupportedModel::Vicuna7B1_1 | SupportedModel::Vicuna13B1_1 => 2048,
             _ => panic!("model not supported"),
@@ -234,61 +236,65 @@ impl OpenAI {
         // TODO(ssoudan) support https://platform.openai.com/docs/api-reference/chat/create#chat/create-function_call
 
         for m in input.context {
-            messages.push(ChatCompletionRequestMessage {
-                role: m.role.into(),
-                content: Some(m.msg),
-                name: None,
-                function_call: None,
-            });
+            if let Ok(m) = ChatCompletionRequestMessage::try_from(m) {
+                messages.push(m);
+            }
         }
-        messages.push(ChatCompletionRequestMessage {
-            role: Role::Assistant.into(),
-            content: Some("Got it.".to_string()),
-            name: None,
-            function_call: None,
-        });
+        messages.push(ChatCompletionRequestMessage::Assistant(
+            ChatCompletionRequestAssistantMessage {
+                role: Role::Assistant.into(),
+                content: Some("Got it.".to_string()),
+                ..Default::default()
+            },
+        ));
 
         for (user, bot) in input.examples {
-            messages.push(ChatCompletionRequestMessage {
-                role: Role::User.into(),
-                content: Some(user.msg),
-                name: None,
-                function_call: None,
-            });
+            if let Ok(user) = ChatCompletionRequestMessage::try_from(user) {
+                messages.push(user);
+            }
 
-            messages.push(ChatCompletionRequestMessage {
-                role: Role::Assistant.into(),
-                content: Some(bot.msg),
-                name: None,
-                function_call: None,
-            });
+            if let Ok(bot) = ChatCompletionRequestMessage::try_from(bot) {
+                messages.push(bot);
+            }
         }
 
         for message in input.chat {
-            messages.push(ChatCompletionRequestMessage {
-                role: message.role.into(),
-                content: Some(message.msg),
-                name: None,
-                function_call: None,
-            });
+            if let Ok(m) = ChatCompletionRequestMessage::try_from(message) {
+                messages.push(m);
+            }
         }
 
         let temperature = self.temperature;
         CreateChatCompletionRequest {
             model: self.model.to_string(),
             messages,
-            functions: None,
-            function_call: None,
             temperature,
-            top_p: None,
             n: Some(1),
-            stream: None,
-            stop: None,
             max_tokens: max_tokens.map(|x| x as u16),
-            presence_penalty: None,
-            frequency_penalty: None,
-            logit_bias: None,
-            user: None,
+            ..Default::default()
+        }
+    }
+}
+
+impl TryFrom<ChatEntry> for ChatCompletionRequestMessage {
+    type Error = ();
+
+    fn try_from(value: ChatEntry) -> Result<Self, ()> {
+        match value.role {
+            Role::User => Ok(Self::User(ChatCompletionRequestUserMessage {
+                content: Some(ChatCompletionRequestUserMessageContent::Text(value.msg)),
+                role: async_openai::types::Role::User,
+            })),
+            Role::System => Ok(Self::System(ChatCompletionRequestSystemMessage {
+                content: Some(value.msg),
+                role: async_openai::types::Role::System,
+            })),
+            Role::Assistant => Ok(Self::Assistant(ChatCompletionRequestAssistantMessage {
+                content: Some(value.msg),
+                role: async_openai::types::Role::Assistant,
+                ..Default::default()
+            })),
+            _ => Err(()),
         }
     }
 }
@@ -317,18 +323,30 @@ impl Model for OpenAI {
         Ok(ModelResponse {
             msg: msg.unwrap_or_default(),
             usage: res.usage.as_ref().map(Into::into),
-            finish_reason: first.finish_reason.clone(),
+            finish_reason: first.finish_reason.map(|x| format!("{:?}", x)),
         })
     }
 }
 
 impl From<&ChatEntry> for ChatCompletionRequestMessage {
     fn from(value: &ChatEntry) -> Self {
-        Self {
-            role: value.role.clone().into(),
-            content: Some(value.msg.clone()),
-            name: None,
-            function_call: None,
+        match value.role {
+            Role::User => Self::User(ChatCompletionRequestUserMessage {
+                content: Some(ChatCompletionRequestUserMessageContent::Text(
+                    value.msg.clone(),
+                )),
+                role: async_openai::types::Role::User,
+            }),
+            Role::System => Self::System(ChatCompletionRequestSystemMessage {
+                content: Some(value.msg.clone()),
+                role: async_openai::types::Role::System,
+            }),
+            Role::Assistant => Self::Assistant(ChatCompletionRequestAssistantMessage {
+                content: Some(value.msg.clone()),
+                role: async_openai::types::Role::Assistant,
+                ..Default::default()
+            }),
+            _ => panic!("role not supported"),
         }
     }
 }
@@ -340,15 +358,45 @@ impl From<Role> for async_openai::types::Role {
             Role::System => Self::System,
             Role::Assistant => Self::Assistant,
             Role::Function => Self::Function,
+            Role::Tool => Self::Tool,
         }
     }
 }
 
 impl From<&ChatCompletionRequestMessage> for ChatEntry {
     fn from(msg: &ChatCompletionRequestMessage) -> Self {
-        Self {
-            role: msg.role.clone().into(),
-            msg: msg.content.clone().unwrap_or_default(),
+        match msg {
+            ChatCompletionRequestMessage::User(msg) => Self {
+                role: msg.role.into(),
+                msg: match &msg.content {
+                    Some(c) => match c {
+                        ChatCompletionRequestUserMessageContent::Text(ref msg) => msg.clone(),
+                        ChatCompletionRequestUserMessageContent::Array(a) => {
+                            a.iter().map(|x| match x {
+                                async_openai::types::ChatCompletionRequestMessageContentPart::Text(t) => t.text.clone(),
+                                async_openai::types::ChatCompletionRequestMessageContentPart::Image(i) => i.image_url.url.clone(),
+                            }).collect::<String>()
+                        }
+                    },
+                    _ => String::new(),
+                },
+            },
+            ChatCompletionRequestMessage::System(msg) => Self {
+                role: msg.role.into(),
+                msg: msg.content.clone().unwrap_or_default(),
+            },
+            ChatCompletionRequestMessage::Assistant(msg) => Self {
+                role: msg.role.into(),
+                msg: msg.content.clone().unwrap_or_default(),
+            },
+            ChatCompletionRequestMessage::Function(msg) => Self {
+                role: msg.role.into(),
+                msg: msg.content.clone().unwrap_or_default(),
+            },
+            ChatCompletionRequestMessage::Tool(t) => Self {
+                role: t.role.into(),
+                msg: t.content.clone().unwrap_or_default(),
+            }
         }
     }
 }
@@ -360,12 +408,13 @@ impl From<async_openai::types::Role> for Role {
             async_openai::types::Role::System => Self::System,
             async_openai::types::Role::Assistant => Self::Assistant,
             async_openai::types::Role::Function => Self::Function,
+            async_openai::types::Role::Tool => Self::Tool,
         }
     }
 }
 
-impl From<&async_openai::types::Usage> for Usage {
-    fn from(usage: &async_openai::types::Usage) -> Self {
+impl From<&async_openai::types::CompletionUsage> for Usage {
+    fn from(usage: &async_openai::types::CompletionUsage) -> Self {
         Self {
             prompt_tokens: usage.prompt_tokens,
             completion_tokens: usage.completion_tokens,
@@ -570,6 +619,6 @@ mod tests {
 
         let token_sz = model.num_tokens(input).await;
 
-        assert_eq!(token_sz, 81);
+        assert_eq!(token_sz, 80);
     }
 }

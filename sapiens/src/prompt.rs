@@ -221,6 +221,6 @@ mod tests {
         // println!("{:?}", prompts);
         let tokens = config.model.num_tokens(chat_history.make_input()).await;
 
-        assert_eq!(tokens, 59)
+        assert_eq!(tokens, 64)
     }
 }
