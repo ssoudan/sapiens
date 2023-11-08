@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.4.4 (2023-11-08)
+
+### Chore
+
+ - <csr-id-550130b6be1bc9fbe876f10308e9c0dbe03dcd0e/> update
+ - <csr-id-4a6ad542b33a9fee4a8d472a0235020e73dc79e4/> bump darling from 0.20.1 to 0.20.3
+   Bumps [darling](https://github.com/TedDriggs/darling) from 0.20.1 to 0.20.3.
+   - [Release notes](https://github.com/TedDriggs/darling/releases)
+   - [Changelog](https://github.com/TedDriggs/darling/blob/master/CHANGELOG.md)
+   - [Commits](https://github.com/TedDriggs/darling/compare/v0.20.1...v0.20.3)
+   
+   ---
+   updated-dependencies:
+   - dependency-name: darling
+     dependency-type: direct:production
+     update-type: version-update:semver-patch
+   ...
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 4 commits contributed to the release over the course of 118 calendar days.
+ - 146 days passed between releases.
+ - 2 commits were understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' were seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - Merge pull request #104 from ssoudan/updates ([`021842f`](https://github.com/ssoudan/sapiens/commit/021842fd05a8b578c5b5b8702b8b0df3af17a4c7))
+    - Update ([`550130b`](https://github.com/ssoudan/sapiens/commit/550130b6be1bc9fbe876f10308e9c0dbe03dcd0e))
+    - Merge pull request #84 from ssoudan/dependabot/cargo/darling-0.20.3 ([`f34c4e5`](https://github.com/ssoudan/sapiens/commit/f34c4e52424cbdff98f04b63f8c66a946b081758))
+    - Bump darling from 0.20.1 to 0.20.3 ([`4a6ad54`](https://github.com/ssoudan/sapiens/commit/4a6ad542b33a9fee4a8d472a0235020e73dc79e4))
+</details>
+
 ## 0.4.3 (2023-06-14)
 
 ### New Features
@@ -15,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 2 commits contributed to the release.
+ - 3 commits contributed to the release.
  - 34 days passed between releases.
  - 1 commit was understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' were seen in commit messages
@@ -27,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release sapiens v0.10.1, sapiens_derive v0.4.3, sapiens_tools v0.10.1, sapiens_cli v0.9.1, sapiens_exp v0.8.1 ([`2a30e78`](https://github.com/ssoudan/sapiens/commit/2a30e7875a2c05761dd7ffdfb158f1949b4cb58f))
     - Merge pull request #43 from ssoudan/upd ([`c8d2e5a`](https://github.com/ssoudan/sapiens/commit/c8d2e5ad69f7bed6cbd6d64dfa62a3d0c864c885))
     - Gpt-3.5-turbo-0613 and more ([`6d1524a`](https://github.com/ssoudan/sapiens/commit/6d1524acbca7362b4eda081612a43005abc888cb))
 </details>

@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_tools"
-version = "0.10.1"
+version = "0.10.2"
 edition.workspace = true
 authors.workspace = true
 description = "The tools - Sapiens"
@@ -28,8 +28,8 @@ search = ["dep:reqwest", "dep:serde_json"]
 disable-test-dependabot = []
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.10.1" }
-sapiens_derive = { path = "../sapiens_derive", version = "^0.4.3" }
+sapiens = { path = "../sapiens", version = "^0.10.2" }
+sapiens_derive = { path = "../sapiens_derive", version = "^0.4.4" }
 
 huelib2 = { version = "0.13.3", optional = true }
 mediawiki = { version = "0.2.11", optional = true }

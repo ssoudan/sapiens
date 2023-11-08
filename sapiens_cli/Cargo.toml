@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_cli"
-version = "0.9.1"
+version = "0.9.2"
 edition.workspace = true
 authors.workspace = true
 description = "The cli - Sapiens"
@@ -27,8 +27,8 @@ search = ["sapiens_tools/search"]
 
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.10.1" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.10.1", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.10.2" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.10.2", default-features = false }
 
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }

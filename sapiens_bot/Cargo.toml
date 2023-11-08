@@ -1,6 +1,6 @@
 [package]
 name = "sapiens_bot"
-version = "0.8.0"
+version = "0.8.1"
 edition.workspace = true
 authors.workspace = true
 description = "The discord bot - Sapiens"
@@ -28,8 +28,8 @@ search = ["sapiens_tools/search"]
 
 
 [dependencies]
-sapiens = { path = "../sapiens", version = "^0.10.1" }
-sapiens_tools = { path = "../sapiens_tools", version = "^0.10.0", default-features = false }
+sapiens = { path = "../sapiens", version = "^0.10.2" }
+sapiens_tools = { path = "../sapiens_tools", version = "^0.10.2", default-features = false }
 
 huelib2 = { version = "0.13.3", optional = true }
 
