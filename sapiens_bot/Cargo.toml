@@ -43,7 +43,7 @@ serenity = { version = "0.11.7", default-features = false, features = [
     "model",
     "cache",
 ] }
-tokio = { version = "1.33", features = ["macros", "rt-multi-thread", "sync"] }
+tokio = { version = "1.34", features = ["macros", "rt-multi-thread", "sync"] }
 async-trait = "0.1.74"
 
 pyo3 = { version = "0.19.2", features = [] }
