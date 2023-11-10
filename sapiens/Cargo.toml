@@ -30,7 +30,7 @@ serde_yaml = "0.9.27"
 clap = { version = "4.4.7", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
-async-openai = "0.16.1"
+async-openai = "0.16.2"
 tokenizers = { version = "0.14.1", features = [] }
 
 # GCP Vertex AI Generative Language Models
