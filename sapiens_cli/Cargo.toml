@@ -31,7 +31,7 @@ sapiens = { path = "../sapiens", version = "^0.10.2" }
 sapiens_tools = { path = "../sapiens_tools", version = "^0.10.2", default-features = false }
 
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 tokio = { version = "1.34.0", features = ["full"] }
 async-trait = "0.1.74"

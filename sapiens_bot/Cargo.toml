@@ -34,7 +34,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.10.2", default-featur
 huelib2 = { version = "0.13.3", optional = true }
 
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.17", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 serenity = { version = "0.11.7", default-features = false, features = [
     "client",
