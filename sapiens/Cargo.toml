@@ -31,7 +31,7 @@ clap = { version = "4.4.8", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
 async-openai = "0.16.2"
-tokenizers = { version = "0.14.1", features = [] }
+tokenizers = { version = "0.15.0", features = [] }
 
 # GCP Vertex AI Generative Language Models
 gcp-vertex-ai-generative-language = "0.1.2"
