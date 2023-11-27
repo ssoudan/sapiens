@@ -27,7 +27,7 @@ lazy_static = "1.4.0"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_yaml = "0.9.27"
 
-clap = { version = "4.4.8", optional = true }
+clap = { version = "4.4.9", optional = true }
 
 # OpenAI API - OpenAI and lm-sys/FastChat
 async-openai = "0.16.3"
