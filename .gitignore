@@ -6,3 +6,4 @@ recipe.json
 configuration.yaml
 experiments/data/
 **/.DS_Store
+.direnv/
