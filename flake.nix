@@ -28,6 +28,8 @@
           ] ++ (with pkgs; [
                   llvmPackages.bintools
                   bashInteractive 
+                  python3
+                  protobuf
                   just
                   rust-analyzer
                   rustc
