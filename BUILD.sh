@@ -73,13 +73,13 @@ if [ "$FAST" = false ]; then
   cargo clippy --all --all-features --tests --benches --examples --workspace -- -D clippy::all || (echo -e "$RED [Clippy failed] $NORMAL" && exit 1)
 
   echo -e "${BLUE}Formatting...${NORMAL}"
-  cargo +nightly fmt --all -- --check || (echo -e "$RED [Format failed] $NORMAL" && exit 1)
+  cargo fmt --all -- --check || (echo -e "$RED [Format failed] $NORMAL" && exit 1)
 
   echo -e "${BLUE}Licensing...${NORMAL}"
   cargo deny check || (echo -e "$RED [License check failed] $NORMAL" && exit 1)
 
   echo -e "${BLUE}Machete...${NORMAL}"
-  cargo +nightly machete || (echo -e "$RED [Machete failed] $NORMAL" && exit 1)
+  cargo machete || (echo -e "$RED [Machete failed] $NORMAL" && exit 1)
 
   #echo -e "${BLUE}Benchmarking...${NORMAL}"
   #cargo criterion --all --features=unstable
