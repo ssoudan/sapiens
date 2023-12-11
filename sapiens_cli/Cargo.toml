@@ -43,7 +43,7 @@ pyo3-asyncio = { version = "0.19.0", features = [
 ] }
 
 clap = { version = "4.4.11", features = ["derive", "env"] }
-colored = "2.0.4"
+colored = "2.1.0"
 dotenvy = "0.15.7"
 
 huelib2 = { version = "0.13.3", optional = true }
