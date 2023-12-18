@@ -56,7 +56,7 @@ async-openai = { version = "0.16.3", optional = true }
 
 convert_case = "0.6.0"
 
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 
 [dev-dependencies]
 indoc = "2"
