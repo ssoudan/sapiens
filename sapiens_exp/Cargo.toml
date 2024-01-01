@@ -24,7 +24,7 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 tokio = { version = "1.35.1", features = ["full"] }
-async-trait = "0.1.74"
+async-trait = "0.1.76"
 
 rand = "0.8.5"
 
