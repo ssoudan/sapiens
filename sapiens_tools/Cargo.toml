@@ -39,7 +39,7 @@ arxiv-rs = { version = "0.1.5", optional = true }
 reqwest = { version = "0.11", features = ["json"], optional = true }
 
 serde = { version = "1.0.195", features = ["derive"] }
-serde_yaml = "0.9.29"
+serde_yaml = "0.9.30"
 serde_json = { version = "1.0.108", optional = true }
 
 tracing = "0.1.40"
