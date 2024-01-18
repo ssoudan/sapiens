@@ -1625,6 +1625,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ollama-rs"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fb57402b9ed5e0c239459eafba74c28306687354bf6876a6c9e9ce7de39867f"
+dependencies = [
+ "reqwest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2436,6 +2447,7 @@ dependencies = [
  "indoc 2.0.4",
  "insta",
  "lazy_static",
+ "ollama-rs",
  "serde",
  "serde_yaml",
  "thiserror",
