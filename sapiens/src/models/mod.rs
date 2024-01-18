@@ -1,3 +1,4 @@
+pub mod ollama;
 pub mod openai;
 pub mod vertex_ai;
 
@@ -30,6 +31,9 @@ pub enum Error {
     /// Filtered output
     #[error("Filtered output")]
     Filtered,
+    /// Ollama error
+    #[error("Ollama error: {0}")]
+    OllamaError(#[from] ollama_rs::error::OllamaError),
 }
 
 /// Roles in the conversation
@@ -80,7 +84,7 @@ pub trait ChatEntryTokenNumber {
 pub struct ChatInput {
     /// The context
     pub(crate) context: Vec<ChatEntry>,
-    /// The examples
+    /// The examples as [(user, bot)]
     pub(crate) examples: Vec<(ChatEntry, ChatEntry)>,
     /// The chat history
     pub(crate) chat: Vec<ChatEntry>,
@@ -150,6 +154,8 @@ pub enum SupportedModel {
     Vicuna13B1_1,
     /// GCP "chat-bison-001"
     ChatBison001,
+    /// Ollama "mixtral"
+    OllamaMixtral,
 }
 
 impl Display for SupportedModel {
@@ -161,6 +167,7 @@ impl Display for SupportedModel {
             SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
+            SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
         }
     }
 }
@@ -174,6 +181,7 @@ impl Debug for SupportedModel {
             SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
+            SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
         }
     }
 }
@@ -189,6 +197,7 @@ impl FromStr for SupportedModel {
             "vicuna-7b-1.1" => Ok(Self::Vicuna7B1_1),
             "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
             "chat-bison-001" => Ok(Self::ChatBison001),
+            "ollama-mixtral" => Ok(Self::OllamaMixtral),
             _ => Err(Error::ModelNotSupported(s.to_string())),
         }
     }
@@ -204,6 +213,7 @@ impl clap::ValueEnum for SupportedModel {
             SupportedModel::Vicuna7B1_1,
             SupportedModel::Vicuna13B1_1,
             SupportedModel::ChatBison001,
+            SupportedModel::OllamaMixtral,
         ]
     }
 
@@ -222,6 +232,9 @@ impl clap::ValueEnum for SupportedModel {
             }
             SupportedModel::ChatBison001 => {
                 Some(clap::builder::PossibleValue::new("chat-bison-001"))
+            }
+            SupportedModel::OllamaMixtral => {
+                Some(clap::builder::PossibleValue::new("ollama-mixtral"))
             }
         }
     }

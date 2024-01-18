@@ -36,6 +36,8 @@ tokenizers = { version = "0.15.0", features = [] }
 # GCP Vertex AI Generative Language Models
 gcp-vertex-ai-generative-language = "0.1.2"
 
+ollama-rs = "*"
+
 thiserror = "1.0.56"
 
 [dev-dependencies]
