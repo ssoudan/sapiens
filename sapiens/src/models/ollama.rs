@@ -7,6 +7,7 @@ use ollama_rs::generation::chat::request::ChatMessageRequest;
 use ollama_rs::generation::chat::ChatMessage;
 use ollama_rs::Ollama;
 use tokio::sync::Mutex;
+use tracing::debug;
 
 use crate::models;
 use crate::models::{
@@ -31,11 +32,11 @@ impl Debug for LanguageModel {
 }
 
 /// Build an Ollama client
-pub async fn build(host: String, port: u16) -> Result<ModelRef, Error> {
+pub async fn build(host: String, port: u16, model: SupportedModel) -> Result<ModelRef, Error> {
     let client = Ollama::new(host, port);
 
     let model = LanguageModel {
-        model: SupportedModel::OllamaMixtral,
+        model,
         client: Arc::new(Mutex::new(client)),
     };
 
@@ -69,7 +70,10 @@ impl LanguageModel {
             }
         }
 
-        let model_name = "mixtral";
+        let model_name = self.model.to_string();
+        let model_name = model_name.strip_prefix("ollama-").unwrap();
+
+        debug!("model_name: {}", model_name);
 
         let message_prompt = ChatMessageRequest::new(model_name.to_string(), messages);
 

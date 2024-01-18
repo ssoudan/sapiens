@@ -169,14 +169,14 @@ async fn main() -> Result<(), pyo3::PyErr> {
                 .await
                 .expect("Failed to build model")
         }
-        SupportedModel::OllamaMixtral => {
+        SupportedModel::OllamaMixtral | SupportedModel::OllamaLlamaPro => {
             let host = std::env::var("OLLAMA_HOST").expect("OLLAMA_HOST is not set");
             let port = std::env::var("OLLAMA_PORT")
                 .expect("OLLAMA_PORT is not set")
                 .parse::<u16>()
                 .expect("OLLAMA_PORT is not a valid port");
 
-            models::ollama::build(host, port)
+            models::ollama::build(host, port, args.model)
                 .await
                 .expect("Failed to build model")
         }
