@@ -156,6 +156,8 @@ pub enum SupportedModel {
     ChatBison001,
     /// Ollama "mixtral"
     OllamaMixtral,
+    /// Ollama "llama-pro"
+    OllamaLlamaPro,
 }
 
 impl Display for SupportedModel {
@@ -168,6 +170,7 @@ impl Display for SupportedModel {
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
             SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
+            SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
         }
     }
 }
@@ -182,6 +185,7 @@ impl Debug for SupportedModel {
             SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
             SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
+            SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
         }
     }
 }
@@ -198,6 +202,7 @@ impl FromStr for SupportedModel {
             "vicuna-13b-1.1" => Ok(Self::Vicuna13B1_1),
             "chat-bison-001" => Ok(Self::ChatBison001),
             "ollama-mixtral" => Ok(Self::OllamaMixtral),
+            "ollama-llama-pro" => Ok(Self::OllamaLlamaPro),
             _ => Err(Error::ModelNotSupported(s.to_string())),
         }
     }
@@ -214,6 +219,7 @@ impl clap::ValueEnum for SupportedModel {
             SupportedModel::Vicuna13B1_1,
             SupportedModel::ChatBison001,
             SupportedModel::OllamaMixtral,
+            SupportedModel::OllamaLlamaPro,
         ]
     }
 
@@ -235,6 +241,9 @@ impl clap::ValueEnum for SupportedModel {
             }
             SupportedModel::OllamaMixtral => {
                 Some(clap::builder::PossibleValue::new("ollama-mixtral"))
+            }
+            SupportedModel::OllamaLlamaPro => {
+                Some(clap::builder::PossibleValue::new("ollama-llama-pro"))
             }
         }
     }
