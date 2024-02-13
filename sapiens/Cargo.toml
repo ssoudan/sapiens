@@ -38,7 +38,7 @@ gcp-vertex-ai-generative-language = "0.1.2"
 
 ollama-rs = "*"
 
-thiserror = "1.0.56"
+thiserror = "1.0.57"
 
 [dev-dependencies]
 indoc = "2"
