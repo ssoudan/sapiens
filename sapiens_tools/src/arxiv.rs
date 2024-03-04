@@ -1,6 +1,5 @@
 use std::fmt::Display;
 
-use arxiv;
 use arxiv::{Arxiv, ArxivQuery};
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
 use sapiens_derive::{Describe, ProtoToolDescribe, ProtoToolInvoke};
