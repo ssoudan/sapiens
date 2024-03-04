@@ -59,7 +59,7 @@ dotenvy = "0.15.7"
 
 [dev-dependencies]
 indoc = "2.0.4"
-insta = "1.35.1"
+insta = "1.36.1"
 
 [package.metadata.cargo-machete]
 ignored = ["huelib2"]
