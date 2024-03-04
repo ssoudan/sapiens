@@ -5,7 +5,7 @@ use serde_yaml::Value;
 use tokio::sync::Mutex;
 
 use super::*;
-use crate::tools::{FieldFormat, Format, TerminalTool, Tool, ToolDescription, ToolUseError};
+use crate::tools::{FieldFormat, Format, TerminalTool, Tool, ToolDescription};
 use crate::void_observer;
 
 struct SimpleAgent {}

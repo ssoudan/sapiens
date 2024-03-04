@@ -1,5 +1,5 @@
 use indoc::indoc;
-use insta::assert_display_snapshot;
+use insta::assert_snapshot;
 use pyo3::PyResult;
 use sapiens::tools::invocation::InvocationError;
 use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
@@ -62,7 +62,7 @@ async fn test_tool_simple_invocation() -> PyResult<()> {
             tool_name, result, ..
         } => {
             assert_eq!(tool_name, "Conclude");
-            assert_display_snapshot!(result);
+            assert_snapshot!(result);
         }
         _ => panic!("Unexpected response: {:?}", res),
     }
@@ -97,7 +97,7 @@ async fn test_tool_invocation_in_python() -> PyResult<()> {
             tool_name, result, ..
         } => {
             assert_eq!(tool_name, "SandboxedPython");
-            assert_display_snapshot!(result);
+            assert_snapshot!(result);
         }
         _ => panic!("Unexpected response: {:?}", res),
     }
@@ -127,7 +127,7 @@ async fn test_exit_in_python() -> PyResult<()> {
     match res {
         InvokeResult::Error { tool_name, e, .. } => {
             assert_eq!(tool_name, "SandboxedPython");
-            assert_display_snapshot!(e);
+            assert_snapshot!(e);
         }
         _ => panic!("Unexpected response: {:?}", res),
     }
@@ -209,7 +209,7 @@ async fn test_python() -> PyResult<()> {
             tool_name, result, ..
         } => {
             assert_eq!(tool_name, "SandboxedPython");
-            assert_display_snapshot!(result);
+            assert_snapshot!(result);
         }
         _ => panic!("Unexpected response: {:?}", res),
     }
@@ -239,7 +239,7 @@ async fn test_python_docstring() -> PyResult<()> {
             tool_name, result, ..
         } => {
             assert_eq!(tool_name, "SandboxedPython");
-            assert_display_snapshot!(result);
+            assert_snapshot!(result);
         }
         _ => panic!("Unexpected response: {:?}", res),
     }

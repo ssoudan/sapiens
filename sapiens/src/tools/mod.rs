@@ -248,7 +248,7 @@ async fn choose_invocation(
 mod tests {
     use std::collections::HashMap;
 
-    use insta::assert_display_snapshot;
+    use insta::assert_snapshot;
     use serde::{Deserialize, Serialize};
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -291,6 +291,6 @@ mod tests {
 
         let serialized = serde_yaml::to_string(&invocation).unwrap();
 
-        assert_display_snapshot!(serialized);
+        assert_snapshot!(serialized);
     }
 }

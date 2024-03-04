@@ -516,7 +516,7 @@ impl AdvancedTool for PythonTool {
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use insta::assert_display_snapshot;
+    use insta::assert_snapshot;
     use sapiens::tools::toolbox::Toolbox;
 
     use crate::conclude::ConcludeTool;
@@ -557,6 +557,6 @@ mod tests {
 
         let code = PythonTool::transform_code(input.code, tools).unwrap();
 
-        assert_display_snapshot!(code);
+        assert_snapshot!(code);
     }
 }

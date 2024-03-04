@@ -2,7 +2,7 @@
 #[cfg(feature = "hue")]
 mod hue_test {
     use indoc::indoc;
-    use insta::{assert_display_snapshot, assert_yaml_snapshot};
+    use insta::{assert_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
     use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::conclude::ConcludeTool;
@@ -53,7 +53,7 @@ mod hue_test {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }
@@ -70,7 +70,7 @@ mod hue_test {
 #[cfg(feature = "arxiv")]
 mod arxiv {
     use indoc::indoc;
-    use insta::{assert_display_snapshot, assert_yaml_snapshot};
+    use insta::{assert_snapshot, assert_yaml_snapshot};
     use pyo3::PyResult;
     use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::arxiv::ArxivTool;
@@ -110,7 +110,7 @@ mod arxiv {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }
@@ -144,7 +144,7 @@ mod arxiv {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }
@@ -179,7 +179,7 @@ mod arxiv {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }
@@ -227,7 +227,7 @@ mod arxiv {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }
@@ -247,7 +247,7 @@ mod python;
 #[cfg(all(feature = "search", not(feature = "disable-test-dependabot")))]
 mod search {
     use indoc::indoc;
-    use insta::assert_display_snapshot;
+    use insta::assert_snapshot;
     use pyo3::PyResult;
     use sapiens::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
     use sapiens_tools::python::PythonTool;
@@ -276,7 +276,7 @@ mod search {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_display_snapshot!(result);
+                assert_snapshot!(result);
             }
             _ => panic!("Unexpected response: {:?}", res),
         }

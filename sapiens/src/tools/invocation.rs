@@ -135,7 +135,7 @@ pub(crate) fn find_all(data: &str) -> Result<ExtractedInvocations, InvocationErr
 #[cfg(test)]
 mod tests {
     use indoc::indoc;
-    use insta::{assert_display_snapshot, assert_yaml_snapshot};
+    use insta::{assert_snapshot, assert_yaml_snapshot};
     use serde_yaml::Number;
 
     #[tokio::test]
@@ -259,7 +259,7 @@ mod tests {
             &serde_yaml::Value::Number(Number::from(10))
         );
         assert!(!invocation.junk.is_empty());
-        assert!(invocation.junk.get("output").is_some());
+        assert!(invocation.junk.contains_key("output"));
     }
 
     #[tokio::test]
@@ -364,6 +364,6 @@ mod tests {
 
         let tool_invocations = super::find_all(data);
 
-        assert_display_snapshot!(tool_invocations.err().unwrap());
+        assert_snapshot!(tool_invocations.err().unwrap());
     }
 }

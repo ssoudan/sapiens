@@ -117,7 +117,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use sapiens::tools::{Describe, FieldFormat, Format};
+    use sapiens::tools::{FieldFormat, Format};
     use serde::{Deserialize, Serialize};
 
     use super::*;

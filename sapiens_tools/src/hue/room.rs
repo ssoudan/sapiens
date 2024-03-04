@@ -151,8 +151,6 @@ pub mod fake {
     #[cfg(test)]
     mod tests {
 
-        use sapiens::tools::Tool;
-
         use super::*;
 
         #[tokio::test]
