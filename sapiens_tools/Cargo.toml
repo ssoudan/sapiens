@@ -32,7 +32,7 @@ sapiens = { path = "../sapiens", version = "^0.10.2" }
 sapiens_derive = { path = "../sapiens_derive", version = "^0.4.4" }
 
 huelib2 = { version = "0.13.3", optional = true }
-mediawiki = { version = "0.2.13", optional = true }
+mediawiki = { version = "0.2.14", optional = true }
 
 arxiv-rs = { version = "0.1.5", optional = true }
 

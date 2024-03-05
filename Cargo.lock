@@ -1431,9 +1431,9 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
 name = "mediawiki"
-version = "0.2.13"
+version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60f837ec8008a3ce94e78635d98f4b167a6df78c5326ee61ee18b70aa64aac3d"
+checksum = "81fba1740cf9170faae4e7e6b74964d9ee198b667a6dc3cc810c941fedd281b7"
 dependencies = [
  "base64 0.21.7",
  "config",
