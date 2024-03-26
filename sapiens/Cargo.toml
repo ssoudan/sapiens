@@ -25,7 +25,7 @@ async-trait = "0.1.77"
 lazy_static = "1.4.0"
 
 serde = { version = "1.0.197", features = ["derive"] }
-serde_yaml = "0.9.32"
+serde_yaml = "0.9.34"
 
 clap = { version = "4.5.2", optional = true }
 
