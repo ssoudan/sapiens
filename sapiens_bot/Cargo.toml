@@ -53,7 +53,7 @@ pyo3-asyncio = { version = "0.19.0", features = [
 ] }
 
 pulldown-cmark-to-cmark = "11.2.0"
-pulldown-cmark = "0.9.6"
+pulldown-cmark = "0.10.0"
 
 dotenvy = "0.15.7"
 
