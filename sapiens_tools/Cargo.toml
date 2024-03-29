@@ -40,7 +40,7 @@ reqwest = { version = "0.12", features = ["json"], optional = true }
 
 serde = { version = "1.0.197", features = ["derive"] }
 serde_yaml = "0.9.34"
-serde_json = { version = "1.0.114", optional = true }
+serde_json = { version = "1.0.115", optional = true }
 
 tracing = "0.1.40"
 
@@ -60,7 +60,7 @@ thiserror = "1.0.57"
 
 [dev-dependencies]
 indoc = "2"
-serde_json = "1.0.114"
+serde_json = "1.0.115"
 insta = { version = "1.36.1", features = ["yaml"] }
 tokio = { version = "1.36.0", features = ["macros"] }
 pyo3-asyncio = { version = "0.19.0", features = [
