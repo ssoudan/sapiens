@@ -161,27 +161,19 @@ impl ChatEntryTokenNumber for OpenAI {
                         let sep = seps[(i + 1) % seps.len()];
                         match x {
                             async_openai::types::ChatCompletionRequestMessage::System(x) => {
-                                if let Some(content) = &x.content {
-                                    format!("{}{}", content, sep)
-                                } else {
-                                    String::new()
-                                }
+                                format!("{}{}", x.content, sep)
                             }
                             async_openai::types::ChatCompletionRequestMessage::User(x) => {
-                                if let Some(content) = &x.content {
-                                    format!(
-                                        "{}: {}\n",
-                                        x.role.to_string().to_ascii_uppercase(),
-                                        match content {
-                                            ChatCompletionRequestUserMessageContent::Text(t) =>
-                                                t.clone(),
-                                            ChatCompletionRequestUserMessageContent::Array(_a) =>
-                                                "".to_string(),
-                                        }
-                                    )
-                                } else {
-                                    format!("{}:\n", x.role.to_string().to_ascii_uppercase())
-                                }
+                                format!(
+                                    "{}: {}\n",
+                                    x.role.to_string().to_ascii_uppercase(),
+                                    match &x.content {
+                                        ChatCompletionRequestUserMessageContent::Text(t) =>
+                                            t.clone(),
+                                        ChatCompletionRequestUserMessageContent::Array(_a) =>
+                                            "".to_string(),
+                                    }
+                                )
                             }
                             async_openai::types::ChatCompletionRequestMessage::Assistant(x) => {
                                 if let Some(content) = &x.content {
@@ -282,12 +274,14 @@ impl TryFrom<ChatEntry> for ChatCompletionRequestMessage {
     fn try_from(value: ChatEntry) -> Result<Self, ()> {
         match value.role {
             Role::User => Ok(Self::User(ChatCompletionRequestUserMessage {
-                content: Some(ChatCompletionRequestUserMessageContent::Text(value.msg)),
+                content: ChatCompletionRequestUserMessageContent::Text(value.msg),
                 role: async_openai::types::Role::User,
+                ..Default::default()
             })),
             Role::System => Ok(Self::System(ChatCompletionRequestSystemMessage {
-                content: Some(value.msg),
+                content: value.msg,
                 role: async_openai::types::Role::System,
+                ..Default::default()
             })),
             Role::Assistant => Ok(Self::Assistant(ChatCompletionRequestAssistantMessage {
                 content: Some(value.msg),
@@ -332,14 +326,14 @@ impl From<&ChatEntry> for ChatCompletionRequestMessage {
     fn from(value: &ChatEntry) -> Self {
         match value.role {
             Role::User => Self::User(ChatCompletionRequestUserMessage {
-                content: Some(ChatCompletionRequestUserMessageContent::Text(
-                    value.msg.clone(),
-                )),
+                content: ChatCompletionRequestUserMessageContent::Text(value.msg.clone()),
                 role: async_openai::types::Role::User,
+                ..Default::default()
             }),
             Role::System => Self::System(ChatCompletionRequestSystemMessage {
-                content: Some(value.msg.clone()),
+                content: value.msg.clone(),
                 role: async_openai::types::Role::System,
+                ..Default::default()
             }),
             Role::Assistant => Self::Assistant(ChatCompletionRequestAssistantMessage {
                 content: Some(value.msg.clone()),
@@ -369,21 +363,23 @@ impl From<&ChatCompletionRequestMessage> for ChatEntry {
             ChatCompletionRequestMessage::User(msg) => Self {
                 role: msg.role.into(),
                 msg: match &msg.content {
-                    Some(c) => match c {
-                        ChatCompletionRequestUserMessageContent::Text(ref msg) => msg.clone(),
-                        ChatCompletionRequestUserMessageContent::Array(a) => {
-                            a.iter().map(|x| match x {
-                                async_openai::types::ChatCompletionRequestMessageContentPart::Text(t) => t.text.clone(),
-                                async_openai::types::ChatCompletionRequestMessageContentPart::Image(i) => i.image_url.url.clone(),
-                            }).collect::<String>()
-                        }
-                    },
-                    _ => String::new(),
+                    ChatCompletionRequestUserMessageContent::Text(ref msg) => msg.clone(),
+                    ChatCompletionRequestUserMessageContent::Array(a) => a
+                        .iter()
+                        .map(|x| match x {
+                            async_openai::types::ChatCompletionRequestMessageContentPart::Text(
+                                t,
+                            ) => t.text.clone(),
+                            async_openai::types::ChatCompletionRequestMessageContentPart::Image(
+                                i,
+                            ) => i.image_url.url.clone(),
+                        })
+                        .collect::<String>(),
                 },
             },
             ChatCompletionRequestMessage::System(msg) => Self {
                 role: msg.role.into(),
-                msg: msg.content.clone().unwrap_or_default(),
+                msg: msg.content.clone(),
             },
             ChatCompletionRequestMessage::Assistant(msg) => Self {
                 role: msg.role.into(),
@@ -395,8 +391,8 @@ impl From<&ChatCompletionRequestMessage> for ChatEntry {
             },
             ChatCompletionRequestMessage::Tool(t) => Self {
                 role: t.role.into(),
-                msg: t.content.clone().unwrap_or_default(),
-            }
+                msg: t.content.clone(),
+            },
         }
     }
 }

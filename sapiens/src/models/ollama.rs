@@ -155,8 +155,8 @@ impl models::Model for LanguageModel {
 //                 },
 //                 ChatEntry {
 //                     role: Role::Assistant,
-//                     msg: "Hello, Marcel, how are you doing today?".to_string(),
-//                 },
+//                     msg: "Hello, Marcel, how are you doing
+// today?".to_string(),                 },
 //                 ChatEntry {
 //                     role: Role::User,
 //                     msg: "I am doing great, thanks for asking".to_string(),
