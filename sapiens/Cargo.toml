@@ -21,7 +21,7 @@ clap = ["dep:clap"]
 [dependencies]
 tokio = { version = "1.37.0" }
 tracing = "0.1.40"
-async-trait = "0.1.79"
+async-trait = "0.1.80"
 lazy_static = "1.4.0"
 
 serde = { version = "1.0.197", features = ["derive"] }
