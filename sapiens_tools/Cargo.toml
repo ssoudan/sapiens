@@ -45,7 +45,7 @@ serde_json = { version = "1.0.115", optional = true }
 tracing = "0.1.40"
 
 tokio = { version = "1.37.0", features = ["macros"] }
-async-trait = "0.1.79"
+async-trait = "0.1.80"
 
 regex = "1.10.4"
 lazy_static = "1.4.0"
