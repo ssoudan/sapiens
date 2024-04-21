@@ -158,6 +158,10 @@ pub enum SupportedModel {
     OllamaMixtral,
     /// Ollama "llama-pro"
     OllamaLlamaPro,
+    /// Ollama "llama3:instruct"
+    OllamaLlama3Instruct,
+    /// Ollama "llama3:70b-instruct"
+    OllamaLlama370BInstruct,
 }
 
 impl Display for SupportedModel {
@@ -171,6 +175,8 @@ impl Display for SupportedModel {
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
             SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
             SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
+            SupportedModel::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
+            SupportedModel::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
         }
     }
 }
@@ -186,6 +192,8 @@ impl Debug for SupportedModel {
             SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
             SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
             SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
+            SupportedModel::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
+            SupportedModel::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
         }
     }
 }
@@ -203,6 +211,8 @@ impl FromStr for SupportedModel {
             "chat-bison-001" => Ok(Self::ChatBison001),
             "ollama-mixtral" => Ok(Self::OllamaMixtral),
             "ollama-llama-pro" => Ok(Self::OllamaLlamaPro),
+            "ollama-llama3:instruct" => Ok(Self::OllamaLlama3Instruct),
+            "ollama-llama3:70b-instruct" => Ok(Self::OllamaLlama370BInstruct),
             _ => Err(Error::ModelNotSupported(s.to_string())),
         }
     }
@@ -220,6 +230,8 @@ impl clap::ValueEnum for SupportedModel {
             SupportedModel::ChatBison001,
             SupportedModel::OllamaMixtral,
             SupportedModel::OllamaLlamaPro,
+            SupportedModel::OllamaLlama3Instruct,
+            SupportedModel::OllamaLlama370BInstruct,
         ]
     }
 
@@ -245,6 +257,12 @@ impl clap::ValueEnum for SupportedModel {
             SupportedModel::OllamaLlamaPro => {
                 Some(clap::builder::PossibleValue::new("ollama-llama-pro"))
             }
+            SupportedModel::OllamaLlama3Instruct => {
+                Some(clap::builder::PossibleValue::new("ollama-llama3:instruct"))
+            }
+            SupportedModel::OllamaLlama370BInstruct => Some(clap::builder::PossibleValue::new(
+                "ollama-llama3:70b-instruct",
+            )),
         }
     }
 }

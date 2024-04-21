@@ -38,7 +38,7 @@ arxiv-rs = { version = "0.1.5", optional = true }
 
 reqwest = { version = "0.12", features = ["json"], optional = true }
 
-serde = { version = "1.0.197", features = ["derive"] }
+serde = { version = "1.0.198", features = ["derive"] }
 serde_yaml = "0.9.34"
 serde_json = { version = "1.0.116", optional = true }
 
@@ -50,13 +50,13 @@ async-trait = "0.1.80"
 regex = "1.10.4"
 lazy_static = "1.4.0"
 
-pyo3 = { version = "0.20.0", features = [] }
+pyo3 = { version = "0.20.3", features = [] }
 
 async-openai = { version = "0.20.0", optional = true }
 
 convert_case = "0.6.0"
 
-thiserror = "1.0.58"
+thiserror = "1.0.59"
 
 [dev-dependencies]
 indoc = "2"

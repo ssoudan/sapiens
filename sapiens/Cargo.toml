@@ -24,7 +24,7 @@ tracing = "0.1.40"
 async-trait = "0.1.80"
 lazy_static = "1.4.0"
 
-serde = { version = "1.0.197", features = ["derive"] }
+serde = { version = "1.0.198", features = ["derive"] }
 serde_yaml = "0.9.34"
 
 clap = { version = "4.5.4", optional = true }
@@ -38,7 +38,7 @@ gcp-vertex-ai-generative-language = "0.1.2"
 
 ollama-rs = "*"
 
-thiserror = "1.0.58"
+thiserror = "1.0.59"
 
 [dev-dependencies]
 indoc = "2"
