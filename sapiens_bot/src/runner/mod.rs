@@ -58,7 +58,10 @@ impl SapiensBot {
                     .await
                     .expect("Failed to build model")
             }
-            SupportedModel::OllamaMixtral | SupportedModel::OllamaLlamaPro => {
+            SupportedModel::OllamaMixtral
+            | SupportedModel::OllamaLlamaPro
+            | SupportedModel::OllamaLlama370BInstruct
+            | SupportedModel::OllamaLlama3Instruct => {
                 let host = std::env::var("OLLAMA_HOST").expect("OLLAMA_HOST is not set");
                 let port = std::env::var("OLLAMA_PORT")
                     .expect("OLLAMA_PORT is not set")

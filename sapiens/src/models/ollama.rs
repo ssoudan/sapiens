@@ -100,7 +100,15 @@ impl ChatEntryTokenNumber for LanguageModel {
     }
 
     async fn context_size(&self) -> usize {
-        32768
+        match self.model {
+            SupportedModel::OllamaMixtral => 32768,
+            SupportedModel::OllamaLlamaPro => 4096,
+            SupportedModel::OllamaLlama3Instruct => 8192,
+            SupportedModel::OllamaLlama370BInstruct => 8192,
+            _ => {
+                panic!("Unsupported model: {:?}", self.model);
+            }
+        }
     }
 }
 
