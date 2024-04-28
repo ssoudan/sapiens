@@ -1,4 +1,4 @@
-use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag};
+use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use pulldown_cmark_to_cmark::{cmark_resume, State};
 use sapiens::chains::Message;
 use sapiens::context::{ChatEntry, ChatEntryFormatter, MessageFormatter};
@@ -40,10 +40,12 @@ fn md_event_size(event: &Event) -> usize {
         Event::Start(tag) => {
             let len = match tag {
                 Tag::Paragraph => 2,
-                Tag::Heading(level, id, classes) => {
+                Tag::Heading {
+                    level, id, classes, ..
+                } => {
                     *level as usize
                         + 1
-                        + id.map(|x| x.len()).unwrap_or_default()
+                        + id.as_ref().map(|x| x.len()).unwrap_or_default()
                         + classes.iter().map(|x| x.len()).sum::<usize>()
                 }
                 Tag::BlockQuote => 2,
@@ -59,12 +61,19 @@ fn md_event_size(event: &Event) -> usize {
                 Tag::Emphasis => 2,
                 Tag::Strong => 2,
                 Tag::Strikethrough => 2,
-                Tag::Link(_, u, t) => 4 + u.len() + t.len(),
-                Tag::Image(_, u, t) => 4 + u.len() + t.len(),
+                Tag::Link {
+                    dest_url, title, ..
+                } => 4 + dest_url.len() + title.len(),
+                Tag::Image {
+                    dest_url, title, ..
+                } => 4 + dest_url.len() + title.len(),
+                Tag::HtmlBlock => 0,
+                Tag::MetadataBlock(_) => 0,
             };
             len
         }
         Event::End(_tag) => 4, // random
+        Event::InlineHtml(i) => i.len(),
     }
 }
 
@@ -87,24 +96,26 @@ pub(crate) fn sanitize_msgs_for_discord(msgs: Vec<String>) -> Vec<String> {
         .collect()
 }
 
-fn is_block_delimiter(t: &Tag) -> bool {
+fn is_block_delimiter(t: &TagEnd) -> bool {
     match t {
-        Tag::Paragraph => true,
-        Tag::Heading(_, _, _) => true,
-        Tag::BlockQuote => true,
-        Tag::CodeBlock(_) => true,
-        Tag::List(_) => true,
-        Tag::Item => false,
-        Tag::FootnoteDefinition(_) => true,
-        Tag::Table(_) => true,
-        Tag::TableHead => false,
-        Tag::TableRow => false,
-        Tag::TableCell => false,
-        Tag::Emphasis => false,
-        Tag::Strong => false,
-        Tag::Strikethrough => false,
-        Tag::Link(_, _, _) => false,
-        Tag::Image(_, _, _) => false,
+        TagEnd::Paragraph => true,
+        TagEnd::Heading(_) => false,
+        TagEnd::BlockQuote => true,
+        TagEnd::CodeBlock => true,
+        TagEnd::HtmlBlock => true,
+        TagEnd::List(_) => true,
+        TagEnd::Item => false,
+        TagEnd::FootnoteDefinition => false,
+        TagEnd::Table => true,
+        TagEnd::TableHead => false,
+        TagEnd::TableRow => false,
+        TagEnd::TableCell => false,
+        TagEnd::Emphasis => false,
+        TagEnd::Strong => false,
+        TagEnd::Strikethrough => false,
+        TagEnd::Link => false,
+        TagEnd::Image => false,
+        TagEnd::MetadataBlock(_) => true,
     }
 }
 
