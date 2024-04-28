@@ -6,11 +6,14 @@ use std::env;
 
 use dotenvy::dotenv_override;
 use pyo3::PyResult;
+use serenity::all::{
+    AutoArchiveDuration, CreateAllowedMentions, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage, CreateThread, Interaction,
+};
 use serenity::async_trait;
 use serenity::futures::channel::mpsc;
 use serenity::futures::{SinkExt, StreamExt};
 use serenity::http::CacheHttp;
-use serenity::model::application::interaction::{Interaction, InteractionResponseType};
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
@@ -37,7 +40,7 @@ impl EventHandler for Handler {
         );
 
         // if message is not from me
-        if new_message.author.id == ctx.cache().unwrap().current_user_id() {
+        if new_message.author.id == ctx.cache().unwrap().current_user().id {
             trace!("Message is from me, ignoring");
             return;
         }
@@ -78,11 +81,10 @@ impl EventHandler for Handler {
         info!("{} is connected!", ready.user.name);
 
         // Create new commands for this guild
-        let commands = GuildId::set_application_commands(&self.guild_id, &ctx.http, |commands| {
-            commands.create_application_command(|command| commands::ping::register(command))
-        })
-        .await
-        .unwrap();
+        let commands =
+            GuildId::set_commands(self.guild_id, &ctx.http, vec![commands::ping::register()])
+                .await
+                .unwrap();
 
         info!(
             "I now have the following guild slash commands: {:#?}",
@@ -91,7 +93,7 @@ impl EventHandler for Handler {
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
+        if let Interaction::Command(command) = interaction {
             info!("Received command interaction: {:#?}", command);
 
             let content = match command.data.name.as_str() {
@@ -100,11 +102,12 @@ impl EventHandler for Handler {
             };
 
             if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content))
-                })
+                .create_response(
+                    &ctx.http,
+                    CreateInteractionResponse::Message(
+                        CreateInteractionResponseMessage::default().content(content),
+                    ),
+                )
                 .await
             {
                 info!("Cannot respond to slash command: {}", why);
@@ -144,18 +147,20 @@ impl Handler {
             .unwrap();
 
         // create a thread to display the job updates
+        let thread_name = format!("{}'s task", new_message.author.name);
+        // max len in 100
+        let thread_name = if thread_name.len() > 100 {
+            thread_name[..100].to_string()
+        } else {
+            thread_name
+        };
+
         let thread = new_message
             .channel_id
-            .create_private_thread(&ctx.http, |thread| {
-                let thread_name = format!("{}'s task", new_message.author.name);
-                // max len in 100
-                let thread_name = if thread_name.len() > 100 {
-                    thread_name[..100].to_string()
-                } else {
-                    thread_name
-                };
-                thread.name(thread_name).auto_archive_duration(1440)
-            })
+            .create_thread(
+                &ctx.http,
+                CreateThread::new(thread_name).auto_archive_duration(AutoArchiveDuration::OneHour),
+            )
             .await
             .unwrap();
 
@@ -172,11 +177,12 @@ impl Handler {
 
         // send a welcome message
         thread
-            .send_message(&ctx.http, |message| {
-                message
+            .send_message(
+                &ctx.http,
+                CreateMessage::new()
                     .content("Let me warm up my engines...")
-                    .allowed_mentions(|mentions| mentions.replied_user(true))
-            })
+                    .allowed_mentions(CreateAllowedMentions::new().replied_user(true)),
+            )
             .await
             .unwrap();
 
@@ -197,11 +203,12 @@ impl Handler {
             if let Some(msgs) = msgs {
                 for txt in msgs {
                     thread
-                        .send_message(&ctx.http, |message| {
-                            message
+                        .send_message(
+                            &ctx.http,
+                            CreateMessage::new()
                                 .content(txt)
-                                .allowed_mentions(|mentions| mentions.replied_user(true))
-                        })
+                                .allowed_mentions(CreateAllowedMentions::new().replied_user(true)),
+                        )
                         .await
                         .unwrap();
                 }
@@ -210,11 +217,12 @@ impl Handler {
 
         // Say goodbye
         thread
-            .send_message(&ctx.http, |message| {
-                message
+            .send_message(
+                &ctx.http,
+                CreateMessage::new()
                     .content("bye bye")
-                    .allowed_mentions(|mentions| mentions.replied_user(true))
-            })
+                    .allowed_mentions(CreateAllowedMentions::new().replied_user(true)),
+            )
             .await
             .unwrap();
     }
@@ -237,7 +245,7 @@ async fn main() -> PyResult<()> {
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_default())
         .init();
 
-    let guild_id = GuildId(
+    let guild_id = GuildId::new(
         env::var("GUILD_ID")
             .expect("Expected GUILD_ID in environment")
             .parse()
