@@ -43,4 +43,4 @@ clap = { version = "4.5.4", features = ["derive", "env"] }
 dotenvy = "0.15.7"
 
 [dev-dependencies]
-insta = { version = "1.38.0", features = ["yaml"] }
+insta = { version = "1.39.0", features = ["yaml"] }
