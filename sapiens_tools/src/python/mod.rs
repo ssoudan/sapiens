@@ -40,7 +40,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 ///   }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
-/// BeautifulSoup4, feedparser, arxiv.
+///   BeautifulSoup4, feedparser, arxiv.
 /// - No PIP.
 #[derive(Debug, Default, ProtoToolDescribe)]
 #[tool(
