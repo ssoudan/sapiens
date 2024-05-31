@@ -23,7 +23,7 @@ sapiens_derive = { path = "../sapiens_derive", version = "^0.4.4", default-featu
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
-tokio = { version = "1.37.0", features = ["full"] }
+tokio = { version = "1.38.0", features = ["full"] }
 async-trait = "0.1.80"
 
 rand = "0.8.5"
