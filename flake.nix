@@ -38,7 +38,11 @@
                   cargo-watch
                   cargo-deny
                   watchexec
-          ]);
+          ] ++  # if darwin
+                (if system == "aarch64-darwin" then [
+                    darwin.apple_sdk.frameworks.SystemConfiguration
+                ] else [])
+            );
           };
     });
 }
