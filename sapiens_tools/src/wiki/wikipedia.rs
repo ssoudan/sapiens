@@ -89,7 +89,6 @@ impl WikipediaTool {
                             Value::Number(n) => Ok(n.to_string()),
                             _ => Err(ToolUseError::InvocationFailed(format!(
                                 "Unsupported value type for parameter: {k:?}. Only <str> or <number> and list of them supported."
-                                
                             ))),
                         })
                         .collect::<Result<Vec<_>, _>>()?

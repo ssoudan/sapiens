@@ -65,7 +65,8 @@ impl<I, S, O> GenericTool<I, S, O> {
     }
 
     /// Get the name of the tool
-    #[must_use] pub fn name(&self) -> &str {
+    #[must_use]
+    pub fn name(&self) -> &str {
         &self.name
     }
 }

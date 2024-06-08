@@ -65,7 +65,8 @@ pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionE
                         .to_object(py)
                         .as_ref(py)
                         .get_type()
-                        .name().map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
+                        .name()
+                        .map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
                 })
             };
             map.insert(Value::String(key?), to_yaml(py, &value.to_object(py))?);
@@ -98,7 +99,8 @@ pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionE
         typename: obj
             .as_ref(py)
             .get_type()
-            .name().map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
+            .name()
+            .map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
     })
 }
 
