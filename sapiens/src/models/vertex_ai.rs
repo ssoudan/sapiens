@@ -28,6 +28,7 @@ pub struct LanguageModel {
     client: Arc<Mutex<LanguageClient>>,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for LanguageModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LanguageModel")
@@ -38,6 +39,10 @@ impl Debug for LanguageModel {
 }
 
 /// Build a GCP Vertex AI Generative Language Model client
+///
+/// # Panics
+///
+/// Panics if the API key is not set
 pub async fn build(api_key: String, temperature: Option<f32>) -> Result<ModelRef, Error> {
     let client = LanguageClient::new(Credentials::ApiKey(api_key))
         .await
@@ -53,7 +58,7 @@ pub async fn build(api_key: String, temperature: Option<f32>) -> Result<ModelRef
 }
 
 impl LanguageModel {
-    fn prepare_input(&self, input: ChatInput) -> Result<MessagePrompt, Error> {
+    fn prepare_input(input: &ChatInput) -> MessagePrompt {
         let context = input
             .context
             .iter()
@@ -88,20 +93,18 @@ impl LanguageModel {
             })
             .collect();
 
-        let message_prompt = MessagePrompt {
+        MessagePrompt {
             context,
             examples,
             messages,
-        };
-
-        Ok(message_prompt)
+        }
     }
 }
 
 #[async_trait::async_trait]
 impl ChatEntryTokenNumber for LanguageModel {
     async fn num_tokens(&self, input: ChatInput) -> usize {
-        let prompt = self.prepare_input(input).unwrap();
+        let prompt = Self::prepare_input(&input);
 
         let req = CountMessageTokensRequest {
             model: format!("models/{}", self.model),
@@ -114,6 +117,7 @@ impl ChatEntryTokenNumber for LanguageModel {
             .count_message_tokens(req)
             .await
             .unwrap();
+        drop(client);
 
         resp.get_ref().token_count as usize
     }
@@ -142,7 +146,7 @@ impl models::Model for LanguageModel {
         input: ChatInput,
         _max_tokens: Option<usize>,
     ) -> Result<ModelResponse, Error> {
-        let prompt = self.prepare_input(input).unwrap();
+        let prompt = Self::prepare_input(&input);
 
         let req = GenerateMessageRequest {
             model: format!("models/{}", self.model),
@@ -159,6 +163,7 @@ impl models::Model for LanguageModel {
             .generate_message(req)
             .await
             .map_err(gcp_vertex_ai_generative_language::Error::from)?;
+        drop(client);
 
         let resp = resp.get_ref();
 
@@ -175,7 +180,7 @@ impl models::Model for LanguageModel {
                         warn!(
                             "Filter: {:?}",
                             BlockedReason::try_from(f.reason).unwrap_or(BlockedReason::Unspecified)
-                        )
+                        );
                     }
                 });
                 return Err(Error::Filtered);

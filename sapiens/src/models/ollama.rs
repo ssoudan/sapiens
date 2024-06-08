@@ -23,6 +23,7 @@ pub struct LanguageModel {
     client: Arc<Mutex<Ollama>>,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for LanguageModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("LanguageModel")
@@ -32,7 +33,7 @@ impl Debug for LanguageModel {
 }
 
 /// Build an Ollama client
-pub async fn build(host: String, port: u16, model: SupportedModel) -> Result<ModelRef, Error> {
+pub fn build(host: String, port: u16, model: SupportedModel) -> Result<ModelRef, Error> {
     let client = Ollama::new(host, port);
 
     let model = LanguageModel {
@@ -44,7 +45,7 @@ pub async fn build(host: String, port: u16, model: SupportedModel) -> Result<Mod
 }
 
 impl LanguageModel {
-    fn prepare_input(&self, input: ChatInput) -> Result<ChatMessageRequest, Error> {
+    fn prepare_input(&self, input: &ChatInput) -> ChatMessageRequest {
         let mut messages = vec![];
 
         let context = input
@@ -56,12 +57,12 @@ impl LanguageModel {
 
         messages.push(ChatMessage::system(context));
 
-        for (user, bot) in input.examples.iter() {
+        for (user, bot) in &input.examples {
             messages.push(ChatMessage::user(user.msg.to_string()));
             messages.push(ChatMessage::assistant(bot.msg.to_string()));
         }
 
-        for entry in input.chat.iter() {
+        for entry in &input.chat {
             match entry.role {
                 Role::User => messages.push(ChatMessage::user(entry.msg.to_string())),
                 Role::Assistant => messages.push(ChatMessage::assistant(entry.msg.to_string())),
@@ -75,16 +76,14 @@ impl LanguageModel {
 
         debug!("model_name: {}", model_name);
 
-        let message_prompt = ChatMessageRequest::new(model_name.to_string(), messages);
-
-        Ok(message_prompt)
+        ChatMessageRequest::new(model_name.to_string(), messages)
     }
 }
 
 #[async_trait::async_trait]
 impl ChatEntryTokenNumber for LanguageModel {
     async fn num_tokens(&self, input: ChatInput) -> usize {
-        let prompt = self.prepare_input(input).unwrap();
+        let prompt = self.prepare_input(&input);
 
         let char_count = prompt
             .messages
@@ -103,8 +102,7 @@ impl ChatEntryTokenNumber for LanguageModel {
         match self.model {
             SupportedModel::OllamaMixtral => 32768,
             SupportedModel::OllamaLlamaPro => 4096,
-            SupportedModel::OllamaLlama3Instruct => 8192,
-            SupportedModel::OllamaLlama370BInstruct => 8192,
+            SupportedModel::OllamaLlama3Instruct | SupportedModel::OllamaLlama370BInstruct => 8192,
             _ => {
                 panic!("Unsupported model: {:?}", self.model);
             }
@@ -119,10 +117,11 @@ impl models::Model for LanguageModel {
         input: ChatInput,
         _max_tokens: Option<usize>,
     ) -> Result<ModelResponse, Error> {
-        let prompt = self.prepare_input(input).unwrap();
+        let prompt = self.prepare_input(&input);
 
         let client = self.client.lock().await;
         let resp = client.send_chat_messages(prompt).await?;
+        drop(client);
 
         if resp.message.is_none() {
             return Err(Error::NoResponseFromModel);

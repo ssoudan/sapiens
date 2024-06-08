@@ -1,3 +1,10 @@
+[alias]
+xtask = "run --package xtask --bin xtask --"
+lint = "run --package xtask --bin xtask lint --"
+validate = "run --package xtask --bin xtask validate"
+todo = "run --package xtask --bin xtask todo --"
+pre_commit = "run --package xtask --bin xtask validate --strict"
+
 [profile.ci]
 failure-output = "immediate-final"
 # Do not cancel the test run on the first failure.
@@ -7,12 +14,4 @@ fail-fast = false
 path = "junit.xml"
 
 [build]
-rustflags = [
-    "-Dunsafe_code",
-    "-Wmissing_docs",
-    "-Wclippy::all",
-    "-Wclippy::await_holding_lock",
-    "-Wclippy::char_lit_as_u8",
-    "-Arustdoc::invalid_rust_codeblocks",
-    "-Arustdoc::bare_urls"
-]
+rustflags = []

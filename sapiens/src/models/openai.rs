@@ -1,4 +1,4 @@
-//! OpenAI models
+//! `OpenAI` models
 
 use std::fmt::Debug;
 use std::str::FromStr;
@@ -19,14 +19,14 @@ use crate::models::{
     ChatEntryTokenNumber, ChatInput, Error, Model, ModelRef, ModelResponse, Role, SupportedModel,
     Usage,
 };
-/// Build an OpenAI model
+/// Build an `OpenAI` model
 /// # Arguments
 /// * `model_name` - The model to use
-/// * `api_key` - The OpenAI API key
-/// * `api_base` - The OpenAI API base URL - defaults to https://api.openai.com/v1
-/// * `temperature` - The OpenAI chat completion request temperature. min: 0,
+/// * `api_key` - The `OpenAI` API key
+/// * `api_base` - The `OpenAI` API base URL - defaults to <https://api.openai.com/v1>
+/// * `temperature` - The `OpenAI` chat completion request temperature. min: 0,
 ///   max: 2, default: 1. The higher the temperature, the crazier the text.
-pub async fn build(
+pub fn build(
     model: SupportedModel,
     api_key: Option<String>,
     api_base: Option<String>,
@@ -49,11 +49,11 @@ pub async fn build(
     Ok(Arc::new(Box::new(model)))
 }
 
-/// OpenAI model
+/// `OpenAI` model
 pub struct OpenAI {
     /// The model
     model: SupportedModel,
-    /// The OpenAI chat completion request temperature
+    /// The `OpenAI` chat completion request temperature
     /// min: 0, max: 2, default: 1,
     /// The higher the temperature, the crazier the text.
     pub temperature: Option<f32>,
@@ -91,6 +91,7 @@ impl Clone for OpenAI {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for OpenAI {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OpenAI")
@@ -101,8 +102,9 @@ impl Debug for OpenAI {
 }
 
 impl OpenAI {
-    /// Create a new OpenAI model
-    pub fn new(
+    /// Create a new `OpenAI` model
+    #[must_use]
+    pub const fn new(
         model: SupportedModel,
         temperature: Option<f32>,
         client: async_openai::Client<OpenAIConfig>,
@@ -171,7 +173,7 @@ impl ChatEntryTokenNumber for OpenAI {
                                         ChatCompletionRequestUserMessageContent::Text(t) =>
                                             t.clone(),
                                         ChatCompletionRequestUserMessageContent::Array(_a) =>
-                                            "".to_string(),
+                                            String::new(),
                                     }
                                 )
                             }
@@ -217,7 +219,7 @@ impl ChatEntryTokenNumber for OpenAI {
 }
 
 impl OpenAI {
-    /// prepare the [`ChatCompletionRequest`] to be passed to OpenAI
+    /// prepare the [`ChatCompletionRequest`] to be passed to `OpenAI`
     fn prepare_chat_completion_request(
         &self,
         input: ChatInput,
@@ -317,11 +319,12 @@ impl Model for OpenAI {
         Ok(ModelResponse {
             msg: msg.unwrap_or_default(),
             usage: res.usage.as_ref().map(Into::into),
-            finish_reason: first.finish_reason.map(|x| format!("{:?}", x)),
+            finish_reason: first.finish_reason.map(|x| format!("{x:?}")),
         })
     }
 }
 
+#[allow(clippy::fallible_impl_from)]
 impl From<&ChatEntry> for ChatCompletionRequestMessage {
     fn from(value: &ChatEntry) -> Self {
         match value.role {
@@ -530,9 +533,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_vicuna_sizes() {
-        let model = build(SupportedModel::Vicuna7B1_1, None, None, None)
-            .await
-            .unwrap();
+        let model = build(SupportedModel::Vicuna7B1_1, None, None, None).unwrap();
 
         assert_eq!(model.context_size().await, 2048);
 
@@ -575,9 +576,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_gpt3_sizes() {
-        let model = build(SupportedModel::GPT3_5Turbo, None, None, None)
-            .await
-            .unwrap();
+        let model = build(SupportedModel::GPT3_5Turbo, None, None, None).unwrap();
 
         assert_eq!(model.context_size().await, 4096);
 

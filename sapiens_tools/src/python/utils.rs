@@ -48,7 +48,7 @@ pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionE
 
     return_cast!(PyDict, |x: &PyDict| {
         let mut map = serde_yaml::Mapping::new();
-        for (key_obj, value) in x.iter() {
+        for (key_obj, value) in x {
             let key = if key_obj.is_none() {
                 Ok("null".to_string())
             } else if let Ok(val) = key_obj.extract::<bool>() {
@@ -65,9 +65,7 @@ pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionE
                         .to_object(py)
                         .as_ref(py)
                         .get_type()
-                        .name()
-                        .map(|x| x.to_string())
-                        .unwrap_or_else(|_| "unknown".to_string()),
+                        .name().map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
                 })
             };
             map.insert(Value::String(key?), to_yaml(py, &value.to_object(py))?);
@@ -100,12 +98,11 @@ pub(crate) fn to_yaml(py: Python, obj: &PyObject) -> Result<Value, PyConversionE
         typename: obj
             .as_ref(py)
             .get_type()
-            .name()
-            .map(|x| x.to_string())
-            .unwrap_or_else(|_| "unknown".to_string()),
+            .name().map_or_else(|_| "unknown".to_string(), std::string::ToString::to_string),
     })
 }
 
+#[allow(clippy::similar_names)]
 pub(crate) fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
     match val {
         Value::Null => py.None(),
@@ -133,7 +130,7 @@ pub(crate) fn value_to_object(val: Value, py: Python<'_>) -> PyObject {
 
 /// Format of a field in a tool description
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SimpleFormat {
+pub(crate) struct SimpleFormat {
     /// Name of the field
     pub name: String,
     /// Type of the field
@@ -146,7 +143,7 @@ pub struct SimpleFormat {
 
 impl From<FieldFormat> for SimpleFormat {
     fn from(part: FieldFormat) -> Self {
-        SimpleFormat {
+        Self {
             name: part.name,
             r#type: part.r#type,
             optional: part.optional,
@@ -187,16 +184,16 @@ impl From<ToolDescription> for SimpleToolDescription {
             .parameters
             .fields
             .into_iter()
-            .map(|x| x.into())
+            .map(std::convert::Into::into)
             .collect();
         let responses_content = desc
             .responses_content
             .fields
             .into_iter()
-            .map(|x| x.into())
+            .map(std::convert::Into::into)
             .collect();
 
-        SimpleToolDescription {
+        Self {
             name: desc.name,
             description: desc.description,
             parameters,

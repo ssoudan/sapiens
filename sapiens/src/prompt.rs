@@ -3,7 +3,7 @@ use std::fmt::{Debug, Formatter};
 
 use crate::context::{ChatEntry, ChatHistory};
 use crate::models::Role;
-use crate::tools::invocation::InvocationError;
+use crate::tools::invocation::Error;
 use crate::tools::toolbox::Toolbox;
 use crate::tools::{ToolDescription, ToolUseError};
 
@@ -22,7 +22,8 @@ pub(crate) struct Manager {
 
 impl Manager {
     /// Create a new prompt manager
-    pub fn new(
+    #[must_use]
+    pub(crate) const fn new(
         toolbox: Toolbox,
         system_prompt: String,
         prompt: String,
@@ -65,7 +66,7 @@ impl Manager {
     }
 
     /// Create the prompt for the task
-    pub fn build_task_prompt(&self, task: &str) -> Task {
+    pub(crate) fn build_task_prompt(&self, task: &str) -> Task {
         let prompt = format!("# Your turn\nOriginal question: {}\n{}", task, self.prompt,);
         Task {
             task: task.to_string(),
@@ -98,7 +99,7 @@ impl Manager {
         ]);
 
         for (prompt, response) in examples {
-            chat_history.add_example(prompt, response).await;
+            chat_history.add_example(prompt, response);
         }
     }
 }
@@ -111,6 +112,7 @@ pub struct Task {
     prompt: String,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for Task {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Task").field("task", &self.task).finish()
@@ -119,16 +121,13 @@ impl Debug for Task {
 
 impl Task {
     /// Create the prompt for the task
+    #[must_use]
     pub fn to_prompt(&self) -> String {
         self.prompt.clone()
     }
 
     /// Create the prompt to react to an action failure
-    pub(crate) fn action_failed_prompt(
-        &self,
-        tool_name: impl AsRef<str>,
-        e: &ToolUseError,
-    ) -> String {
+    pub(crate) fn action_failed_prompt(tool_name: impl AsRef<str>, e: &ToolUseError) -> String {
         format!(
             "# Action {} failed with:\n{:?}\nSomething was incorrect in previous response.",
             tool_name.as_ref(),
@@ -137,33 +136,29 @@ impl Task {
     }
 
     /// Create the prompt to react to invalid action specification
-    pub(crate) fn invalid_action_prompt(&self, e: &InvocationError) -> String {
-        format!(
-            "# No valid Action found:\n{:?}\nSomething was incorrect in previous response.",
-            e,
-        )
+    pub(crate) fn invalid_action_prompt(e: &Error) -> String {
+        format!("# No valid Action found:\n{e:?}\nSomething was incorrect in previous response.")
     }
 
     /// Create the prompt to react to an action success
     pub(crate) fn action_success_prompt(
-        &self,
         tool_name: impl AsRef<str>,
         available_invocation_count: usize,
         result: impl AsRef<str>,
     ) -> String {
-        if available_invocation_count != 1 {
+        if available_invocation_count == 1 {
+            format!(
+                "# Action {} response: \n```yaml\n{}```",
+                tool_name.as_ref(),
+                result.as_ref(),
+            )
+        } else {
             format!(
                 "# Action {} response: \nYou must give only one Action at a time. There was {}. Only the first one was considered.\n```yaml\n{}```",
                 tool_name.as_ref(),
                 available_invocation_count,
                 result.as_ref(),
 
-            )
-        } else {
-            format!(
-                "# Action {} response: \n```yaml\n{}```",
-                tool_name.as_ref(),
-                result.as_ref(),
             )
         }
     }
@@ -221,6 +216,6 @@ mod tests {
         // println!("{:?}", prompts);
         let tokens = config.model.num_tokens(chat_history.make_input()).await;
 
-        assert_eq!(tokens, 64)
+        assert_eq!(tokens, 64);
     }
 }

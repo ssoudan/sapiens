@@ -8,12 +8,16 @@ use darling_macro::FromField;
 use proc_macro::TokenStream;
 use syn::DeriveInput;
 
+/// A struct field that is documented.
 #[derive(Clone, Debug, FromField)]
 #[darling(forward_attrs(doc))]
 struct DocumentedStructField {
+    /// The name of the field
     ident: Option<syn::Ident>,
+    /// The type of the field
     ty: syn::Type,
     // vis: syn::Visibility,
+    /// The documentation of the field
     attrs: Vec<syn::Attribute>,
 }
 

@@ -1,4 +1,4 @@
-//! Main for sapiens_exp
+//! Main for `sapiens_exp`
 
 use std::fmt::Display;
 use std::sync::Arc;
@@ -27,7 +27,7 @@ enum Scenario {
 impl Display for Scenario {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Scenario::Scenario0 => write!(f, "Scenario0"),
+            Self::Scenario0 => write!(f, "Scenario0"),
         }
     }
 }
@@ -149,16 +149,13 @@ async fn main() -> Result<(), pyo3::PyErr> {
                 .parse::<u16>()
                 .expect("OLLAMA_PORT is not a valid port");
 
-            models::ollama::build(host, port, args.model)
-                .await
-                .expect("Failed to build model")
+            models::ollama::build(host, port, args.model).expect("Failed to build model")
         }
         _ => {
             let api_key = std::env::var("OPENAI_API_KEY").ok();
             let api_base = std::env::var("OPENAI_API_BASE").ok();
 
             models::openai::build(args.model.clone(), api_key, api_base, temperature)
-                .await
                 .expect("Failed to build model")
         }
     };

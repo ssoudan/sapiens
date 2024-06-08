@@ -12,6 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 documentation = "https://docs.rs/sapiens_derive"
 
+[lints]
+workspace = true
+
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"

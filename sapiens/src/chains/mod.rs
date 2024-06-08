@@ -6,7 +6,7 @@
 //! - [ ] 2207.05608 - Inner monologue - Different types of feedbacks - 2022
 //! - [ ] 2302.00083 - In context RALM - Jan 2023
 //! - [ ] 2302.01560 - DEPS - Describe, explain, plan, select stages. Feb 2023
-//! - [ ] 2210.03629 - ReAct - Reasoning + Action - Mar 2023
+//! - [ ] 2210.03629 - `ReAct` - Reasoning + Action - Mar 2023
 //! - [ ] 2303.11366 - Reflexion - heuristic + self-reflection - Mar 2023
 //! - [ ] 2303.17071 - DERA - Distinct roles+responsibilities - Mar 2023
 //! - [ ] 2305.10601 - Tree of Thoughts - May 2023
@@ -30,10 +30,9 @@ use crate::chains::agents::ooda::{multistep, one_step};
 use crate::chains::schedulers::{MultiAgentScheduler, SingleAgentScheduler};
 use crate::context::ContextDump;
 use crate::models::Usage;
-use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::{invoke_tool, InvokeResult, Toolbox};
 use crate::tools::{TerminationMessage, ToolUseError};
-use crate::{SapiensConfig, WeakRuntimeObserver};
+use crate::{invocation, SapiensConfig, WeakRuntimeObserver};
 
 /// Outcome of an invocation
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,12 +45,12 @@ pub enum Outcome {
     /// No valid invocation was found
     NoValidInvocationsFound {
         /// The invocation error
-        e: InvocationError,
+        e: invocation::Error,
     },
     /// No invocation was found
     NoInvocationsFound {
         /// The invocation error
-        e: InvocationError,
+        e: invocation::Error,
     },
     /// The invocation failed
     ToolUseError {
@@ -112,23 +111,19 @@ pub enum Message {
 impl Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Message::Task { content } => write!(f, "Task: {}", content),
-            Message::Observation { content,.. } => write!(f, "Observation: {}", content),
-            Message::Orientation { content ,..} => write!(f, "Orientation: {}", content),
-            Message::Decision { content,.. } => write!(f, "Decision: {}", content),
-            Message::Action { content ,..} => write!(f, "Action: {}", content),
-            Message::ActionResult {
+            Self::Task { content } => write!(f, "Task: {content}"),
+            Self::Observation { content,.. } => write!(f, "Observation: {content}"),
+            Self::Orientation { content ,..} => write!(f, "Orientation: {content}"),
+            Self::Decision { content,.. } => write!(f, "Decision: {content}"),
+            Self::Action { content ,..} => write!(f, "Action: {content}"),
+            Self::ActionResult {
                 invocation_count,
                 tool_name,
                 extracted_input,
                 outcome,
             } => write!(
                 f,
-                "ActionResult: {} invocations found, tool_name: {:?}, extracted_input: {:?}, outcome: {:?}",
-                invocation_count,
-                tool_name,
-                extracted_input,
-                outcome
+                "ActionResult: {invocation_count} invocations found, tool_name: {tool_name:?}, extracted_input: {extracted_input:?}, outcome: {outcome:?}",                                
             ),
         }
     }
@@ -137,7 +132,7 @@ impl Display for Message {
 impl From<InvokeResult> for Message {
     fn from(result: InvokeResult) -> Self {
         match result {
-            InvokeResult::NoInvocationsFound { e } => Message::ActionResult {
+            InvokeResult::NoInvocationsFound { e } => Self::ActionResult {
                 invocation_count: 0,
                 tool_name: None,
                 extracted_input: None,
@@ -146,7 +141,7 @@ impl From<InvokeResult> for Message {
             InvokeResult::NoValidInvocationsFound {
                 e,
                 invocation_count,
-            } => Message::ActionResult {
+            } => Self::ActionResult {
                 invocation_count,
                 tool_name: None,
                 extracted_input: None,
@@ -157,7 +152,7 @@ impl From<InvokeResult> for Message {
                 tool_name,
                 extracted_input,
                 result,
-            } => Message::ActionResult {
+            } => Self::ActionResult {
                 invocation_count,
                 tool_name: Some(tool_name),
                 extracted_input: Some(extracted_input),
@@ -168,7 +163,7 @@ impl From<InvokeResult> for Message {
                 tool_name,
                 e,
                 ..
-            } => Message::ActionResult {
+            } => Self::ActionResult {
                 invocation_count,
                 tool_name: Some(tool_name),
                 extracted_input: None,
@@ -186,11 +181,13 @@ pub struct Context {
 
 impl Context {
     /// Create a new context
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Dump the context into a [`ContextDump`]
+    #[must_use]
     pub fn dump(&self) -> ContextDump {
         ContextDump {
             messages: self.messages.clone(),
@@ -198,6 +195,7 @@ impl Context {
     }
 
     /// Returns the latest task
+    #[must_use]
     pub fn get_latest_task(&self) -> Option<String> {
         self.messages.iter().rev().find_map(|m| match m {
             Message::Task { content } => Some(content.clone()),
@@ -343,7 +341,7 @@ impl SingleStepOODAChain {
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
     ) -> Result<Self, Error> {
-        let agent = one_step::Agent::new(config.clone(), toolbox.clone(), observer.clone()).await;
+        let agent = one_step::Agent::new(config.clone(), toolbox.clone(), observer.clone());
 
         let scheduler =
             SingleAgentScheduler::new(config.max_steps, Box::new(agent), observer.clone());
@@ -353,6 +351,7 @@ impl SingleStepOODAChain {
     }
 
     /// Add a new task to the OODA chain
+    #[must_use]
     pub fn with_task(mut self, task: String) -> Self {
         self.runtime
             .context
@@ -376,6 +375,7 @@ impl Chain for SingleStepOODAChain {
 
 /// Multistep OODA chain
 pub struct MultiStepOODAChain {
+    /// The runtime of the chain
     runtime: Runtime,
 }
 
@@ -387,10 +387,10 @@ impl MultiStepOODAChain {
         observer: WeakRuntimeObserver,
     ) -> Result<Self, Error> {
         let agents = vec![
-            multistep::Agent::new_observer(config.clone(), toolbox.clone(), observer.clone()).await,
-            multistep::Agent::new_orienter(config.clone(), toolbox.clone(), observer.clone()).await,
-            multistep::Agent::new_decider(config.clone(), toolbox.clone(), observer.clone()).await,
-            multistep::Agent::new_actor(config.clone(), toolbox.clone(), observer.clone()).await,
+            multistep::Agent::new_observer(config.clone(), toolbox.clone(), observer.clone()),
+            multistep::Agent::new_orienter(config.clone(), toolbox.clone(), observer.clone()),
+            multistep::Agent::new_decider(config.clone(), toolbox.clone(), observer.clone()),
+            multistep::Agent::new_actor(config.clone(), toolbox.clone(), observer.clone()),
         ];
 
         let agents = agents
@@ -405,6 +405,7 @@ impl MultiStepOODAChain {
     }
 
     /// Add a new task to the OODA chain
+    #[must_use]
     pub fn with_task(mut self, task: String) -> Self {
         self.runtime
             .context

@@ -14,7 +14,6 @@
 //! -> Trial
 
 use std::marker::PhantomData;
-use std::ops::DerefMut;
 use std::sync::Arc;
 
 use sapiens::tools::{Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError};
@@ -66,7 +65,7 @@ impl<I, S, O> GenericTool<I, S, O> {
     }
 
     /// Get the name of the tool
-    pub fn name(&self) -> &str {
+    #[must_use] pub fn name(&self) -> &str {
         &self.name
     }
 }
@@ -108,7 +107,7 @@ where
             // Lock
             let mut guard = self.state.lock().await;
 
-            input.update(guard.deref_mut())?
+            input.update(&mut *guard)?
         };
 
         Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)

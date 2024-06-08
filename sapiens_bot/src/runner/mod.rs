@@ -19,17 +19,17 @@ use tracing::{debug, error, info, warn};
 use crate::runner::utils::{sanitize_msgs_for_discord, Formatter};
 
 /// Formatting utilities
-pub mod utils;
+pub(crate) mod utils;
 
 /// Sapiens bot
-pub struct SapiensBot {
+pub(crate) struct SapiensBot {
     toolbox: Toolbox,
     config: SapiensConfig,
 }
 
 impl SapiensBot {
-    /// Create a new bot from the environment variables: OPENAI_API_KEY, ...
-    pub async fn new_from_env() -> Self {
+    /// Create a new bot from the environment variables: `OPENAI_API_KEY`, ...
+    pub(crate) async fn new_from_env() -> Self {
         let toolbox = sapiens_tools::setup::toolbox_from_env().await;
 
         let _ =
@@ -44,7 +44,7 @@ impl SapiensBot {
                     warn!("MODEL not specified: defaulting to chat-bison-001.");
                     SupportedModel::ChatBison001
                 } else {
-                    panic!("Invalid model: {}", e)
+                    panic!("Invalid model: {e}")
                 }
             }
         };
@@ -68,16 +68,13 @@ impl SapiensBot {
                     .parse::<u16>()
                     .expect("OLLAMA_PORT is not a valid port");
 
-                models::ollama::build(host, port, model)
-                    .await
-                    .expect("Failed to build model")
+                models::ollama::build(host, port, model).expect("Failed to build model")
             }
             _ => {
                 let api_key = std::env::var("OPENAI_API_KEY").ok();
                 let api_base = std::env::var("OPENAI_API_BASE").ok();
 
                 models::openai::build(model, api_key, api_base, temperature)
-                    .await
                     .expect("Failed to build model")
             }
         };
@@ -91,8 +88,8 @@ impl SapiensBot {
     }
 
     /// Start a new task
-    pub async fn start_task(
-        &mut self,
+    pub(crate) async fn start_task(
+        &self,
         task: String,
         observer: WeakRuntimeObserver,
     ) -> Result<TaskState, Error>
@@ -102,7 +99,7 @@ where {
 }
 
 /// Handler for task progress updates
-pub struct ProgressObserver {
+pub(crate) struct ProgressObserver {
     /// Whether to show the warm-up prompt
     pub show_warmup_prompt: bool,
     pub job_tx: mpsc::Sender<JobUpdate>,
@@ -110,6 +107,7 @@ pub struct ProgressObserver {
     message_format: Box<dyn MessageFormatter + 'static + Send + Sync>,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for ProgressObserver {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProgressHandler")
@@ -170,7 +168,7 @@ impl RuntimeObserver for ProgressObserver {
                 e,
                 ..
             }) => {
-                let msg = format!("*Error*: {}", e);
+                let msg = format!("*Error*: {e}");
 
                 let msgs = sanitize_msgs_for_discord(vec![msg]);
 
@@ -185,7 +183,7 @@ impl RuntimeObserver for ProgressObserver {
 
 /// A job update
 #[derive(Debug)]
-pub enum JobUpdate {
+pub(crate) enum JobUpdate {
     Completed(Vec<String>),
     Vec(Vec<String>),
     FailedToStart(Vec<String>),
@@ -194,7 +192,7 @@ pub enum JobUpdate {
 }
 
 /// A job to run
-pub struct NewJob {
+pub(crate) struct NewJob {
     task: String,
     tx: mpsc::Sender<JobUpdate>,
     max_steps: usize,
@@ -203,7 +201,8 @@ pub struct NewJob {
 
 impl NewJob {
     /// Create a new job
-    pub fn new(
+    #[must_use]
+    pub(crate) const fn new(
         task: String,
         max_steps: usize,
         show_warmup_prompt: bool,
@@ -218,18 +217,18 @@ impl NewJob {
     }
 }
 
-pub struct Runner {
+pub(crate) struct Runner {
     rx: mpsc::Receiver<NewJob>,
     sapiens: SapiensBot,
 }
 
 impl Runner {
-    pub async fn new(rx: mpsc::Receiver<NewJob>) -> Self {
+    pub(crate) async fn new(rx: mpsc::Receiver<NewJob>) -> Self {
         let sapiens = SapiensBot::new_from_env().await;
         Self { rx, sapiens }
     }
 
-    pub async fn run(&mut self) {
+    pub(crate) async fn run(&mut self) {
         while let Some(job) = self.rx.next().await {
             let task = job.task.clone();
             info!("Starting job: {}", task);
@@ -277,7 +276,7 @@ impl Runner {
                             Err(e) => {
                                 error!("Error while running task: {}", e);
 
-                                let msg = format!("Error: {}", e);
+                                let msg = format!("Error: {e}");
                                 let msgs = sanitize_msgs_for_discord(vec![msg]);
 
                                 tx.send(JobUpdate::FailedToStart(msgs)).await.unwrap();
@@ -297,7 +296,7 @@ impl Runner {
                 }
                 Err(e) => {
                     error!("Error while starting task: {}", e);
-                    let msg = format!("Error: {}", e);
+                    let msg = format!("Error: {e}");
                     let msgs = sanitize_msgs_for_discord(vec![msg]);
 
                     tx.send(JobUpdate::FailedToStart(msgs)).await.unwrap();

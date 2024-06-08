@@ -5,17 +5,17 @@ use sapiens::context::{ChatEntry, ChatEntryFormatter, MessageFormatter};
 use sapiens::models::Role;
 
 /// Chat entry formatter that renders the chat entry in markdown
-pub struct Formatter {}
+pub(crate) struct Formatter {}
 
 impl ChatEntryFormatter for Formatter {
     fn format(&self, entry: &ChatEntry) -> String {
         let msg = entry.msg.clone();
         match entry.role {
-            Role::User => format!(":earth_americas:\n{}", msg),
-            Role::Assistant => format!(":robot:\n{}", msg),
-            Role::System => format!(":rooster:\n{}", msg),
-            Role::Function => format!(":gear:\n{}", msg),
-            Role::Tool => format!(":wrench:\n{}", msg),
+            Role::User => format!(":earth_americas:\n{msg}"),
+            Role::Assistant => format!(":robot:\n{msg}"),
+            Role::System => format!(":rooster:\n{msg}"),
+            Role::Function => format!(":gear:\n{msg}"),
+            Role::Tool => format!(":wrench:\n{msg}"),
         }
     }
 }
@@ -27,6 +27,7 @@ impl MessageFormatter for Formatter {
 }
 
 /// Size in characters of an event once rendered in markdown
+#[allow(clippy::match_same_arms)]
 fn md_event_size(event: &Event) -> usize {
     match event {
         Event::Text(text) => text.len(),
@@ -96,7 +97,9 @@ pub(crate) fn sanitize_msgs_for_discord(msgs: Vec<String>) -> Vec<String> {
         .collect()
 }
 
-fn is_block_delimiter(t: &TagEnd) -> bool {
+#[allow(clippy::match_same_arms)]
+#[allow(clippy::trivially_copy_pass_by_ref)]
+const fn is_block_delimiter(t: &TagEnd) -> bool {
     match t {
         TagEnd::Paragraph => true,
         TagEnd::Heading(_) => false,

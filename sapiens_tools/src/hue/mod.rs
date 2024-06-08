@@ -6,7 +6,7 @@ pub mod room;
 pub mod status;
 
 /// State of a light.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Eq)]
 pub struct State {
     /// Whether the light is on.
     pub on: Option<bool>,
@@ -52,7 +52,7 @@ impl From<huelib2::resource::light::State> for State {
 }
 
 /// A light.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Light {
     /// Identifier of the light.
     pub id: String,

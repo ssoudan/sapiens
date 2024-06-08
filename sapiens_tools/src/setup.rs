@@ -8,9 +8,14 @@ use crate::python::PythonTool;
 ///
 /// - Uses features to enable/disable tools.
 /// - Gets API keys from environment variables.
-/// - Uses environment variables to configure tools: HUE_BRIDGE_IP, HUE_USERNAME
+/// - Uses environment variables to configure tools: `HUE_BRIDGE_IP`,
+///   `HUE_USERNAME`
+///
+/// # Panics
+///
+/// if the required environment variables are not set.
 pub async fn toolbox_from_env() -> Toolbox {
-    let mut toolbox = Toolbox::default();
+    let toolbox = Toolbox::default();
 
     #[cfg(feature = "search")]
     {
@@ -26,33 +31,25 @@ pub async fn toolbox_from_env() -> Toolbox {
 
         use huelib2::bridge;
 
-        let bridge_ip = match std::env::var("HUE_BRIDGE_IP") {
-            Ok(ip) => IpAddr::from_str(&ip).expect("Invalid IP address"),
-            Err(_) => {
-                println!("HUE_BRIDGE_IP env not set. Trying to discover bridge.");
-                let bridge_ip = bridge::discover_nupnp().unwrap().pop().unwrap();
-                println!(
-                    "Discovered bridge at IP address: HUE_BRIDGE_IP={}",
-                    bridge_ip
-                );
-                bridge_ip
-            }
+        let bridge_ip = if let Ok(ip) = std::env::var("HUE_BRIDGE_IP") {
+            IpAddr::from_str(&ip).expect("Invalid IP address")
+        } else {
+            println!("HUE_BRIDGE_IP env not set. Trying to discover bridge.");
+            let bridge_ip = bridge::discover_nupnp().unwrap().pop().unwrap();
+            println!("Discovered bridge at IP address: HUE_BRIDGE_IP={bridge_ip}");
+            bridge_ip
         };
 
-        let username = match std::env::var("HUE_USERNAME") {
-            Ok(username) => username,
-            Err(_) => {
-                println!("HUE_USERNAME env not set. Trying to register a new user.");
+        let username = if let Ok(username) = std::env::var("HUE_USERNAME") {
+            username
+        } else {
+            println!("HUE_USERNAME env not set. Trying to register a new user.");
 
-                // Register a new user.
-                let username =
-                    bridge::register_user(bridge_ip, "sapiens").expect("Failed to register user");
-                println!(
-                    "Registered a new user - pass it as env: \nHUE_USERNAME={}",
-                    username
-                );
-                username
-            }
+            // Register a new user.
+            let username =
+                bridge::register_user(bridge_ip, "sapiens").expect("Failed to register user");
+            println!("Registered a new user - pass it as env: \nHUE_USERNAME={username}");
+            username
         };
 
         let bridge = bridge::Bridge::new(bridge_ip, username);
@@ -80,7 +77,7 @@ pub async fn toolbox_from_env() -> Toolbox {
 
     #[cfg(feature = "arxiv")]
     {
-        toolbox.add_tool(crate::arxiv::ArxivTool::new().await).await;
+        toolbox.add_tool(crate::arxiv::ArxivTool::new()).await;
     }
 
     #[cfg(feature = "summarize")]

@@ -37,7 +37,7 @@
 
 use std::sync::Arc;
 
-use rust_fsm::*;
+use rust_fsm::{state_machine, StateMachine};
 use sapiens::tools::toolbox::Toolbox;
 use sapiens::tools::{Describe, ToolUseError};
 use sapiens_derive::Describe;
@@ -225,19 +225,19 @@ struct ClosetOutput {
 impl From<Option<CerealBowlRecipeOutput>> for ClosetOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::CerealFound) => ClosetOutput {
+            Some(CerealBowlRecipeOutput::CerealFound) => Self {
                 found: true,
                 object: Some(ClosetObject::Cereal),
             },
-            Some(CerealBowlRecipeOutput::MilkFound) => ClosetOutput {
+            Some(CerealBowlRecipeOutput::MilkFound) => Self {
                 found: true,
                 object: Some(ClosetObject::Milk),
             },
-            Some(CerealBowlRecipeOutput::BowlFound) => ClosetOutput {
+            Some(CerealBowlRecipeOutput::BowlFound) => Self {
                 found: true,
                 object: Some(ClosetObject::Bowl),
             },
-            _ => ClosetOutput {
+            _ => Self {
                 found: false,
                 object: None,
             },
@@ -306,15 +306,15 @@ struct MixingOutput {
 impl From<Option<CerealBowlRecipeOutput>> for MixingOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::MilkAdded) => MixingOutput {
+            Some(CerealBowlRecipeOutput::MilkAdded) => Self {
                 added: true,
                 object: Some(Pourable::Milk),
             },
-            Some(CerealBowlRecipeOutput::CerealAdded) => MixingOutput {
+            Some(CerealBowlRecipeOutput::CerealAdded) => Self {
                 added: true,
                 object: Some(Pourable::Cereal),
             },
-            _ => MixingOutput {
+            _ => Self {
                 added: false,
                 object: None,
             },
@@ -361,8 +361,8 @@ struct ServingOutput {
 impl From<Option<CerealBowlRecipeOutput>> for ServingOutput {
     fn from(output: Option<CerealBowlRecipeOutput>) -> Self {
         match output {
-            Some(CerealBowlRecipeOutput::Accepted) => ServingOutput { accepted: true },
-            _ => ServingOutput { accepted: false },
+            Some(CerealBowlRecipeOutput::Accepted) => Self { accepted: true },
+            _ => Self { accepted: false },
         }
     }
 }
@@ -376,7 +376,7 @@ impl From<Option<CerealBowlRecipeOutput>> for ServingOutput {
 /// The mixing is where you can mix the cereal and the milk in the bowl.
 /// The serving is where you can serve the bowl.
 /// The goal is to make a bowl of cereal and serve it.
-pub async fn build(mut toolbox: Toolbox) -> (Toolbox, Arc<Mutex<dyn tools::State>>) {
+pub async fn build(toolbox: Toolbox) -> (Toolbox, Arc<Mutex<dyn tools::State>>) {
     let state = InternalState::new();
     let shared_state = Arc::new(Mutex::new(state));
 
@@ -427,7 +427,7 @@ mod tests {
         println!("{:?}", machine.state());
         let _x = machine.consume(&CerealBowlRecipeInput::GetMilk).unwrap();
         let x = machine.state();
-        println!("{:?}", x);
+        println!("{x:?}");
 
         let _x = machine
             .consume(&CerealBowlRecipeInput::AddCerealToBowl)
@@ -442,6 +442,9 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::significant_drop_tightening)]
+    #[allow(clippy::manual_assert)]
     async fn test_with_tools() {
         let shared_state = InternalState::default();
 
@@ -462,7 +465,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = closet.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<ClosetOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let guard = shared_state.lock().await;
             let state = guard.state();
@@ -479,7 +482,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = closet.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<ClosetOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let guard = shared_state.lock().await;
             let state = guard.state();
@@ -496,7 +499,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = closet.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<ClosetOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let guard = shared_state.lock().await;
             let state = guard.state();
@@ -522,7 +525,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = mixing.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<MixingOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let guard = shared_state.lock().await;
             let state = guard.state();
@@ -540,7 +543,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = mixing.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<MixingOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let guard = shared_state.lock().await;
             let state = guard.state();
@@ -565,7 +568,7 @@ mod tests {
         let input = serde_yaml::to_value(input).unwrap();
         let output = serving.invoke(input).await.unwrap();
         let output = serde_yaml::from_value::<ServingOutput>(output).unwrap();
-        println!("{:?}", output);
+        println!("{output:?}");
         {
             let mut guard = shared_state.lock().await;
             let state = guard.state();
@@ -592,6 +595,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[allow(clippy::significant_drop_tightening)]
     async fn test_with_toolbox() {
         let toolbox = Toolbox::default();
 

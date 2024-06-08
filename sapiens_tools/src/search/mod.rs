@@ -23,6 +23,7 @@ pub mod gce;
     input = "SearchToolInput",
     output = "SearchToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct SearchTool {
     /// API key to use
     api_key: String,
@@ -40,6 +41,7 @@ impl Debug for SearchTool {
 
 /// [`SearchTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SearchToolInput {
     /// query to search. `q` parameter of the Google Custom Search Engine API
     /// Use `exclude_terms` and `exact_terms` to refine your search.
@@ -54,7 +56,7 @@ pub struct SearchToolInput {
     /// number of results to return (max 10, default 4)
     num: Option<u32>,
 
-    /// language restriction (default 'lang_en') - see https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list#query-parameters
+    /// language restriction (default "`lang_en`") - see <https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list#query-parameters>
     lr: Option<String>,
 
     /// start index (default 1)
@@ -63,6 +65,7 @@ pub struct SearchToolInput {
 
 /// [`SearchTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SearchToolOutput {
     /// result items. An [`Item`] has the following format: `{'title':
     /// '...', 'link': '...', 'snippet': '...'}`
@@ -73,7 +76,7 @@ pub struct SearchToolOutput {
 
 impl From<&SearchToolInput> for QueryParameters {
     fn from(value: &SearchToolInput) -> Self {
-        let mut q = QueryParameters::builder();
+        let mut q = Self::builder();
 
         let q = q
             .q(&value.q)
@@ -102,7 +105,7 @@ impl Default for SearchTool {
         let api_key = std::env::var("GOOGLE_API_KEY").expect("GOOGLE_API_KEY env not set");
         let cse_id = std::env::var("GOOGLE_CSE_ID").expect("GOOGLE_CSE_ID env not set");
 
-        SearchTool {
+        Self {
             api_key,
             cse_id,
             client: Mutex::new(Client::builder().build().unwrap()),
@@ -117,10 +120,15 @@ impl SearchTool {
     ///
     /// * `api_key` - API key to use
     /// * `cse_id` - CSE ID to use
-    pub async fn new(api_key: String, cse_id: String) -> SearchTool {
+    ///
+    /// # Panics
+    ///
+    /// Panics if `api_key` or `cse_id` are not set in the environment.
+    #[must_use]
+    pub fn new(api_key: String, cse_id: String) -> Self {
         let client = Client::builder().build().unwrap();
 
-        SearchTool {
+        Self {
             api_key,
             cse_id,
             client: Mutex::new(client),
@@ -245,9 +253,9 @@ mod tests {
 
         let resp = tool.do_query(query_params).await.unwrap();
 
-        println!("{:#?}", resp);
+        println!("{resp:#?}");
 
         let body = resp.text().await.unwrap();
-        println!("{}", body);
+        println!("{body}");
     }
 }

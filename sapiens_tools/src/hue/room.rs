@@ -11,6 +11,7 @@ use crate::hue::Room;
 /// A tool to use that the source of truth for the Lights of a Room.
 #[derive(ProtoToolDescribe, ProtoToolInvoke)]
 #[tool(name = "Room", input = "RoomToolInput", output = "RoomToolOutput")]
+#[allow(clippy::module_name_repetitions)]
 pub struct RoomTool {
     bridge: huelib2::bridge::Bridge,
 }
@@ -22,9 +23,10 @@ impl Debug for RoomTool {
 }
 
 impl RoomTool {
-    /// Create a new RoomTool
-    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
-        RoomTool { bridge }
+    /// Create a new `RoomTool`
+    #[must_use]
+    pub const fn new(bridge: huelib2::bridge::Bridge) -> Self {
+        Self { bridge }
     }
 }
 
@@ -45,6 +47,7 @@ impl Default for RoomTool {
 
 /// The input of the tool
 #[derive(Debug, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct RoomToolInput {
     /// The list of Room names (<string>) to get the lights for, e.g.
     /// `room_filter: ["Bedroom"]`. If unsure, use `[]` as `room_filter` to get
@@ -53,7 +56,8 @@ pub struct RoomToolInput {
 }
 
 /// The output of the tool
-#[derive(Debug, Serialize, Deserialize, PartialEq, Describe)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct RoomToolOutput {
     /// A list of Rooms with a name and a list of Light IDs in that
     /// room. E.g.: `[{"name": "Smoking room", "lights": ["1", "2", ...]},
@@ -86,15 +90,16 @@ impl RoomTool {
     }
 }
 
-/// A fake RoomTool
+/// A fake `RoomTool`
 pub mod fake {
     use sapiens::tools::{Describe, Tool, ToolDescription, ToolUseError};
 
     use crate::hue::room::{RoomToolInput, RoomToolOutput};
     use crate::hue::Room;
 
-    /// a fake RoomTool
+    /// a fake `RoomTool`
     #[derive(Default)]
+    #[allow(clippy::module_name_repetitions)]
     pub struct FakeRoomTool {}
 
     impl FakeRoomTool {

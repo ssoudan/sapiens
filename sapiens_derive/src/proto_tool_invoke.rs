@@ -1,3 +1,4 @@
+//! The implementation of the `ProtoToolInvoke` derive macro.
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
@@ -5,16 +6,20 @@ use quote::{quote, ToTokens};
 /// A derive macro for the `Describe` trait.
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(tool_invoke_typed), supports(struct_named))]
-pub struct DeriveReceiver {
+pub(crate) struct DeriveReceiver {
+    /// The struct or enum that the derive macro is being applied to.
     ident: syn::Ident,
 
+    /// The generics of the struct or enum.
     generics: syn::Generics,
+
+    /// The name
     name: Option<syn::Path>,
 }
 
 impl ToTokens for DeriveReceiver {
     fn to_tokens(&self, out: &mut proc_macro2::TokenStream) {
-        let DeriveReceiver {
+        let Self {
             ref ident,
             ref generics,
             ref name,
@@ -37,12 +42,12 @@ impl ToTokens for DeriveReceiver {
                     Ok(serde_yaml::to_value(output).map_err(|e| ToolUseError::InvalidOutput(e.to_string()))?)
                 }
             }
-        })
+        });
     }
 }
 
 /// The entry point for the `ProtoToolInvoke` derive macro expansion.
-pub fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
+pub(crate) fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
     let receiver = match DeriveReceiver::from_derive_input(input) {
         Ok(parsed) => parsed,
         Err(e) => return e.write_errors().into(),

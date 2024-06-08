@@ -12,7 +12,7 @@ struct SimpleAgent {}
 
 impl From<()> for Error {
     fn from(_value: ()) -> Self {
-        panic!("This should not happen")
+        unreachable!("This should not happen")
     }
 }
 
@@ -62,6 +62,7 @@ impl Tool for ConcludeTool {
 
         // set done
         *done = Some("Done".to_string());
+        drop(done);
 
         Ok(Value::Null)
     }
@@ -88,7 +89,7 @@ impl TerminalTool for ConcludeTool {
 #[tokio::test]
 async fn observes_too_much() {
     let toolbox = {
-        let mut toolbox = Toolbox::default();
+        let toolbox = Toolbox::default();
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         toolbox
     };
@@ -108,7 +109,7 @@ async fn observes_too_much() {
         .context
         .messages
         .iter()
-        .for_each(|m| println!("{:?}", m));
+        .for_each(|m| println!("{m:?}"));
 
     assert!(terminal_state.is_err());
 }
@@ -145,7 +146,7 @@ impl Agent for NoAsSimpleAgent {
 #[tokio::test]
 async fn observes_and_conclude() {
     let toolbox = {
-        let mut toolbox = Toolbox::default();
+        let toolbox = Toolbox::default();
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         toolbox
     };
@@ -166,7 +167,7 @@ async fn observes_and_conclude() {
         .context
         .messages
         .iter()
-        .for_each(|m| println!("{:?}", m));
+        .for_each(|m| println!("{m:?}"));
 
     assert!(terminal_state.is_ok());
 

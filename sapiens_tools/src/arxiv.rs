@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 /// not peer-reviewed by arXiv.
 #[derive(Debug, ProtoToolInvoke, ProtoToolDescribe)]
 #[tool(name = "Arxiv", input = "ArxivToolInput", output = "ArxivToolOutput")]
+#[allow(clippy::module_name_repetitions)]
 pub struct ArxivTool {}
 
 /// Sort order
@@ -31,8 +32,8 @@ pub enum SortOrder {
 impl Display for SortOrder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SortOrder::Ascending => write!(f, "ascending"),
-            SortOrder::Descending => write!(f, "descending"),
+            Self::Ascending => write!(f, "ascending"),
+            Self::Descending => write!(f, "descending"),
         }
     }
 }
@@ -55,9 +56,9 @@ pub enum SortBy {
 impl Display for SortBy {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SortBy::Relevance => write!(f, "relevance"),
-            SortBy::LastUpdatedDate => write!(f, "lastUpdatedDate"),
-            SortBy::SubmittedDate => write!(f, "submittedDate"),
+            Self::Relevance => write!(f, "relevance"),
+            Self::LastUpdatedDate => write!(f, "lastUpdatedDate"),
+            Self::SubmittedDate => write!(f, "submittedDate"),
         }
     }
 }
@@ -66,24 +67,25 @@ impl Display for SortBy {
 ///
 /// Arxiv API documentation query specification
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ArxivToolInput {
-    /// search_query: Search query - see https://info.arxiv.org/help/api/user-manual.html
+    /// `search_query`: Search query - see <https://info.arxiv.org/help/api/user-manual.html>
     /// for details. E.g. `cs.AI` or `cat:cs.AI` or `au:John Smith`
     /// The fields that can be searched are: `ti` (title), `au` (author), `abs`
     /// (abstract), `co` (comment), `jr` (journal reference), `cat` (subject
-    /// category), `rn` (report number), `id` (id (use id_list instead)),
+    /// category), `rn` (report number), `id` (id (use `id_list` instead)),
     /// `all` (all of the above). Operators: `AND`, `OR`, `ANDNOT`.
     /// You cannot search on publication or last update date.
     pub search_query: String,
 
-    /// id_list: Comma-separated list of arXiv IDs to return
+    /// `id_list`: Comma-separated list of arXiv IDs to return
     pub id_list: Option<String>,
 
-    /// start: Result offset for pagination
+    /// `start`: Result offset for pagination
     pub start: Option<i32>,
 
-    /// max_results: Maximum number of results to return in a single response.
-    /// Default is 10. Maximum allowed value is 100.
+    /// `max_results`: Maximum number of results to return in a single
+    /// response. Default is 10. Maximum allowed value is 100.
     pub max_results: Option<i32>,
 
     /// Sort by. Can be either `relevance`, `lastUpdatedDate` or
@@ -109,7 +111,7 @@ pub struct ArxivToolInput {
 
 impl From<&ArxivToolInput> for ArxivQuery {
     fn from(input: &ArxivToolInput) -> Self {
-        ArxivQuery {
+        Self {
             base_url: "https://export.arxiv.org/api/query?".to_string(),
             search_query: input.search_query.clone(),
             id_list: input.id_list.clone().unwrap_or_default(),
@@ -123,6 +125,7 @@ impl From<&ArxivToolInput> for ArxivQuery {
 
 /// [`ArxivTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ArxivToolOutput {
     // FUTURE(ssoudan) proc_macro_derive to generate this
     /// query result. `ArxivResult` is an object containing the following
@@ -143,6 +146,7 @@ pub struct ArxivToolOutput {
 
 /// Arxiv result
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ArxivResult {
     /// arXiv ID
     pub id: String,
@@ -168,7 +172,7 @@ pub struct ArxivResult {
 
 impl From<Arxiv> for ArxivResult {
     fn from(arxiv: Arxiv) -> Self {
-        ArxivResult {
+        Self {
             id: arxiv.id,
             updated: arxiv.updated,
             published: arxiv.published,
@@ -181,10 +185,17 @@ impl From<Arxiv> for ArxivResult {
     }
 }
 
+impl Default for ArxivTool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ArxivTool {
     /// Create a new [`ArxivTool`]
-    pub async fn new() -> ArxivTool {
-        ArxivTool {}
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {}
     }
 
     #[tracing::instrument(skip(self))]
@@ -203,7 +214,7 @@ impl ArxivTool {
 
         let vec = result
             .into_iter()
-            .map(|x| x.into())
+            .map(std::convert::Into::into)
             .map(|mut x: ArxivResult| {
                 if !(input.show_pdf_url.unwrap_or(false)) {
                     x.pdf_url = None;
@@ -238,7 +249,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv() {
-        let tool = ArxivTool::new().await;
+        let tool = ArxivTool::new();
         let input = ArxivToolInput {
             search_query: "cat:cs.AI".to_string(),
             id_list: None,
@@ -253,12 +264,12 @@ mod tests {
         };
         let output = tool.invoke_typed(&input).await.unwrap();
 
-        assert!(!output.result.is_empty())
+        assert!(!output.result.is_empty());
     }
 
     #[tokio::test]
     async fn test_arxiv_from_yaml() {
-        let tool = ArxivTool::new().await;
+        let tool = ArxivTool::new();
         let input = indoc! {"
             search_query: cat:cs.AI
             show_authors: true           
@@ -276,7 +287,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_arxiv_from_yaml_2() {
-        let tool = ArxivTool::new().await;
+        let tool = ArxivTool::new();
         let input = indoc! {"
             search_query: cat:cs.DB
             max_results: 4

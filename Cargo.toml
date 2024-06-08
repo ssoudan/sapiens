@@ -5,7 +5,8 @@ members = [
 	"sapiens_tools",
 	"sapiens_cli",
 	"sapiens_bot",
-	"sapiens_exp"
+	"sapiens_exp",
+	"xtask",
 ]
 resolver = "2"
 
@@ -22,3 +23,34 @@ publish = true
 
 keywords = ["bot", "language-model"]
 categories = ["science"]
+
+[workspace.lints.clippy]
+all = { priority = -1, level = "deny" }
+cargo = { priority = -1, level = "deny" }
+complexity = { priority = -1, level = "deny" }
+correctness = { priority = -1, level = "deny" }
+nursery = { priority = -1, level = "deny" }
+pedantic = { priority = -1, level = "deny" }
+perf = { priority = -1, level = "deny" }
+style = { priority = -1, level = "deny" }
+suspicious = { priority = -1, level = "deny" }
+
+# unwrap_used = "deny"
+missing_errors_doc = "allow"
+multiple_crate_versions = "allow"
+option_if_let_else = "allow"
+must-use-candidate = "warn"
+missing_docs_in_private_items = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+redundant_pub_crate = "allow"
+cast_precision_loss = "allow"
+float_cmp = "allow"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "warn"
+
+[workspace.lints.rust]
+unused_must_use = "deny"
+unused_imports = "deny"
+unreachable_pub = "deny"

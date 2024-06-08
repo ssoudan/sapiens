@@ -1,4 +1,4 @@
-use super::*;
+use super::{Agent, Context, Error, Message, Scheduler, WeakRuntimeObserver};
 use crate::chains;
 
 /// A simple scheduler that can be used to schedule agents
@@ -6,14 +6,18 @@ use crate::chains;
 /// It has only one agent and a maximum number of steps.
 /// Since it has only one agent, it will always schedule the same agent.
 pub struct SingleAgentScheduler<E> {
+    /// Remaining steps
     remaining_steps: usize,
+    /// The agent
     agent: Box<dyn Agent<Error = E>>,
+    /// Observer
     #[allow(dead_code)]
     observer: WeakRuntimeObserver,
 }
 
 impl<E> SingleAgentScheduler<E> {
     /// Create a new scheduler with a maximum number of steps and an agent
+    #[must_use]
     pub fn new(
         max_steps: usize,
         agent: Box<dyn Agent<Error = E>>,
@@ -58,6 +62,7 @@ pub struct MultiAgentScheduler<E> {
 impl<E> MultiAgentScheduler<E> {
     /// Create a new scheduler with a maximum number of steps and a list of
     /// agents
+    #[must_use]
     pub fn new(
         max_steps: usize,
         agents: Vec<Box<dyn Agent<Error = E>>>,

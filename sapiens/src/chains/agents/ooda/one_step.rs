@@ -115,11 +115,8 @@ parameters:
 
 impl Agent {
     /// Create a new [`Agent`].
-    pub async fn new(
-        config: SapiensConfig,
-        toolbox: Toolbox,
-        observer: WeakRuntimeObserver,
-    ) -> Self {
+    #[must_use]
+    pub fn new(config: SapiensConfig, toolbox: Toolbox, observer: WeakRuntimeObserver) -> Self {
         let system_prompt =
             "You are an agent named Sapiens interacting with the WORLD. Listen to the WORLD!"
                 .to_string();
@@ -178,12 +175,10 @@ impl Agent {
             match m {
                 Message::Action { content, .. } => {
                     // Add the action to the chat history as a message from the Assistant
-                    chat_history
-                        .add_chitchat(ChatEntry {
-                            msg: content.to_string(),
-                            role: Role::Assistant,
-                        })
-                        .await;
+                    chat_history.add_chitchat(ChatEntry {
+                        msg: content.to_string(),
+                        role: Role::Assistant,
+                    });
                 }
                 Message::ActionResult {
                     invocation_count,
@@ -191,7 +186,7 @@ impl Agent {
                     outcome,
                     ..
                 } => {
-                    let entry = format_outcome(&task, invocation_count, tool_name, outcome);
+                    let entry = format_outcome(&task, *invocation_count, tool_name, outcome);
 
                     // add an error message to the chat history
                     let entry = ChatEntry {
@@ -200,7 +195,7 @@ impl Agent {
                     };
 
                     // Add the response to the chat history
-                    chat_history.add_chitchat(entry).await;
+                    chat_history.add_chitchat(entry);
                 }
                 _ => {
                     // Nothing
@@ -210,12 +205,10 @@ impl Agent {
 
         if chat_history.is_chitchat_empty() {
             // Add the recurring prompts to the chat history
-            chat_history
-                .add_chitchat(ChatEntry {
-                    msg: task.to_prompt(),
-                    role: Role::User,
-                })
-                .await;
+            chat_history.add_chitchat(ChatEntry {
+                msg: task.to_prompt(),
+                role: Role::User,
+            });
         }
 
         // prune the history if needed
@@ -330,11 +323,11 @@ mod tests {
                 .to_string(),
             ),
             outcome: Outcome::Success {
-                result: indoc! {r#"
+                result: indoc! {r"
                 stdout: |
                   The sorted list is [1, 2, 3, 4, 5]
                 stderr: ''
-                "#}
+                "}
                 .to_string(),
             },
         });
@@ -343,7 +336,7 @@ mod tests {
 
         let observer = void_observer();
         let weak_observer = Arc::downgrade(&observer);
-        let agent = Agent::new(Default::default(), toolbox, weak_observer).await;
+        let agent = Agent::new(SapiensConfig::default(), toolbox, weak_observer);
 
         let chat_history = agent.convert_context_to_chat_history(&context).await;
 

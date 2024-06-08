@@ -39,7 +39,10 @@ impl From<&sapiens::models::Usage> for Usage {
 }
 
 fn to_lines(s: impl AsRef<str>) -> Vec<String> {
-    s.as_ref().split('\n').map(|s| s.to_string()).collect()
+    s.as_ref()
+        .split('\n')
+        .map(std::string::ToString::to_string)
+        .collect()
 }
 
 impl Add for Usage {
@@ -184,27 +187,27 @@ pub struct EventAndState {
 
 impl Event {
     /// Get the token usage
+    #[must_use]
     pub fn tokens(&self) -> Option<Usage> {
         match &self {
-            Event::Prompt { .. } => None,
-            Event::Start { .. } => None,
-            Event::End(_) => None,
-            Event::ToolInvocationSucceeded { .. } => None,
-            Event::ToolInvocationFailed { .. } => None,
-            Event::InvalidInvocation { .. } => None,
-            Event::Message { message, .. } => match message {
-                Message::Task { .. } => None,
-                Message::Observation { usage, .. } => usage.as_ref().map(|x| x.into()),
-                Message::Orientation { usage, .. } => usage.as_ref().map(|x| x.into()),
-                Message::Decision { usage, .. } => usage.as_ref().map(|x| x.into()),
-                Message::Action { usage, .. } => usage.as_ref().map(|x| x.into()),
-                Message::ActionResult { .. } => None,
+            Self::Prompt { .. }
+            | Self::Start { .. }
+            | Self::End(_)
+            | Self::ToolInvocationSucceeded { .. }
+            | Self::ToolInvocationFailed { .. }
+            | Self::InvalidInvocation { .. } => None,
+            Self::Message { message, .. } => match message {
+                Message::Observation { usage, .. }
+                | Message::Orientation { usage, .. }
+                | Message::Decision { usage, .. }
+                | Message::Action { usage, .. } => usage.as_ref().map(std::convert::Into::into),
+                Message::Task { .. } | Message::ActionResult { .. } => None,
             },
         }
     }
 
     /// Wrap the event in an [`EventAndState`] with the given `state`
-    fn into_event_and_state(self, state: Option<String>) -> EventAndState {
+    const fn into_event_and_state(self, state: Option<String>) -> EventAndState {
         EventAndState { event: self, state }
     }
 }
@@ -263,6 +266,7 @@ impl TraceObserver {
             let guard = state.lock().await;
 
             let state = guard.state();
+            drop(guard);
             info!("Current state: {}", state);
             Some(state)
         } else {
@@ -312,7 +316,7 @@ impl From<InvocationSuccessNotification> for Event {
             result,
         } = notification;
 
-        Event::ToolInvocationSucceeded {
+        Self::ToolInvocationSucceeded {
             tool_name,
             invocation_count,
             extracted_input: to_lines(extracted_input),
@@ -330,11 +334,11 @@ impl From<InvocationFailureNotification> for Event {
             e,
         } = notification;
 
-        Event::ToolInvocationFailed {
+        Self::ToolInvocationFailed {
             tool_name,
             invocation_count,
             extracted_input: to_lines(extracted_input),
-            error: to_lines(format!("{}", e)),
+            error: to_lines(format!("{e}")),
         }
     }
 }
@@ -346,16 +350,16 @@ impl From<InvalidInvocationNotification> for Event {
             invocation_count,
         } = notification;
 
-        Event::InvalidInvocation {
+        Self::InvalidInvocation {
             invocation_count,
-            error: to_lines(format!("{}", e)),
+            error: to_lines(format!("{e}")),
         }
     }
 }
 
 impl From<MessageNotification> for Event {
     fn from(notification: MessageNotification) -> Self {
-        Event::Message {
+        Self::Message {
             message: notification.message,
         }
     }

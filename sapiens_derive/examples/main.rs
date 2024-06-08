@@ -23,7 +23,7 @@ struct Cat2 {
 
 impl ToTokens for Cat2 {
     fn to_tokens(&self, out: &mut proc_macro2::TokenStream) {
-        let Cat2 {
+        let Self {
             ref ident,
             ref generics,
             ref data,
@@ -97,7 +97,7 @@ impl ToTokens for Cat2 {
                     ].into()
                 }
             }
-        })
+        });
     }
 }
 
@@ -123,16 +123,15 @@ pub struct Foo {
         r#"
 INPUT:
 
-{}
+{input}
 
 PARSED AS:
 
-{:?}
+{receiver:?}
 
 EMITS:
 
-{}
-    "#,
-        input, receiver, tokens
+{tokens}
+    "#
     );
 }

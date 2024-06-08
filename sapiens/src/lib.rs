@@ -9,14 +9,14 @@
 //! interaction between the user, the language model and the tools.
 //!
 //! # More information
-//! See https://github.com/ssoudan/sapiens/tree/main/sapiens_cli for an example of usage or
-//! https://github.com/ssoudan/sapiens/tree/main/sapiens_bot for a Discord bot.
+//! See <https://github.com/ssoudan/sapiens/tree/main/sapiens_cli> for an example of usage or
+//! <https://github.com/ssoudan/sapiens/tree/main/sapiens_bot> for a Discord bot.
 //!
-//! https://github.com/ssoudan/sapiens/tree/main/sapiens_exp is a framework to run experiments and collect traces
+//! <https://github.com/ssoudan/sapiens/tree/main/sapiens_exp> is a framework to run experiments and collect traces
 //! of the interactions between the language model and the tools to accomplish a
 //! task.
 //!
-//! A collection of tools is defined in https://github.com/ssoudan/sapiens/tree/main/sapiens_tools.
+//! A collection of tools is defined in <https://github.com/ssoudan/sapiens/tree/main/sapiens_tools>.
 pub mod context;
 
 /// Prompt generation logic
@@ -42,9 +42,8 @@ use crate::chains::{Chain, Message, MultiStepOODAChain, SingleStepOODAChain};
 use crate::context::{ChatEntry, ContextDump};
 use crate::models::openai::OpenAI;
 use crate::models::{ModelRef, ModelResponse, Role, Usage};
-use crate::tools::invocation::InvocationError;
 use crate::tools::toolbox::{InvokeResult, Toolbox};
-use crate::tools::{TerminationMessage, ToolUseError};
+use crate::tools::{invocation, TerminationMessage, ToolUseError};
 
 /// The error type for the bot
 #[derive(thiserror::Error, Debug)]
@@ -81,9 +80,9 @@ impl FromStr for ChainType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "single-step-ooda" => Ok(ChainType::SingleStepOODA),
-            "multi-step-ooda" => Ok(ChainType::MultiStepOODA),
-            _ => Err(format!("Unknown chain type: {}", s)),
+            "single-step-ooda" => Ok(Self::SingleStepOODA),
+            "multi-step-ooda" => Ok(Self::MultiStepOODA),
+            _ => Err(format!("Unknown chain type: {s}")),
         }
     }
 }
@@ -91,13 +90,13 @@ impl FromStr for ChainType {
 #[cfg(feature = "clap")]
 impl clap::ValueEnum for ChainType {
     fn value_variants<'a>() -> &'a [Self] {
-        &[ChainType::SingleStepOODA, ChainType::MultiStepOODA]
+        &[Self::SingleStepOODA, Self::MultiStepOODA]
     }
 
     fn to_possible_value(&self) -> Option<PossibleValue> {
         match self {
-            ChainType::SingleStepOODA => Some(PossibleValue::new("single-step-ooda")),
-            ChainType::MultiStepOODA => Some(PossibleValue::new("multi-step-ooda")),
+            Self::SingleStepOODA => Some(PossibleValue::new("single-step-ooda")),
+            Self::MultiStepOODA => Some(PossibleValue::new("multi-step-ooda")),
         }
     }
 }
@@ -117,6 +116,7 @@ pub struct SapiensConfig {
     pub max_tokens: Option<usize>,
 }
 
+#[allow(clippy::missing_fields_in_debug)]
 impl Debug for SapiensConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Config")
@@ -188,7 +188,7 @@ impl From<InvokeResult> for InvocationResultNotification {
     fn from(res: InvokeResult) -> Self {
         match res {
             InvokeResult::NoInvocationsFound { e } => {
-                InvocationResultNotification::InvalidInvocation(InvalidInvocationNotification {
+                Self::InvalidInvocation(InvalidInvocationNotification {
                     e,
                     invocation_count: 0,
                 })
@@ -196,7 +196,7 @@ impl From<InvokeResult> for InvocationResultNotification {
             InvokeResult::NoValidInvocationsFound {
                 e,
                 invocation_count,
-            } => InvocationResultNotification::InvalidInvocation(InvalidInvocationNotification {
+            } => Self::InvalidInvocation(InvalidInvocationNotification {
                 e,
                 invocation_count,
             }),
@@ -205,7 +205,7 @@ impl From<InvokeResult> for InvocationResultNotification {
                 tool_name,
                 extracted_input,
                 result,
-            } => InvocationResultNotification::InvocationSuccess(InvocationSuccessNotification {
+            } => Self::InvocationSuccess(InvocationSuccessNotification {
                 invocation_count,
                 tool_name,
                 extracted_input,
@@ -216,7 +216,7 @@ impl From<InvokeResult> for InvocationResultNotification {
                 tool_name,
                 extracted_input,
                 e,
-            } => InvocationResultNotification::InvocationFailure(InvocationFailureNotification {
+            } => Self::InvocationFailure(InvocationFailureNotification {
                 invocation_count,
                 tool_name,
                 extracted_input,
@@ -253,7 +253,7 @@ pub struct InvocationFailureNotification {
 /// Invalid invocation notification
 pub struct InvalidInvocationNotification {
     /// The result
-    pub e: InvocationError,
+    pub e: invocation::Error,
     /// Number of invocation blocks in the message
     pub invocation_count: usize,
 }
@@ -313,7 +313,9 @@ impl RuntimeObserver for VoidTaskProgressUpdateObserver {}
 
 /// A step in the task
 pub struct Step {
+    /// The actual task chain
     task_chain: Box<dyn Chain>,
+    /// The observer
     observer: WeakRuntimeObserver,
 }
 
@@ -367,11 +369,12 @@ pub enum TaskState {
 
 impl TaskState {
     /// Create a new [`TaskState`] for a `task`.
+    ///     
     pub async fn new(config: SapiensConfig, toolbox: Toolbox, task: String) -> Result<Self, Error> {
         let observer = wrap_observer(VoidTaskProgressUpdateObserver {});
         let observer = Arc::downgrade(&observer);
 
-        TaskState::with_observer(config, toolbox, task, observer).await
+        Self::with_observer(config, toolbox, task, observer).await
     }
 
     /// Create a new [`TaskState`] for a `task`.
@@ -379,6 +382,10 @@ impl TaskState {
     /// The `observer` will be called when the task starts and when a step is
     /// completed - either successfully or not. The `observer` will be called
     /// with the latest chat history element. It is also called on error.
+    ///
+    /// # Errors
+    ///
+    /// If the chain cannot be created, an error is returned.
     pub async fn with_observer(
         config: SapiensConfig,
         toolbox: Toolbox,
@@ -409,7 +416,7 @@ impl TaskState {
             observer.lock().await.on_start(task_chain.dump()).await;
         }
 
-        Ok(TaskState::Step {
+        Ok(Self::Step {
             step: Step {
                 task_chain,
                 observer,
@@ -421,10 +428,10 @@ impl TaskState {
     pub async fn run(mut self) -> Result<Stop, Error> {
         loop {
             match self {
-                TaskState::Step { step } => {
+                Self::Step { step } => {
                     self = step.step().await?;
                 }
-                TaskState::Stop { stop } => {
+                Self::Stop { stop } => {
                     return Ok(stop);
                 }
             }
@@ -434,16 +441,17 @@ impl TaskState {
     /// Run the task for a single step
     pub async fn step(self) -> Result<Self, Error> {
         match self {
-            TaskState::Step { step } => step.step().await,
-            TaskState::Stop { stop } => Ok(TaskState::Stop { stop }),
+            Self::Step { step } => step.step().await,
+            Self::Stop { stop } => Ok(Self::Stop { stop }),
         }
     }
 
     /// is the task done?
+    #[must_use]
     pub fn is_done(&self) -> Option<Vec<TerminationMessage>> {
         match self {
-            TaskState::Step { step: _ } => None,
-            TaskState::Stop { stop } => Some(stop.termination_messages.clone()),
+            Self::Step { step: _ } => None,
+            Self::Stop { stop } => Some(stop.termination_messages.clone()),
         }
     }
 }

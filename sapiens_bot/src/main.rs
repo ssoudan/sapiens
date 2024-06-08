@@ -193,10 +193,8 @@ impl Handler {
             debug!("Received job update: {:#?}", job_update);
 
             let msgs = match job_update {
-                JobUpdate::Completed(v) => Some(v),
-                JobUpdate::Vec(v) => Some(v),
-                JobUpdate::FailedToStart(e) => Some(e),
-                JobUpdate::ToolError(e) => Some(e),
+                JobUpdate::Completed(v) | JobUpdate::Vec(v) => Some(v),
+                JobUpdate::FailedToStart(e) | JobUpdate::ToolError(e) => Some(e),
                 JobUpdate::Over => None,
             };
 
@@ -263,7 +261,7 @@ async fn main() -> PyResult<()> {
 
     // Remove all environment variables from the environment
     for (key, _) in env::vars() {
-        env::remove_var(key);
+        unsafe { env::remove_var(key) };
     }
     assert!(env::vars().next().is_none(), "Environment is not empty");
     ////////////////////////////////////////////////

@@ -14,6 +14,7 @@ use crate::hue::Light;
     input = "StatusToolInput",
     output = "StatusToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct StatusTool {
     bridge: huelib2::bridge::Bridge,
 }
@@ -35,6 +36,7 @@ impl Default for StatusTool {
 
 /// The input of the tool
 #[derive(Debug, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct StatusToolInput {
     /// The list of Lights IDs (<string>) to get the status for, e.g.: `["1",
     /// "2"]`. To get all the lights: `[]`
@@ -43,6 +45,7 @@ pub struct StatusToolInput {
 
 /// The output of the tool
 #[derive(Debug, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct StatusToolOutput {
     /// A list of Lights with their statuses. E.g.: `[{"id": "1", "name":
     /// "Corridor", "on": True, "brightness": 126, "hue": 2456, "saturation":
@@ -51,9 +54,10 @@ pub struct StatusToolOutput {
 }
 
 impl StatusTool {
-    /// Create a new StatusTool
-    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
-        StatusTool { bridge }
+    /// Create a new `StatusTool`
+    #[must_use]
+    pub const fn new(bridge: huelib2::bridge::Bridge) -> Self {
+        Self { bridge }
     }
 
     #[tracing::instrument(skip(self))]
@@ -89,6 +93,7 @@ impl StatusTool {
     input = "SetStatusToolInput",
     output = "StatusToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct SetStatusTool {
     bridge: huelib2::bridge::Bridge,
 }
@@ -100,9 +105,10 @@ impl Debug for SetStatusTool {
 }
 
 impl SetStatusTool {
-    /// Create a new StatusTool
-    pub fn new(bridge: huelib2::bridge::Bridge) -> Self {
-        SetStatusTool { bridge }
+    /// Create a new `StatusTool`
+    #[must_use]
+    pub const fn new(bridge: huelib2::bridge::Bridge) -> Self {
+        Self { bridge }
     }
 
     #[tracing::instrument(skip(self))]
@@ -154,7 +160,7 @@ impl SetStatusTool {
             .get_all_lights()
             .map_err(|e| ToolUseError::InvocationFailed(e.to_string()))?
             .into_iter()
-            .map(|l| l.into())
+            .map(std::convert::Into::into)
             .collect();
 
         // filter lights
@@ -195,7 +201,7 @@ pub struct SetStatusToolInput {
     pub lights: Option<Vec<Light>>,
 }
 
-/// A fake StatusTool
+/// A fake `StatusTool`
 pub mod fake {
     use sapiens::tools::{
         Describe, ProtoToolDescribe, ProtoToolInvoke, ToolDescription, ToolUseError,
@@ -204,13 +210,15 @@ pub mod fake {
     use crate::hue::status::{StatusToolInput, StatusToolOutput};
     use crate::hue::{Light, State};
 
-    /// A fake StatusTool
+    /// A fake `StatusTool`
+    #[allow(clippy::module_name_repetitions)]
     pub struct FakeStatusTool {}
 
     impl FakeStatusTool {
-        /// Create a new StatusTool
-        pub fn new() -> Self {
-            FakeStatusTool {}
+        /// Create a new `StatusTool`
+        #[must_use]
+        pub const fn new() -> Self {
+            Self {}
         }
     }
 

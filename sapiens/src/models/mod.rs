@@ -37,7 +37,7 @@ pub enum Error {
 }
 
 /// Roles in the conversation
-#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     /// The system
@@ -56,11 +56,11 @@ pub enum Role {
 impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Role::System => write!(f, "system"),
-            Role::User => write!(f, "user"),
-            Role::Assistant => write!(f, "assistant"),
-            Role::Function => write!(f, "function"),
-            Role::Tool => write!(f, "tool"),
+            Self::System => write!(f, "system"),
+            Self::User => write!(f, "user"),
+            Self::Assistant => write!(f, "assistant"),
+            Self::Function => write!(f, "function"),
+            Self::Tool => write!(f, "tool"),
         }
     }
 }
@@ -118,7 +118,7 @@ impl Debug for ModelResponse {
         writeln!(f, "ModelResponse {{ ")?;
         write!(f, "msg: \n{}, \n", &self.msg)?;
         if let Some(usage) = &self.usage {
-            writeln!(f, "usage: {:#?}, ", usage)?;
+            writeln!(f, "usage: {usage:#?}, ")?;
         }
         if let Some(finish_reason) = &self.finish_reason {
             writeln!(f, "finish_reason: {}, ", &finish_reason)?;
@@ -167,16 +167,16 @@ pub enum SupportedModel {
 impl Display for SupportedModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
-            SupportedModel::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-            SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
-            SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
-            SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
-            SupportedModel::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
-            SupportedModel::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
+            Self::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            Self::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
+            Self::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
+            Self::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
+            Self::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
+            Self::ChatBison001 => write!(f, "chat-bison-001"),
+            Self::OllamaMixtral => write!(f, "ollama-mixtral"),
+            Self::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
+            Self::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
+            Self::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
         }
     }
 }
@@ -184,16 +184,16 @@ impl Display for SupportedModel {
 impl Debug for SupportedModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SupportedModel::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
-            SupportedModel::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
-            SupportedModel::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
-            SupportedModel::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
-            SupportedModel::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
-            SupportedModel::ChatBison001 => write!(f, "chat-bison-001"),
-            SupportedModel::OllamaMixtral => write!(f, "ollama-mixtral"),
-            SupportedModel::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
-            SupportedModel::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
-            SupportedModel::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
+            Self::GPT3_5Turbo => write!(f, "gpt-3.5-turbo"),
+            Self::GPT3_5Turbo0613 => write!(f, "gpt-3.5-turbo-0613"),
+            Self::GPT3_5Turbo16k => write!(f, "gpt-3.5-turbo-16k"),
+            Self::Vicuna7B1_1 => write!(f, "vicuna-7b-1.1"),
+            Self::Vicuna13B1_1 => write!(f, "vicuna-13b-1.1"),
+            Self::ChatBison001 => write!(f, "chat-bison-001"),
+            Self::OllamaMixtral => write!(f, "ollama-mixtral"),
+            Self::OllamaLlamaPro => write!(f, "ollama-llama-pro"),
+            Self::OllamaLlama3Instruct => write!(f, "ollama-llama3:instruct"),
+            Self::OllamaLlama370BInstruct => write!(f, "ollama-llama3:70b-instruct"),
         }
     }
 }
@@ -222,45 +222,33 @@ impl FromStr for SupportedModel {
 impl clap::ValueEnum for SupportedModel {
     fn value_variants<'a>() -> &'a [Self] {
         &[
-            SupportedModel::GPT3_5Turbo,
-            SupportedModel::GPT3_5Turbo0613,
-            SupportedModel::GPT3_5Turbo16k,
-            SupportedModel::Vicuna7B1_1,
-            SupportedModel::Vicuna13B1_1,
-            SupportedModel::ChatBison001,
-            SupportedModel::OllamaMixtral,
-            SupportedModel::OllamaLlamaPro,
-            SupportedModel::OllamaLlama3Instruct,
-            SupportedModel::OllamaLlama370BInstruct,
+            Self::GPT3_5Turbo,
+            Self::GPT3_5Turbo0613,
+            Self::GPT3_5Turbo16k,
+            Self::Vicuna7B1_1,
+            Self::Vicuna13B1_1,
+            Self::ChatBison001,
+            Self::OllamaMixtral,
+            Self::OllamaLlamaPro,
+            Self::OllamaLlama3Instruct,
+            Self::OllamaLlama370BInstruct,
         ]
     }
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         match self {
-            SupportedModel::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
-            SupportedModel::GPT3_5Turbo0613 => {
-                Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-0613"))
-            }
-            SupportedModel::GPT3_5Turbo16k => {
-                Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-16k"))
-            }
-            SupportedModel::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
-            SupportedModel::Vicuna13B1_1 => {
-                Some(clap::builder::PossibleValue::new("vicuna-13b-1.1"))
-            }
-            SupportedModel::ChatBison001 => {
-                Some(clap::builder::PossibleValue::new("chat-bison-001"))
-            }
-            SupportedModel::OllamaMixtral => {
-                Some(clap::builder::PossibleValue::new("ollama-mixtral"))
-            }
-            SupportedModel::OllamaLlamaPro => {
-                Some(clap::builder::PossibleValue::new("ollama-llama-pro"))
-            }
-            SupportedModel::OllamaLlama3Instruct => {
+            Self::GPT3_5Turbo => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo")),
+            Self::GPT3_5Turbo0613 => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-0613")),
+            Self::GPT3_5Turbo16k => Some(clap::builder::PossibleValue::new("gpt-3.5-turbo-16k")),
+            Self::Vicuna7B1_1 => Some(clap::builder::PossibleValue::new("vicuna-7b-1.1")),
+            Self::Vicuna13B1_1 => Some(clap::builder::PossibleValue::new("vicuna-13b-1.1")),
+            Self::ChatBison001 => Some(clap::builder::PossibleValue::new("chat-bison-001")),
+            Self::OllamaMixtral => Some(clap::builder::PossibleValue::new("ollama-mixtral")),
+            Self::OllamaLlamaPro => Some(clap::builder::PossibleValue::new("ollama-llama-pro")),
+            Self::OllamaLlama3Instruct => {
                 Some(clap::builder::PossibleValue::new("ollama-llama3:instruct"))
             }
-            SupportedModel::OllamaLlama370BInstruct => Some(clap::builder::PossibleValue::new(
+            Self::OllamaLlama370BInstruct => Some(clap::builder::PossibleValue::new(
                 "ollama-llama3:70b-instruct",
             )),
         }

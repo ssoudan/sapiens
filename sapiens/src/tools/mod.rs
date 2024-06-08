@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use toolbox::Toolbox;
 use tracing::warn;
 
-use crate::tools::invocation::{ExtractedInvocations, InvocationError};
+use crate::tools::invocation::{Error, ExtractedInvocations};
 
 /// Tools to extract Tool invocations from a messages
 pub mod invocation;
@@ -58,7 +58,7 @@ impl Serialize for Format {
 
 impl From<Vec<FieldFormat>> for Format {
     fn from(fields: Vec<FieldFormat>) -> Self {
-        Format { fields }
+        Self { fields }
     }
 }
 
@@ -77,13 +77,14 @@ pub struct ToolDescription {
 
 impl ToolDescription {
     /// Create a new tool description
+    #[must_use]
     pub fn new(
         name: &str,
         description: &str,
         parameters: Format,
         responses_content: Format,
     ) -> Self {
-        ToolDescription {
+        Self {
             name: name.to_string(),
             description: description.to_string(),
             parameters,
@@ -149,9 +150,9 @@ pub trait Tool: Sync + Send {
 }
 
 #[async_trait::async_trait]
-impl<T: Sync + Send> Tool for T
+impl<T> Tool for T
 where
-    T: ProtoToolDescribe + ProtoToolInvoke,
+    T: Sync + Send + ProtoToolDescribe + ProtoToolInvoke,
 {
     fn description(&self) -> ToolDescription {
         self.description()
@@ -199,19 +200,15 @@ pub trait AdvancedTool: Tool {
     ) -> Result<serde_yaml::Value, ToolUseError>;
 }
 
-async fn choose_invocation(
-    tool_invocations: ExtractedInvocations,
-) -> Result<ToolInvocationInput, InvocationError> {
+fn choose_invocation(tool_invocations: ExtractedInvocations) -> Result<ToolInvocationInput, Error> {
     // TODO(ssoudan) customizable level of strictness
     if tool_invocations.yaml_block_count > 1 {
-        return Err(InvocationError::TooManyYamlBlocks(
-            tool_invocations.yaml_block_count,
-        ));
+        return Err(Error::TooManyYamlBlocks(tool_invocations.yaml_block_count));
     }
 
     // if no tool_invocations are found, we return an error
     if tool_invocations.invocations.is_empty() {
-        return Err(InvocationError::NoInvocationFound);
+        return Err(Error::NoInvocationFound);
     }
 
     // We just take the first one
@@ -246,8 +243,6 @@ async fn choose_invocation(
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use insta::assert_snapshot;
     use serde::{Deserialize, Serialize};
 
@@ -286,7 +281,7 @@ mod tests {
         let invocation = super::ToolInvocationInput {
             tool_name: "Search".to_string(),
             parameters: serde_yaml::to_value(input).unwrap(),
-            junk: HashMap::from_iter(junk.into_iter()),
+            junk: junk.into_iter().collect(),
         };
 
         let serialized = serde_yaml::to_string(&invocation).unwrap();

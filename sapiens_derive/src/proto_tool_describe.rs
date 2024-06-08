@@ -1,3 +1,4 @@
+//! The `ProtoToolDescribe` derive macro.
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
@@ -7,19 +8,23 @@ use syn::Expr;
 #[derive(Debug, FromDeriveInput)]
 #[darling(attributes(tool), supports(struct_named), forward_attrs(doc))]
 struct DeriveReceiver {
+    /// The struct or enum that the derive macro is being applied to.
     ident: syn::Ident,
+    /// The attributes of the struct or enum.
     attrs: Vec<syn::Attribute>,
+    /// The generics of the struct or enum.
     generics: syn::Generics,
-
+    /// The name
     name: Option<String>,
-
+    /// The input type
     input: syn::Path,
+    /// The output type
     output: syn::Path,
 }
 
 impl ToTokens for DeriveReceiver {
     fn to_tokens(&self, out: &mut proc_macro2::TokenStream) {
-        let DeriveReceiver {
+        let Self {
             ref ident,
             ref attrs,
             ref generics,
@@ -59,11 +64,9 @@ impl ToTokens for DeriveReceiver {
             doc
         };
 
-        let name = if let Some(name) = name {
-            name.clone()
-        } else {
-            ident.to_string()
-        };
+        let name = name
+            .as_ref()
+            .map_or_else(|| ident.to_string(), std::clone::Clone::clone);
 
         // dbg!(input);
 
@@ -84,12 +87,12 @@ impl ToTokens for DeriveReceiver {
                     }
                 }
             }
-        })
+        });
     }
 }
 
 /// The entry point for the `ProtoToolDescribe` derive macro expansion.
-pub fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
+pub(crate) fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
     let receiver = match DeriveReceiver::from_derive_input(input) {
         Ok(parsed) => parsed,
         Err(e) => return e.write_errors().into(),

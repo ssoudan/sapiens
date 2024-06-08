@@ -36,8 +36,8 @@ pub enum C2COff {
 impl Display for C2COff {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            C2COff::Off => write!(f, "0"),
-            C2COff::On => write!(f, "1"),
+            Self::Off => write!(f, "0"),
+            Self::On => write!(f, "1"),
         }
     }
 }
@@ -45,7 +45,7 @@ impl Display for C2COff {
 /// Country Restriction
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Cr {
-    /// Country code - See https://developers.google.com/custom-search/docs/json_api_reference#countryCollections
+    /// Country code - See <https://developers.google.com/custom-search/docs/json_api_reference#countryCollections>
     Country(String),
     /// Not
     Not(Box<Cr>),
@@ -58,10 +58,10 @@ pub enum Cr {
 impl Display for Cr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Cr::Country(country) => write!(f, "{}", country),
-            Cr::Not(cr) => write!(f, "-{}", cr),
-            Cr::And(cr1, cr2) => write!(f, "({}).({})", cr1, cr2),
-            Cr::Or(cr1, cr2) => write!(f, "({}|{})", cr1, cr2),
+            Self::Country(country) => write!(f, "{country}"),
+            Self::Not(cr) => write!(f, "-{cr}"),
+            Self::And(cr1, cr2) => write!(f, "({cr1}).({cr2})"),
+            Self::Or(cr1, cr2) => write!(f, "({cr1}|{cr2})"),
         }
     }
 }
@@ -82,10 +82,10 @@ pub enum DateRestrict {
 impl Display for DateRestrict {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            DateRestrict::Day(day) => write!(f, "d{}", day),
-            DateRestrict::Week(week) => write!(f, "w{}", week),
-            DateRestrict::Month(month) => write!(f, "m{}", month),
-            DateRestrict::Year(year) => write!(f, "y{}", year),
+            Self::Day(day) => write!(f, "d{day}"),
+            Self::Week(week) => write!(f, "w{week}"),
+            Self::Month(month) => write!(f, "m{month}"),
+            Self::Year(year) => write!(f, "y{year}"),
         }
     }
 }
@@ -102,8 +102,8 @@ pub enum DuplicateContentFilter {
 impl Display for DuplicateContentFilter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            DuplicateContentFilter::Off => write!(f, "0"),
-            DuplicateContentFilter::On => write!(f, "1"),
+            Self::Off => write!(f, "0"),
+            Self::On => write!(f, "1"),
         }
     }
 }
@@ -111,7 +111,7 @@ impl Display for DuplicateContentFilter {
 /// Geolocation of end user
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Gl {
-    /// Country code - See https://developers.google.com/custom-search/docs/json_api_reference#country-codes
+    /// Country code - See <https://developers.google.com/custom-search/docs/json_api_reference#country-codes>
     /// (2 letters lower case).
     CountryCode(String),
 }
@@ -119,7 +119,7 @@ pub enum Gl {
 impl Display for Gl {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Gl::CountryCode(country_code) => write!(f, "{}", country_code),
+            Self::CountryCode(country_code) => write!(f, "{country_code}"),
         }
     }
 }
@@ -140,16 +140,16 @@ pub enum ImgColorType {
 impl Display for ImgColorType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImgColorType::Color => {
+            Self::Color => {
                 write!(f, "color")
             }
-            ImgColorType::Gray => {
+            Self::Gray => {
                 write!(f, "gray")
             }
-            ImgColorType::Mono => {
+            Self::Mono => {
                 write!(f, "mono")
             }
-            ImgColorType::Trans => {
+            Self::Trans => {
                 write!(f, "trans")
             }
         }
@@ -188,40 +188,40 @@ pub enum ImgDominantColor {
 impl Display for ImgDominantColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImgDominantColor::Black => {
+            Self::Black => {
                 write!(f, "black")
             }
-            ImgDominantColor::Blue => {
+            Self::Blue => {
                 write!(f, "blue")
             }
-            ImgDominantColor::Brown => {
+            Self::Brown => {
                 write!(f, "brown")
             }
-            ImgDominantColor::Gray => {
+            Self::Gray => {
                 write!(f, "gray")
             }
-            ImgDominantColor::Green => {
+            Self::Green => {
                 write!(f, "green")
             }
-            ImgDominantColor::Orange => {
+            Self::Orange => {
                 write!(f, "orange")
             }
-            ImgDominantColor::Pink => {
+            Self::Pink => {
                 write!(f, "pink")
             }
-            ImgDominantColor::Purple => {
+            Self::Purple => {
                 write!(f, "purple")
             }
-            ImgDominantColor::Red => {
+            Self::Red => {
                 write!(f, "red")
             }
-            ImgDominantColor::Teal => {
+            Self::Teal => {
                 write!(f, "teal")
             }
-            ImgDominantColor::White => {
+            Self::White => {
                 write!(f, "white")
             }
-            ImgDominantColor::Yellow => {
+            Self::Yellow => {
                 write!(f, "yellow")
             }
         }
@@ -250,25 +250,25 @@ pub enum ImgSize {
 impl Display for ImgSize {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImgSize::Icon => {
+            Self::Icon => {
                 write!(f, "icon")
             }
-            ImgSize::Small => {
+            Self::Small => {
                 write!(f, "small")
             }
-            ImgSize::Medium => {
+            Self::Medium => {
                 write!(f, "medium")
             }
-            ImgSize::Large => {
+            Self::Large => {
                 write!(f, "large")
             }
-            ImgSize::Xlarge => {
+            Self::Xlarge => {
                 write!(f, "xlarge")
             }
-            ImgSize::Xxlarge => {
+            Self::Xxlarge => {
                 write!(f, "xxlarge")
             }
-            ImgSize::Huge => {
+            Self::Huge => {
                 write!(f, "huge")
             }
         }
@@ -295,22 +295,22 @@ pub enum ImgType {
 impl Display for ImgType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ImgType::Face => {
+            Self::Face => {
                 write!(f, "face")
             }
-            ImgType::Photo => {
+            Self::Photo => {
                 write!(f, "photo")
             }
-            ImgType::Clipart => {
+            Self::Clipart => {
                 write!(f, "clipart")
             }
-            ImgType::Lineart => {
+            Self::Lineart => {
                 write!(f, "lineart")
             }
-            ImgType::Animated => {
+            Self::Animated => {
                 write!(f, "animated")
             }
-            ImgType::Stock => {
+            Self::Stock => {
                 write!(f, "stock")
             }
         }
@@ -361,41 +361,41 @@ pub enum Lr {
 impl Display for Lr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Lr::LangAr => write!(f, "lang_ar"),
-            Lr::LangBg => write!(f, "lang_bg"),
-            Lr::LangCa => write!(f, "lang_ca"),
-            Lr::LangCs => write!(f, "lang_cs"),
-            Lr::LangDa => write!(f, "lang_da"),
-            Lr::LangDe => write!(f, "lang_de"),
-            Lr::LangEl => write!(f, "lang_el"),
-            Lr::LangEn => write!(f, "lang_en"),
-            Lr::LangEs => write!(f, "lang_es"),
-            Lr::LangEt => write!(f, "lang_et"),
-            Lr::LangFi => write!(f, "lang_fi"),
-            Lr::LangFr => write!(f, "lang_fr"),
-            Lr::LangHr => write!(f, "lang_hr"),
-            Lr::LangHu => write!(f, "lang_hu"),
-            Lr::LangId => write!(f, "lang_id"),
-            Lr::LangIs => write!(f, "lang_is"),
-            Lr::LangIt => write!(f, "lang_it"),
-            Lr::LangIw => write!(f, "lang_iw"),
-            Lr::LangJa => write!(f, "lang_ja"),
-            Lr::LangKo => write!(f, "lang_ko"),
-            Lr::LangLt => write!(f, "lang_lt"),
-            Lr::LangLv => write!(f, "lang_lv"),
-            Lr::LangNl => write!(f, "lang_nl"),
-            Lr::LangNo => write!(f, "lang_no"),
-            Lr::LangPl => write!(f, "lang_pl"),
-            Lr::LangPt => write!(f, "lang_pt"),
-            Lr::LangRo => write!(f, "lang_ro"),
-            Lr::LangRu => write!(f, "lang_ru"),
-            Lr::LangSk => write!(f, "lang_sk"),
-            Lr::LangSl => write!(f, "lang_sl"),
-            Lr::LangSr => write!(f, "lang_sr"),
-            Lr::LangSv => write!(f, "lang_sv"),
-            Lr::LangTr => write!(f, "lang_tr"),
-            Lr::LangZhCN => write!(f, "lang_zh-CN"),
-            Lr::LangZhTW => write!(f, "lang_zh-TW"),
+            Self::LangAr => write!(f, "lang_ar"),
+            Self::LangBg => write!(f, "lang_bg"),
+            Self::LangCa => write!(f, "lang_ca"),
+            Self::LangCs => write!(f, "lang_cs"),
+            Self::LangDa => write!(f, "lang_da"),
+            Self::LangDe => write!(f, "lang_de"),
+            Self::LangEl => write!(f, "lang_el"),
+            Self::LangEn => write!(f, "lang_en"),
+            Self::LangEs => write!(f, "lang_es"),
+            Self::LangEt => write!(f, "lang_et"),
+            Self::LangFi => write!(f, "lang_fi"),
+            Self::LangFr => write!(f, "lang_fr"),
+            Self::LangHr => write!(f, "lang_hr"),
+            Self::LangHu => write!(f, "lang_hu"),
+            Self::LangId => write!(f, "lang_id"),
+            Self::LangIs => write!(f, "lang_is"),
+            Self::LangIt => write!(f, "lang_it"),
+            Self::LangIw => write!(f, "lang_iw"),
+            Self::LangJa => write!(f, "lang_ja"),
+            Self::LangKo => write!(f, "lang_ko"),
+            Self::LangLt => write!(f, "lang_lt"),
+            Self::LangLv => write!(f, "lang_lv"),
+            Self::LangNl => write!(f, "lang_nl"),
+            Self::LangNo => write!(f, "lang_no"),
+            Self::LangPl => write!(f, "lang_pl"),
+            Self::LangPt => write!(f, "lang_pt"),
+            Self::LangRo => write!(f, "lang_ro"),
+            Self::LangRu => write!(f, "lang_ru"),
+            Self::LangSk => write!(f, "lang_sk"),
+            Self::LangSl => write!(f, "lang_sl"),
+            Self::LangSr => write!(f, "lang_sr"),
+            Self::LangSv => write!(f, "lang_sv"),
+            Self::LangTr => write!(f, "lang_tr"),
+            Self::LangZhCN => write!(f, "lang_zh-CN"),
+            Self::LangZhTW => write!(f, "lang_zh-TW"),
         }
     }
 }
@@ -405,41 +405,41 @@ impl TryFrom<&str> for Lr {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
-            "lang_ar" => Ok(Lr::LangAr),
-            "lang_bg" => Ok(Lr::LangBg),
-            "lang_ca" => Ok(Lr::LangCa),
-            "lang_cs" => Ok(Lr::LangCs),
-            "lang_da" => Ok(Lr::LangDa),
-            "lang_de" => Ok(Lr::LangDe),
-            "lang_el" => Ok(Lr::LangEl),
-            "lang_en" => Ok(Lr::LangEn),
-            "lang_es" => Ok(Lr::LangEs),
-            "lang_et" => Ok(Lr::LangEt),
-            "lang_fi" => Ok(Lr::LangFi),
-            "lang_fr" => Ok(Lr::LangFr),
-            "lang_hr" => Ok(Lr::LangHr),
-            "lang_hu" => Ok(Lr::LangHu),
-            "lang_id" => Ok(Lr::LangId),
-            "lang_is" => Ok(Lr::LangIs),
-            "lang_it" => Ok(Lr::LangIt),
-            "lang_iw" => Ok(Lr::LangIw),
-            "lang_ja" => Ok(Lr::LangJa),
-            "lang_ko" => Ok(Lr::LangKo),
-            "lang_lt" => Ok(Lr::LangLt),
-            "lang_lv" => Ok(Lr::LangLv),
-            "lang_nl" => Ok(Lr::LangNl),
-            "lang_no" => Ok(Lr::LangNo),
-            "lang_pl" => Ok(Lr::LangPl),
-            "lang_pt" => Ok(Lr::LangPt),
-            "lang_ro" => Ok(Lr::LangRo),
-            "lang_ru" => Ok(Lr::LangRu),
-            "lang_sk" => Ok(Lr::LangSk),
-            "lang_sl" => Ok(Lr::LangSl),
-            "lang_sr" => Ok(Lr::LangSr),
-            "lang_sv" => Ok(Lr::LangSv),
-            "lang_tr" => Ok(Lr::LangTr),
-            "lang_zh-CN" => Ok(Lr::LangZhCN),
-            "lang_zh-TW" => Ok(Lr::LangZhTW),
+            "lang_ar" => Ok(Self::LangAr),
+            "lang_bg" => Ok(Self::LangBg),
+            "lang_ca" => Ok(Self::LangCa),
+            "lang_cs" => Ok(Self::LangCs),
+            "lang_da" => Ok(Self::LangDa),
+            "lang_de" => Ok(Self::LangDe),
+            "lang_el" => Ok(Self::LangEl),
+            "lang_en" => Ok(Self::LangEn),
+            "lang_es" => Ok(Self::LangEs),
+            "lang_et" => Ok(Self::LangEt),
+            "lang_fi" => Ok(Self::LangFi),
+            "lang_fr" => Ok(Self::LangFr),
+            "lang_hr" => Ok(Self::LangHr),
+            "lang_hu" => Ok(Self::LangHu),
+            "lang_id" => Ok(Self::LangId),
+            "lang_is" => Ok(Self::LangIs),
+            "lang_it" => Ok(Self::LangIt),
+            "lang_iw" => Ok(Self::LangIw),
+            "lang_ja" => Ok(Self::LangJa),
+            "lang_ko" => Ok(Self::LangKo),
+            "lang_lt" => Ok(Self::LangLt),
+            "lang_lv" => Ok(Self::LangLv),
+            "lang_nl" => Ok(Self::LangNl),
+            "lang_no" => Ok(Self::LangNo),
+            "lang_pl" => Ok(Self::LangPl),
+            "lang_pt" => Ok(Self::LangPt),
+            "lang_ro" => Ok(Self::LangRo),
+            "lang_ru" => Ok(Self::LangRu),
+            "lang_sk" => Ok(Self::LangSk),
+            "lang_sl" => Ok(Self::LangSl),
+            "lang_sr" => Ok(Self::LangSr),
+            "lang_sv" => Ok(Self::LangSv),
+            "lang_tr" => Ok(Self::LangTr),
+            "lang_zh-CN" => Ok(Self::LangZhCN),
+            "lang_zh-TW" => Ok(Self::LangZhTW),
             _ => Err("Invalid value"),
         }
     }
@@ -466,16 +466,16 @@ impl TryFrom<u32> for SearchResultNumber {
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         match value {
-            1 => Ok(SearchResultNumber::One),
-            2 => Ok(SearchResultNumber::Two),
-            3 => Ok(SearchResultNumber::Three),
-            4 => Ok(SearchResultNumber::Four),
-            5 => Ok(SearchResultNumber::Five),
-            6 => Ok(SearchResultNumber::Six),
-            7 => Ok(SearchResultNumber::Seven),
-            8 => Ok(SearchResultNumber::Eight),
-            9 => Ok(SearchResultNumber::Nine),
-            10 => Ok(SearchResultNumber::Ten),
+            1 => Ok(Self::One),
+            2 => Ok(Self::Two),
+            3 => Ok(Self::Three),
+            4 => Ok(Self::Four),
+            5 => Ok(Self::Five),
+            6 => Ok(Self::Six),
+            7 => Ok(Self::Seven),
+            8 => Ok(Self::Eight),
+            9 => Ok(Self::Nine),
+            10 => Ok(Self::Ten),
             _ => Err("Invalid search result number"),
         }
     }
@@ -484,16 +484,16 @@ impl TryFrom<u32> for SearchResultNumber {
 impl Display for SearchResultNumber {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            SearchResultNumber::One => write!(f, "1"),
-            SearchResultNumber::Two => write!(f, "2"),
-            SearchResultNumber::Three => write!(f, "3"),
-            SearchResultNumber::Four => write!(f, "4"),
-            SearchResultNumber::Five => write!(f, "5"),
-            SearchResultNumber::Six => write!(f, "6"),
-            SearchResultNumber::Seven => write!(f, "7"),
-            SearchResultNumber::Eight => write!(f, "8"),
-            SearchResultNumber::Nine => write!(f, "9"),
-            SearchResultNumber::Ten => write!(f, "10"),
+            Self::One => write!(f, "1"),
+            Self::Two => write!(f, "2"),
+            Self::Three => write!(f, "3"),
+            Self::Four => write!(f, "4"),
+            Self::Five => write!(f, "5"),
+            Self::Six => write!(f, "6"),
+            Self::Seven => write!(f, "7"),
+            Self::Eight => write!(f, "8"),
+            Self::Nine => write!(f, "9"),
+            Self::Ten => write!(f, "10"),
         }
     }
 }
@@ -501,15 +501,15 @@ impl Display for SearchResultNumber {
 /// Rights Restriction
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Rights {
-    /// Creative Commons Public Domain
+    /// Creative Commons `Public` Domain
     CcPublicdomain,
-    /// Creative Commons Attribution (CC BY)
+    /// Creative Commons `Attribution` (CC BY)
     CcAttribute,
-    /// Creative Commons ShareAlike (CC SA)
+    /// Creative Commons `ShareAlike` (CC SA)
     CcSharealike,
-    /// Creative Commons NoDerivs (CC ND)
+    /// Creative Commons `NoDerivs` (CC ND)
     CcNoncommercial,
-    /// Creative Commons NonCommercial (CC NC)
+    /// Creative Commons `NonCommercial` (CC NC)
     CcNonderived,
     /// And
     And(Box<Rights>, Box<Rights>),
@@ -518,12 +518,12 @@ pub enum Rights {
 impl Display for Rights {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Rights::CcPublicdomain => write!(f, "cc_publicdomain"),
-            Rights::CcAttribute => write!(f, "cc_attribute"),
-            Rights::CcSharealike => write!(f, "cc_sharealike"),
-            Rights::CcNoncommercial => write!(f, "cc_noncommercial"),
-            Rights::CcNonderived => write!(f, "cc_nonderived"),
-            Rights::And(left, right) => write!(f, "{}%7C{}", left, right),
+            Self::CcPublicdomain => write!(f, "cc_publicdomain"),
+            Self::CcAttribute => write!(f, "cc_attribute"),
+            Self::CcSharealike => write!(f, "cc_sharealike"),
+            Self::CcNoncommercial => write!(f, "cc_noncommercial"),
+            Self::CcNonderived => write!(f, "cc_nonderived"),
+            Self::And(left, right) => write!(f, "{left}%7C{right}"),
         }
     }
 }
@@ -540,8 +540,8 @@ pub enum Safe {
 impl Display for Safe {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Safe::Active => write!(f, "active"),
-            Safe::Off => write!(f, "off"),
+            Self::Active => write!(f, "active"),
+            Self::Off => write!(f, "off"),
         }
     }
 }
@@ -556,7 +556,7 @@ pub enum SearchType {
 impl Display for SearchType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            SearchType::Image => write!(f, "image"),
+            Self::Image => write!(f, "image"),
         }
     }
 }
@@ -573,15 +573,15 @@ pub enum SiteSearchFilter {
 impl Display for SiteSearchFilter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            SiteSearchFilter::E => write!(f, "e"),
-            SiteSearchFilter::I => write!(f, "i"),
+            Self::E => write!(f, "e"),
+            Self::I => write!(f, "i"),
         }
     }
 }
 
 /// CSE query parameters
 ///
-/// See https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list
+/// See <https://developers.google.com/custom-search/v1/reference/rest/v1/cse/list>
 #[derive(Default, Clone, Serialize, Deserialize)]
 pub struct QueryParameters {
     /// Simplified/Traditional Chinese
@@ -663,14 +663,16 @@ pub struct QueryParameters {
 }
 
 impl QueryParameters {
-    /// Build a QueryParameters
-    pub fn build(&mut self) -> Self {
+    /// Build a `QueryParameters`
+    #[must_use]
+    pub fn build(&self) -> Self {
         self.clone()
     }
 
-    /// Create a new QueryParameters
-    pub fn builder() -> QueryParameters {
-        QueryParameters {
+    /// Create a new `QueryParameters`
+    #[must_use]
+    pub const fn builder() -> Self {
+        Self {
             c2coff: None,
             cr: None,
             cx: None,
@@ -705,7 +707,10 @@ impl QueryParameters {
         }
     }
 
-    /// Convert QueryParameters to a Vec of (String, String) tuples
+    /// Convert `QueryParameters` to a Vec of (String, String) tuples
+    #[allow(clippy::too_many_lines)]
+    #[allow(clippy::cognitive_complexity)]
+    #[must_use]
     pub fn to_parameters(&self) -> Vec<(String, String)> {
         let mut params = vec![];
 
@@ -982,15 +987,14 @@ impl QueryParameters {
 
     /// Specifies that all search results should be pages that are related
     /// to the specified URL
-
     pub fn related_site(&mut self, related_site: String) -> &mut Self {
         self.related_site = Some(related_site);
         self
     }
 
     /// Filters based on licensing. Supported values include:
-    /// cc_publicdomain, cc_attribute, cc_sharealike,
-    /// cc_noncommercial, cc_nonderived and combinations of these.
+    /// `cc_publicdomain`, `cc_attribute`, `cc_sharealike`,
+    /// `cc_noncommercial`, `cc_nonderived` and combinations of these.
     pub fn rights(&mut self, rights: Rights) -> &mut Self {
         self.rights = Some(Box::new(rights));
         self
@@ -1034,7 +1038,7 @@ impl QueryParameters {
     }
 
     /// Build query for next page of results.
-    pub fn next_page(&mut self, n: NextPage) -> &mut Self {
+    pub fn next_page(&mut self, n: &NextPage) -> &mut Self {
         self.start = Some(n.start);
         self
     }
@@ -1059,7 +1063,7 @@ pub struct NextPage {
 
 /// A search result.
 ///
-/// The complete documentation is available at https://developers.google.com/custom-search/v1/reference/rest/v1/Search
+/// The complete documentation is available at <https://developers.google.com/custom-search/v1/reference/rest/v1/Search>
 #[derive(Debug, Deserialize, Serialize)]
 pub struct SearchResults {
     /// The search results.
@@ -1074,13 +1078,14 @@ impl SearchResults {
     /// next page of results.
     ///
     /// See [`QueryParameters::next_page`].
+    #[must_use]
     pub fn next_page(&self) -> Option<NextPage> {
         self.other
             .get("queries")
             .and_then(|queries| queries.get("nextPage"))
             .and_then(|next_page| next_page.get(0))
             .and_then(|next_page| next_page.get("startIndex"))
-            .and_then(|start_index| start_index.as_u64())
+            .and_then(serde_json::Value::as_u64)
             .map(|start_index| NextPage {
                 start: start_index as u32,
             })

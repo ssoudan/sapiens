@@ -6,7 +6,7 @@ use crate::tools::ToolInvocationInput;
 
 /// Error while extracting tool invocations
 #[derive(Debug, thiserror::Error, Clone, Serialize, Deserialize)]
-pub enum InvocationError {
+pub enum Error {
     /// Invalid yaml
     #[error("Invalid yaml: {0}")]
     InvalidYaml(String),
@@ -33,7 +33,7 @@ enum Invocation<T> {
 ///
 /// `data` can be a single yaml of T or of a Vec<T> or a list of yaml
 /// documents separated by `---`.
-fn extract_from_yaml<T>(data: &str) -> Result<Vec<T>, InvocationError>
+fn extract_from_yaml<T>(data: &str) -> Result<Vec<T>, Error>
 where
     T: DeserializeOwned,
 {
@@ -53,13 +53,13 @@ where
             },
             Err(e) => {
                 debug!(error = %e, "Failed to deserialize as a list of T or a single T");
-                return Err(InvocationError::InvalidYaml(e.to_string()));
+                return Err(Error::InvalidYaml(e.to_string()));
             }
         }
     }
 
     if invocations.is_empty() {
-        Err(InvocationError::NoInvocationFound)
+        Err(Error::NoInvocationFound)
     } else {
         Ok(invocations)
     }
@@ -73,8 +73,8 @@ pub(crate) struct ExtractedInvocations {
 }
 
 /// Find all the invocations in a markdown document.
-pub(crate) fn find_all(data: &str) -> Result<ExtractedInvocations, InvocationError> {
-    let mut err: Option<InvocationError> = None;
+pub(crate) fn find_all(data: &str) -> Result<ExtractedInvocations, Error> {
+    let mut err: Option<Error> = None;
 
     let mut invocations = vec![];
     let mut yaml_block_count = 0;
@@ -119,11 +119,7 @@ pub(crate) fn find_all(data: &str) -> Result<ExtractedInvocations, InvocationErr
     }
 
     if invocations.is_empty() {
-        if let Some(err) = err {
-            Err(err)
-        } else {
-            Err(InvocationError::NoInvocationFound)
-        }
+        err.map_or_else(|| Err(Error::NoInvocationFound), Err)
     } else {
         Ok(ExtractedInvocations {
             invocations,
@@ -140,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_find_invocations_one_yaml() {
-        let data = indoc! {r#"# Some text
+        let data = indoc! {r"# Some text
     ```yaml
     tool_name: Search
     parameters:
@@ -149,7 +145,7 @@ mod tests {
       num_results: 10
     ```        
     Some other text
-    "#};
+    "};
 
         let invocations = super::find_all(data).unwrap();
 
@@ -158,7 +154,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_find_multiple_invocations() {
-        let data = indoc! {r#"# Some text
+        let data = indoc! {r"# Some text
     ```yaml
     tool_name: Search1
     parameters:
@@ -195,7 +191,7 @@ mod tests {
         num_results: 10
     ```                
     Some other text
-    "#};
+    "};
 
         let invocations = super::find_all(data).unwrap();
 
@@ -206,7 +202,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_extraction_of_one_yaml() {
-        let data = indoc! {r#"# Some text
+        let data = indoc! {r"# Some text
     ```yaml
     tool_name: Search
     parameters:
@@ -215,7 +211,7 @@ mod tests {
       num_results: 10
     ```        
     Some other text
-    "#};
+    "};
 
         let tool_invocations = super::find_all(data).unwrap();
 
@@ -228,7 +224,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_extraction_of_one_yaml_with_output() {
-        let data = indoc! {r#"# Some text
+        let data = indoc! {r"# Some text
     ```yaml
     tool_name: Search
     parameters:
@@ -240,7 +236,7 @@ mod tests {
         Marcel Deneuve is a character in the Resident Evil film series, playing a minor role in Resident Evil: Apocalypse and a much larger role in Resident Evil: Extinction. Explore historical records and family tree profiles about Marcel Deneuve on MyHeritage, the world's largest family network.
     ```        
     Some other text
-    "#};
+    "};
 
         let tool_invocations = super::find_all(data).unwrap();
 
@@ -264,7 +260,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_extraction_of_three_yaml_with_output() {
-        let data = indoc! {r#"# Some text
+        let data = indoc! {r"# Some text
     ```yaml
     tool_name: Search1
     parameters:
@@ -292,7 +288,7 @@ mod tests {
       num_results: 10
     ```
     That's all folks!          
-    "#};
+    "};
 
         let tool_invocations = super::find_all(data).unwrap();
 
@@ -310,7 +306,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_extraction_of_broken_yaml() {
-        let data = indoc! {r#"
+        let data = indoc! {r"
         ## Observations:
         - The task involves finding lights in an office and setting their color like a rainbow.
         - We do not know what type of lights are in the office.
@@ -360,7 +356,7 @@ mod tests {
               technological advances can make your life infinitely easier.
           next_start_index: 4
         ```   
-    "#};
+    "};
 
         let tool_invocations = super::find_all(data);
 

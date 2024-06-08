@@ -78,11 +78,11 @@ Notes:
 - One Action at a time. No more. No less.
 ";
 
-const OBSERVER_PROTO_INITIAL_RESPONSE: &str = r#"
+const OBSERVER_PROTO_INITIAL_RESPONSE: &str = r"
 ## Observations:
 - The given list to sort is [2, 3, 1, 4, 5].
 - I need to sort this list in ascending order.
-"#;
+";
 
 const OBSERVER_PROTO_SECOND_INPUT: &str = r#"
 ## Orientation:
@@ -117,13 +117,13 @@ const OBSERVER_PROTO_SECOND_RESPONSE: &str = r"
 - We have the sorted list: [1, 2, 3, 4, 5].
 ";
 
-const ORIENTER_PROTO_INITIAL_RESPONSE: &str = r#"
+const ORIENTER_PROTO_INITIAL_RESPONSE: &str = r"
 ## Orientation:
 - SandboxedPython can be used to sort the list.
 - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
 - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
 - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text.
-"#;
+";
 
 const ORIENTER_PROTO_SECOND_INPUT: &str = r#"
 ## Decision:
@@ -156,10 +156,10 @@ const ORIENTER_PROTO_SECOND_RESPONSE: &str = r"
 - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
 ";
 
-const DECIDER_PROTO_INITIAL_RESPONSE: &str = r#"
+const DECIDER_PROTO_INITIAL_RESPONSE: &str = r"
 ## Decision:
 - We can use the sorted() function of Python to sort the list.
-"#;
+";
 
 const DECIDER_PROTO_SECOND_INPUT: &str = r#"
 ## The ONLY Action:
@@ -205,7 +205,7 @@ parameters:
 That's it for now. We will take further action based on the response.
 "#;
 
-const ACTOR_PROTO_SECOND_INPUT: &str = r#"
+const ACTOR_PROTO_SECOND_INPUT: &str = r"
 # Action SandboxedPython response:
 ```yaml
 stdout: |
@@ -221,7 +221,7 @@ stderr: ''
 - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
 ## Decision:
 - Use the Conclude Tool to terminate the task with the sorted list.
-"#;
+";
 
 const ACTOR_PROTO_SECOND_RESPONSE: &str = r"
 ## The ONLY Action:
@@ -245,15 +245,16 @@ enum AgentRole {
 impl Debug for AgentRole {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            AgentRole::Observer { .. } => write!(f, "Observer"),
-            AgentRole::Orienter { .. } => write!(f, "Orienter"),
-            AgentRole::Decider { .. } => write!(f, "Decider"),
-            AgentRole::Actor { .. } => write!(f, "Actor"),
+            Self::Observer { .. } => write!(f, "Observer"),
+            Self::Orienter { .. } => write!(f, "Orienter"),
+            Self::Decider { .. } => write!(f, "Decider"),
+            Self::Actor { .. } => write!(f, "Actor"),
         }
     }
 }
 
 impl AgentRole {
+    #[allow(clippy::too_many_lines)]
     async fn convert_context_to_chat_history(
         &self,
         mut chat_history: ChatHistory,
@@ -263,10 +264,10 @@ impl AgentRole {
         let examples = self.build_examples();
 
         let prompt_manager = match self {
-            AgentRole::Observer { prompt_manager } => prompt_manager,
-            AgentRole::Orienter { prompt_manager } => prompt_manager,
-            AgentRole::Decider { prompt_manager } => prompt_manager,
-            AgentRole::Actor { prompt_manager } => prompt_manager,
+            Self::Observer { prompt_manager }
+            | Self::Orienter { prompt_manager }
+            | Self::Decider { prompt_manager }
+            | Self::Actor { prompt_manager } => prompt_manager,
         };
 
         // Add the prompts to the chat history
@@ -286,39 +287,31 @@ impl AgentRole {
         // - Observation messages become individual chat entries from the Assistant
         let mut user_msg = vec![];
         match self {
-            AgentRole::Observer { .. } => {
+            Self::Observer { .. } => {
                 for m in &context.messages {
                     match m {
                         Message::Observation { content, .. } => {
                             if !user_msg.is_empty() {
                                 // Add the user message to the chat history as a message from the
                                 // User
-                                chat_history
-                                    .add_chitchat(ChatEntry {
-                                        msg: user_msg.join("\n"),
-                                        role: Role::User,
-                                    })
-                                    .await;
+                                chat_history.add_chitchat(ChatEntry {
+                                    msg: user_msg.join("\n"),
+                                    role: Role::User,
+                                });
 
                                 user_msg.clear();
                             }
 
                             // Add the observation to the chat history as a message from the
                             // Observer
-                            chat_history
-                                .add_chitchat(ChatEntry {
-                                    msg: content.to_string(),
-                                    role: Role::Assistant,
-                                })
-                                .await;
+                            chat_history.add_chitchat(ChatEntry {
+                                msg: content.to_string(),
+                                role: Role::Assistant,
+                            });
                         }
-                        Message::Orientation { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Decision { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Action { content, .. } => {
+                        Message::Orientation { content, .. }
+                        | Message::Decision { content, .. }
+                        | Message::Action { content, .. } => {
                             user_msg.push(content.clone());
                         }
                         Message::ActionResult {
@@ -327,50 +320,43 @@ impl AgentRole {
                             outcome,
                             ..
                         } => {
-                            let entry = format_outcome(&task, invocation_count, tool_name, outcome);
+                            let entry =
+                                format_outcome(&task, *invocation_count, tool_name, outcome);
 
                             user_msg.push(entry);
                         }
-                        _ => {
+                        Message::Task { .. } => {
                             // Nothing
                         }
                     }
                 }
             }
 
-            AgentRole::Orienter { .. } => {
+            Self::Orienter { .. } => {
                 for m in &context.messages {
                     match m {
-                        Message::Observation { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
                         Message::Orientation { content, .. } => {
                             if !user_msg.is_empty() {
                                 // Add the user message to the chat history as a message from the
                                 // User
-                                chat_history
-                                    .add_chitchat(ChatEntry {
-                                        msg: user_msg.join("\n"),
-                                        role: Role::User,
-                                    })
-                                    .await;
+                                chat_history.add_chitchat(ChatEntry {
+                                    msg: user_msg.join("\n"),
+                                    role: Role::User,
+                                });
 
                                 user_msg.clear();
                             }
 
                             // Add the observation to the chat history as a message from the
                             // Observer
-                            chat_history
-                                .add_chitchat(ChatEntry {
-                                    msg: content.to_string(),
-                                    role: Role::Assistant,
-                                })
-                                .await;
+                            chat_history.add_chitchat(ChatEntry {
+                                msg: content.to_string(),
+                                role: Role::Assistant,
+                            });
                         }
-                        Message::Decision { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Action { content, .. } => {
+                        Message::Observation { content, .. }
+                        | Message::Decision { content, .. }
+                        | Message::Action { content, .. } => {
                             user_msg.push(content.clone());
                         }
                         Message::ActionResult {
@@ -379,97 +365,84 @@ impl AgentRole {
                             outcome,
                             ..
                         } => {
-                            let entry = format_outcome(&task, invocation_count, tool_name, outcome);
+                            let entry =
+                                format_outcome(&task, *invocation_count, tool_name, outcome);
 
                             user_msg.push(entry);
                         }
-                        _ => {
+                        Message::Task { .. } => {
                             // Nothing
                         }
                     }
                 }
             }
-            AgentRole::Decider { .. } => {
+            Self::Decider { .. } => {
                 for m in &context.messages {
                     match m {
-                        Message::Observation { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Orientation { content, .. } => {
+                        Message::Action { content, .. }
+                        | Message::Observation { content, .. }
+                        | Message::Orientation { content, .. } => {
                             user_msg.push(content.clone());
                         }
                         Message::Decision { content, .. } => {
                             if !user_msg.is_empty() {
                                 // Add the user message to the chat history as a message from the
                                 // User
-                                chat_history
-                                    .add_chitchat(ChatEntry {
-                                        msg: user_msg.join("\n"),
-                                        role: Role::User,
-                                    })
-                                    .await;
+                                chat_history.add_chitchat(ChatEntry {
+                                    msg: user_msg.join("\n"),
+                                    role: Role::User,
+                                });
 
                                 user_msg.clear();
                             }
 
-                            chat_history
-                                .add_chitchat(ChatEntry {
-                                    msg: content.to_string(),
-                                    role: Role::Assistant,
-                                })
-                                .await;
+                            chat_history.add_chitchat(ChatEntry {
+                                msg: content.to_string(),
+                                role: Role::Assistant,
+                            });
                         }
-                        Message::Action { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
+
                         Message::ActionResult {
                             invocation_count,
                             tool_name,
                             outcome,
                             ..
                         } => {
-                            let entry = format_outcome(&task, invocation_count, tool_name, outcome);
+                            let entry =
+                                format_outcome(&task, *invocation_count, tool_name, outcome);
 
                             user_msg.push(entry);
                         }
-                        _ => {
+                        Message::Task { .. } => {
                             // Nothing
                         }
                     }
                 }
             }
-            AgentRole::Actor { .. } => {
+            Self::Actor { .. } => {
                 for m in &context.messages {
                     match m {
-                        Message::Observation { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Orientation { content, .. } => {
-                            user_msg.push(content.clone());
-                        }
-                        Message::Decision { content, .. } => {
+                        Message::Observation { content, .. }
+                        | Message::Orientation { content, .. }
+                        | Message::Decision { content, .. } => {
                             user_msg.push(content.clone());
                         }
                         Message::Action { content, .. } => {
                             if !user_msg.is_empty() {
                                 // Add the user message to the chat history as a message from the
                                 // User
-                                chat_history
-                                    .add_chitchat(ChatEntry {
-                                        msg: user_msg.join("\n"),
-                                        role: Role::User,
-                                    })
-                                    .await;
+                                chat_history.add_chitchat(ChatEntry {
+                                    msg: user_msg.join("\n"),
+                                    role: Role::User,
+                                });
 
                                 user_msg.clear();
                             }
 
-                            chat_history
-                                .add_chitchat(ChatEntry {
-                                    msg: content.to_string(),
-                                    role: Role::Assistant,
-                                })
-                                .await;
+                            chat_history.add_chitchat(ChatEntry {
+                                msg: content.to_string(),
+                                role: Role::Assistant,
+                            });
                         }
                         Message::ActionResult {
                             invocation_count,
@@ -477,11 +450,12 @@ impl AgentRole {
                             outcome,
                             ..
                         } => {
-                            let entry = format_outcome(&task, invocation_count, tool_name, outcome);
+                            let entry =
+                                format_outcome(&task, *invocation_count, tool_name, outcome);
 
                             user_msg.push(entry);
                         }
-                        _ => {
+                        Message::Task { .. } => {
                             // Nothing
                         }
                     }
@@ -491,22 +465,18 @@ impl AgentRole {
 
         if !user_msg.is_empty() {
             // Add the user message to the chat history as a message from the User
-            chat_history
-                .add_chitchat(ChatEntry {
-                    msg: user_msg.join("\n"),
-                    role: Role::User,
-                })
-                .await;
+            chat_history.add_chitchat(ChatEntry {
+                msg: user_msg.join("\n"),
+                role: Role::User,
+            });
         }
 
         if chat_history.is_chitchat_empty() {
             // Add the recurring prompts to the chat history
-            chat_history
-                .add_chitchat(ChatEntry {
-                    msg: task.to_prompt(),
-                    role: Role::User,
-                })
-                .await;
+            chat_history.add_chitchat(ChatEntry {
+                msg: task.to_prompt(),
+                role: Role::User,
+            });
         }
 
         // prune the history if needed
@@ -517,7 +487,7 @@ impl AgentRole {
 
     fn build_examples(&self) -> Vec<(String, String)> {
         match self {
-            AgentRole::Observer { prompt_manager } => {
+            Self::Observer { prompt_manager } => {
                 let warmup_task =
                     prompt_manager.build_task_prompt("Sort in ascending order: [2, 3, 1, 4, 5]");
 
@@ -538,7 +508,7 @@ impl AgentRole {
                     ),
                 ]
             }
-            AgentRole::Orienter { prompt_manager } => {
+            Self::Orienter { prompt_manager } => {
                 let warmup_task =
                     prompt_manager.build_task_prompt("Sort in ascending order: [2, 3, 1, 4, 5]");
 
@@ -559,7 +529,7 @@ impl AgentRole {
                     ),
                 ]
             }
-            AgentRole::Decider { prompt_manager } => {
+            Self::Decider { prompt_manager } => {
                 let warmup_task =
                     prompt_manager.build_task_prompt("Sort in ascending order: [2, 3, 1, 4, 5]");
 
@@ -580,7 +550,7 @@ impl AgentRole {
                     ),
                 ]
             }
-            AgentRole::Actor { prompt_manager } => {
+            Self::Actor { prompt_manager } => {
                 let warmup_task =
                     prompt_manager.build_task_prompt("Sort in ascending order: [2, 3, 1, 4, 5]");
 
@@ -614,7 +584,8 @@ pub struct Agent {
 
 impl Agent {
     /// Create a new [`Agent`] with the role of an observer.
-    pub async fn new_observer(
+    #[must_use]
+    pub fn new_observer(
         config: SapiensConfig,
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
@@ -641,7 +612,8 @@ impl Agent {
     }
 
     /// Create a new [`Agent`] with the role of an orienter.
-    pub async fn new_orienter(
+    #[must_use]
+    pub fn new_orienter(
         config: SapiensConfig,
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
@@ -669,7 +641,8 @@ impl Agent {
     }
 
     /// Create a new [`Agent`] with the role of a decider.
-    pub async fn new_decider(
+    #[must_use]
+    pub fn new_decider(
         config: SapiensConfig,
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
@@ -697,7 +670,8 @@ impl Agent {
     }
 
     /// Create a new [`Agent`] with the role of an actor.
-    pub async fn new_actor(
+    #[must_use]
+    pub fn new_actor(
         config: SapiensConfig,
         toolbox: Toolbox,
         observer: WeakRuntimeObserver,
@@ -816,7 +790,7 @@ mod tests {
 
         let observer = void_observer();
         let weak_observer = Arc::downgrade(&observer);
-        let agent = Agent::new_observer(Default::default(), toolbox, weak_observer).await;
+        let agent = Agent::new_observer(SapiensConfig::default(), toolbox, weak_observer);
 
         let chat_history = agent.convert_context_to_chat_history(&context).await;
 
@@ -828,12 +802,12 @@ mod tests {
         let mut context = build_dummy_context();
 
         context.add_message(Message::Observation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Observations:
             - We needed to sort the list in ascending order.
             - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -844,7 +818,7 @@ mod tests {
 
         let observer = void_observer();
         let weak_observer = Arc::downgrade(&observer);
-        let agent = Agent::new_orienter(Default::default(), toolbox, weak_observer).await;
+        let agent = Agent::new_orienter(SapiensConfig::default(), toolbox, weak_observer);
 
         let chat_history = agent.convert_context_to_chat_history(&context).await;
 
@@ -856,12 +830,12 @@ mod tests {
         let mut context = build_dummy_context();
 
         context.add_message(Message::Observation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Observations:
             - We needed to sort the list in ascending order.
             - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -869,11 +843,11 @@ mod tests {
         });
 
         context.add_message(Message::Orientation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Orientation:
             - I know the answer to the original question.
             - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -884,7 +858,7 @@ mod tests {
 
         let observer = void_observer();
         let weak_observer = Arc::downgrade(&observer);
-        let agent = Agent::new_decider(Default::default(), toolbox, weak_observer).await;
+        let agent = Agent::new_decider(SapiensConfig::default(), toolbox, weak_observer);
 
         let chat_history = agent.convert_context_to_chat_history(&context).await;
 
@@ -896,12 +870,12 @@ mod tests {
         let mut context = build_dummy_context();
 
         context.add_message(Message::Observation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Observations:
             - We needed to sort the list in ascending order.
             - We have the response of the Action.
             - We have the sorted list: [1, 2, 3, 4, 5].
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -909,11 +883,11 @@ mod tests {
         });
 
         context.add_message(Message::Orientation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Orientation:
             - I know the answer to the original question.
             - I need to provide the `tool_name` and `parameters` fields for the Conclude Tool.
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -921,10 +895,10 @@ mod tests {
         });
 
         context.add_message(Message::Decision {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Decision:
             - Use the Conclude Tool to terminate the task with the sorted list.
-            "#
+            "
             }
             .trim()
             .to_string(),
@@ -935,7 +909,7 @@ mod tests {
 
         let observer = void_observer();
         let weak_observer = Arc::downgrade(&observer);
-        let agent = Agent::new_actor(Default::default(), toolbox, weak_observer).await;
+        let agent = Agent::new_actor(SapiensConfig::default(), toolbox, weak_observer);
 
         let chat_history = agent.convert_context_to_chat_history(&context).await;
 
@@ -950,10 +924,10 @@ mod tests {
         });
 
         context.add_message(Message::Observation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Observations:
             - The given list to sort is [2, 3, 1, 4, 5].
-            - I need to sort this list in ascending order."#
+            - I need to sort this list in ascending order."
             }
             .trim()
             .to_string(),
@@ -961,20 +935,20 @@ mod tests {
         });
 
         context.add_message(Message::Orientation {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Orientation:
             - SandboxedPython can be used to sort the list.
             - I need to provide only the `tool_name` and `parameters` fields for the SandboxedPython Tool.
             - I expect the response of the Action to contains the field `stdout` with the sorted list and `stderr` empty.
-            - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text."#
+            - I need to use the Conclude Tool to terminate the task when I have the sorted list in plain text."
             }.trim().to_string(),
             usage: None,
         });
 
         context.add_message(Message::Decision {
-            content: indoc! {r#"
+            content: indoc! {r"
             ## Decision:
-            - We can use the sorted() function of Python to sort the list."#
+            - We can use the sorted() function of Python to sort the list."
             }
             .trim()
             .to_string(),
@@ -1016,11 +990,11 @@ mod tests {
                 .to_string(),
             ),
             outcome: Outcome::Success {
-                result: indoc! {r#"
+                result: indoc! {r"
                 stdout: |
                   The sorted list is [1, 2, 3, 4, 5]
                 stderr: ''
-                "#}
+                "}
                 .trim()
                 .to_string(),
             },

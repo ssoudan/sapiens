@@ -42,11 +42,11 @@ impl Debug for ChatEntry {
 /// The prompt is the part of the history that we want to stay at the top of the
 /// history. The chitchat is the rest of the history.
 ///
-/// Add the prompting messages to the history with [ChatHistory::add_prompts].
+/// Add the prompting messages to the history with [`ChatHistory::add_prompts`].
 ///
 /// To ensure we have enough tokens to complete the task, we truncate the
 /// chitchat history when new messages are added - with
-/// [ChatHistory::add_chitchat].
+/// [`ChatHistory::add_chitchat`].
 #[derive(Clone)]
 pub struct ChatHistory {
     /// Config - contains a ref to the model
@@ -75,6 +75,7 @@ impl Debug for ChatHistory {
 
 impl ChatHistory {
     /// Create a new chat history
+    #[must_use]
     pub fn new(config: SapiensConfig, max_token: usize) -> Self {
         Self {
             config,
@@ -91,7 +92,7 @@ impl ChatHistory {
     }
 
     /// add a prompt to the history
-    pub async fn add_example(&mut self, user: String, bot: String) {
+    pub fn add_example(&mut self, user: String, bot: String) {
         let msg_user = ChatEntry {
             role: Role::User,
             msg: user,
@@ -107,7 +108,7 @@ impl ChatHistory {
 
     /// add a message to the chitchat history, and prune the history if needed
     /// returns the number of messages in the chitchat history
-    pub async fn add_chitchat(&mut self, entry: ChatEntry) {
+    pub fn add_chitchat(&mut self, entry: ChatEntry) {
         // ensure we don't have two consecutive messages from the same role
         if let Some(last) = self.chitchat.last() {
             if last.role == entry.role {
@@ -132,7 +133,7 @@ impl ChatHistory {
         self.chitchat.is_empty()
     }
 
-    /// uses [tiktoken_rs::num_tokens_from_messages] prune
+    /// uses [`tiktoken_rs::num_tokens_from_messages`] prune
     /// the chitchat history starting from the head until we have enough
     /// tokens to complete the task
     pub async fn purge(&mut self) -> Result<usize, Error> {
@@ -221,6 +222,7 @@ impl From<&ChatHistory> for Vec<ChatEntry> {
 }
 
 /// A dump of the chat history
+#[allow(clippy::module_name_repetitions)]
 pub struct ContextDump {
     /// the messages
     pub messages: Vec<Message>,

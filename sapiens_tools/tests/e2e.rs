@@ -40,7 +40,7 @@ mod hue_test {
     ```
     "#};
 
-        let mut toolbox = Toolbox::default();
+        let toolbox = Toolbox::default();
         toolbox.add_advanced_tool(PythonTool::default()).await;
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         toolbox.add_tool(FakeRoomTool::default()).await;
@@ -55,7 +55,7 @@ mod hue_test {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         // collect the conclusion
@@ -79,8 +79,8 @@ mod arxiv {
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv() -> PyResult<()> {
-        let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArxivTool::new().await).await;
+        let toolbox = Toolbox::default();
+        toolbox.add_tool(ArxivTool::new()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
@@ -112,7 +112,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         Ok(())
@@ -120,8 +120,8 @@ mod arxiv {
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_2() -> PyResult<()> {
-        let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArxivTool::new().await).await;
+        let toolbox = Toolbox::default();
+        toolbox.add_tool(ArxivTool::new()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
@@ -146,7 +146,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         Ok(())
@@ -154,8 +154,8 @@ mod arxiv {
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_3() -> PyResult<()> {
-        let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArxivTool::new().await).await;
+        let toolbox = Toolbox::default();
+        toolbox.add_tool(ArxivTool::new()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let data = indoc! {r#"```yaml
@@ -181,7 +181,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         Ok(())
@@ -189,8 +189,8 @@ mod arxiv {
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_arxiv_4() -> PyResult<()> {
-        let mut toolbox = Toolbox::default();
-        toolbox.add_tool(ArxivTool::new().await).await;
+        let toolbox = Toolbox::default();
+        toolbox.add_tool(ArxivTool::new()).await;
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
@@ -229,7 +229,7 @@ mod arxiv {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         let termination_messages = toolbox.termination_messages().await;
@@ -255,7 +255,7 @@ mod search {
 
     #[pyo3_asyncio::tokio::test]
     async fn test_python_search() -> PyResult<()> {
-        let mut toolbox = Toolbox::default();
+        let toolbox = Toolbox::default();
         toolbox.add_tool(SearchTool::default()).await;
         toolbox.add_advanced_tool(PythonTool::default()).await;
 
@@ -278,7 +278,7 @@ mod search {
                 assert_eq!(tool_name, "SandboxedPython");
                 assert_snapshot!(result);
             }
-            _ => panic!("Unexpected response: {:?}", res),
+            _ => panic!("Unexpected response: {res:?}"),
         }
 
         Ok(())

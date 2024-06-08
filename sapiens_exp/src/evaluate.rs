@@ -44,7 +44,7 @@ pub struct Trial {
 
 impl Trial {
     /// Create a new trial
-    pub fn build(
+    #[must_use] pub fn build(
         config: Config,
         task: String,
         trace: Trace,
@@ -107,15 +107,6 @@ impl Trial {
 
         let completed = termination_message.is_some();
 
-        Analysis {
-            attempted_invocations,
-            successful_invocations,
-            tokens,
-            completed,
-            reached_accepting_state,
-            final_state_name,
-            termination_message,
-            tool_stats,
-        }
+        Analysis { attempted_invocations, successful_invocations, tokens, completed, reached_accepting_state, termination_message, tool_stats, final_state_name }
     }
 }

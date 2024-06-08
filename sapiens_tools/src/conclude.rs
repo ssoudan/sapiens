@@ -17,6 +17,7 @@ use tokio::sync::Mutex;
     input = "ConcludeToolInput",
     output = "ConcludeToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct ConcludeTool {
     done: Mutex<Option<ConcludeToolInput>>,
 }
@@ -39,13 +40,14 @@ impl TerminalTool for ConcludeTool {
         // lock
         {
             let mut done = self.done.lock().await;
-            done.take().map(|input| input.into())
+            done.take().map(std::convert::Into::into)
         }
     }
 }
 
 /// A tool that is called to wrap the task.
 #[derive(Debug, Clone, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ConcludeToolInput {
     /// The final answer for this task. Plain text ONLY. No string interpolation
     /// supported. MANDATORY. Call directly from `SandboxPython` Tool for long
@@ -65,8 +67,9 @@ impl From<ConcludeToolInput> for TerminationMessage {
     }
 }
 
-/// ConcludeToolOutput - empty
+/// `ConcludeToolOutput` - empty
 #[derive(Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct ConcludeToolOutput {}
 
 impl ConcludeTool {

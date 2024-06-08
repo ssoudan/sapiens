@@ -1,4 +1,4 @@
-//! Main for sapiens_cli
+//! Main for `sapiens_cli`
 use std::sync::Arc;
 
 use clap::Parser;
@@ -109,21 +109,21 @@ impl RuntimeObserver for Observer {
             let msgs = chat_history.format(&formatter);
 
             for msg in msgs {
-                println!("{}", msg);
+                println!("{msg}");
                 println!("=============");
             }
         } else {
             // Show only the last message
             let last_msg = chat_history.messages.last().unwrap();
             let msg = MessageFormatter::format(&ColorFormatter, last_msg);
-            println!("{}", msg);
+            println!("{msg}");
             println!("=============");
         }
     }
 
     async fn on_model_update(&mut self, event: ModelNotification) {
         let msg = ChatEntryFormatter::format(&ColorFormatter, &event.chat_entry);
-        println!("{}", msg);
+        println!("{msg}");
         println!("=============");
     }
 
@@ -179,9 +179,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
                 .parse::<u16>()
                 .expect("OLLAMA_PORT is not a valid port");
 
-            models::ollama::build(host, port, args.model)
-                .await
-                .expect("Failed to build model")
+            models::ollama::build(host, port, args.model).expect("Failed to build model")
         }
         _ => {
             let api_key = std::env::var("OPENAI_API_KEY").ok();
@@ -193,7 +191,6 @@ async fn main() -> Result<(), pyo3::PyErr> {
                 api_base,
                 Some(args.temperature),
             )
-            .await
             .expect("Failed to build model")
         }
     };
@@ -210,7 +207,7 @@ async fn main() -> Result<(), pyo3::PyErr> {
     // Sanitation
     // remove environment variables that could be used to access the host
     for (k, _) in std::env::vars() {
-        std::env::remove_var(&k);
+        unsafe { std::env::remove_var(&k) };
     }
     assert!(
         std::env::vars().next().is_none(),

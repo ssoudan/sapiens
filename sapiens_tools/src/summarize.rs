@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
     input = "SummarizeToolInput",
     output = "SummarizeToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct SummarizeTool {
     openai_client: Client<OpenAIConfig>,
     model: String,
@@ -26,15 +27,17 @@ impl Debug for SummarizeTool {
 }
 
 impl SummarizeTool {
-    /// Create a new SummarizeTool
-    pub fn with_model(openai_client: Client<OpenAIConfig>, model: String) -> Self {
+    /// Create a new `SummarizeTool`
+    #[must_use]
+    pub const fn with_model(openai_client: Client<OpenAIConfig>, model: String) -> Self {
         Self {
             openai_client,
             model,
         }
     }
 
-    /// Create a new SummarizeTool with the default model
+    /// Create a new `SummarizeTool` with the default model
+    #[must_use]
     pub fn new(openai_client: Client<OpenAIConfig>) -> Self {
         Self::with_model(openai_client, "text-babbage-001".to_string())
     }
@@ -51,13 +54,15 @@ impl Default for SummarizeTool {
 
 /// A tool that is called to test stuffs
 #[derive(Debug, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SummarizeToolInput {
     /// The text to summarize (max 2000 characters)
     pub text: String,
 }
 
-/// SummarizeToolOutput not very significant
+/// `SummarizeToolOutput` not very significant
 #[derive(Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct SummarizeToolOutput {
     /// The summary
     pub summary: String,

@@ -40,7 +40,7 @@ const MAX_OUTPUT_SIZE: usize = 512;
 ///   }`.
 /// - `open`|`exec` are forbidden.
 /// - Limited libraries available: urllib3, requests, sympy, numpy,
-///   BeautifulSoup4, feedparser, arxiv.
+///   `BeautifulSoup4`, feedparser, arxiv.
 /// - No PIP.
 #[derive(Debug, Default, ProtoToolDescribe)]
 #[tool(
@@ -48,10 +48,12 @@ const MAX_OUTPUT_SIZE: usize = 512;
     input = "PythonToolInput",
     output = "PythonToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct PythonTool {}
 
 /// The input of the Python tool
 #[derive(Debug, Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct PythonToolInput {
     /// The Python code to run. MANDATORY
     pub code: String,
@@ -59,6 +61,7 @@ pub struct PythonToolInput {
 
 /// The output of the Python tool
 #[derive(Serialize, Deserialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct PythonToolOutput {
     /// The stdout output of the Python code.
     pub stdout: String,
@@ -93,13 +96,14 @@ impl ToolsWrapper {
             .map(SimpleToolDescription::from)
             .collect::<Vec<_>>();
 
-        ToolsWrapper { toolbox, tool_list }
+        Self { toolbox, tool_list }
     }
 }
 
 #[pymethods]
 impl ToolsWrapper {
     // list all tools
+    #[allow(clippy::unnecessary_wraps)]
     #[pyo3(signature = ())]
     fn list(&self, py: Python<'_>) -> PyResult<PyObject> {
         let tools = self.tool_list.to_object(py);
@@ -119,7 +123,7 @@ impl ToolsWrapper {
             let input: PyObject = input.into();
 
             utils::to_yaml(py, &input).map_err(|e| {
-                pyo3::exceptions::PyException::new_err(format!("Invalid input: {}", e))
+                pyo3::exceptions::PyException::new_err(format!("Invalid input: {e}"))
             })?
         } else {
             Value::default()
@@ -163,7 +167,7 @@ impl ToolsWrapper {
         loop {
             if let Ok(output) = rx.try_recv() {
                 let output = output.map_err(|e| {
-                    pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {}", e))
+                    pyo3::exceptions::PyException::new_err(format!("Tool invocation failed: {e}"))
                 })?;
 
                 let output = utils::value_to_object(output, py);
@@ -185,7 +189,7 @@ impl PythonTool {
 
         let tools = toolbox.describe().await;
 
-        let code = Self::transform_code(code, tools)?;
+        let code = Self::transform_code(&code, tools)?;
 
         let toolwrapper = ToolsWrapper::new(toolbox).await;
 
@@ -228,14 +232,15 @@ impl PythonTool {
         });
 
         let (stdout, stderr) = res.map_err(|e| {
-            ToolUseError::InvocationFailed(format!("Python code execution failed: {}", e))
+            ToolUseError::InvocationFailed(format!("Python code execution failed: {e}"))
         })?;
 
         Ok(PythonToolOutput { stdout, stderr })
     }
 
+    #[allow(clippy::too_many_lines)]
     fn transform_code(
-        code: String,
+        code: &str,
         tools: HashMap<String, ToolDescription>,
     ) -> Result<String, ToolUseError> {
         lazy_static::lazy_static! {
@@ -276,7 +281,7 @@ impl PythonTool {
                 self.toolbox = toolbox
             "#}
             .lines()
-            .map(|s| format!("    {}", s))
+            .map(|s| format!("    {s}"))
             .collect::<Vec<_>>()
             .join("\n"),
         );
@@ -315,7 +320,7 @@ impl PythonTool {
             let inputs = if inputs.is_empty() {
                 "(self)".to_string()
             } else {
-                format!("(self, {})", inputs)
+                format!("(self, {inputs})")
             };
 
             // Build the docstring
@@ -328,26 +333,26 @@ impl PythonTool {
             let mut docstring = String::new();
             // Description
             description.description.lines().for_each(|l| {
-                docstring.push_str(&format!("    {}\n", l));
+                docstring.push_str(&format!("    {l}\n"));
             });
             // Arguments
             docstring.push_str("    Args:\n");
-            inputs_parts.iter().for_each(|f| {
+            for f in &inputs_parts {
                 docstring.push_str(&format!("        {}: <{}> ", f.name, f.r#type));
                 // first line goes with the name, the rest is indented
                 f.description.lines().enumerate().for_each(|(i, l)| {
                     if i == 0 {
-                        docstring.push_str(&format!("{}\n", l));
+                        docstring.push_str(&format!("{l}\n"));
                     } else {
-                        docstring.push_str(&format!("            {}\n", l));
+                        docstring.push_str(&format!("            {l}\n"));
                     }
                 });
-            });
+            }
             if !output_parts.is_empty() {
                 // Return
                 docstring.push_str("    Returns:\n");
                 docstring.push_str("           A dictionary with the following keys:\n");
-                output_parts.iter().for_each(|f| {
+                for f in &output_parts {
                     if f.optional {
                         docstring
                             .push_str(&format!("        {}: <{}> (Optional) ", f.name, f.r#type));
@@ -358,19 +363,19 @@ impl PythonTool {
                     // first line goes with the name, the rest is indented
                     f.description.lines().enumerate().for_each(|(i, l)| {
                         if i == 0 {
-                            docstring.push_str(&format!("{}\n", l));
+                            docstring.push_str(&format!("{l}\n"));
                         } else {
-                            docstring.push_str(&format!("            {}\n", l));
+                            docstring.push_str(&format!("            {l}\n"));
                         }
                     });
-                });
+                }
             }
 
             let dict = inputs_parts
                 .iter()
                 .map(|f| {
                     let name = &f.name;
-                    format!("\"{}\": {}", name, name)
+                    format!("\"{name}\": {name}")
                 })
                 .collect::<Vec<_>>()
                 .join(", ");
@@ -412,7 +417,7 @@ impl PythonTool {
         let code_to_prepend = tool_class_code;
 
         // prepend the code to the user code
-        let code = format!("{}\n# ======== user code\n{}", code_to_prepend, code);
+        let code = format!("{code_to_prepend}\n# ======== user code\n{code}");
 
         Ok(code)
     }
@@ -458,7 +463,7 @@ impl PythonTool {
         });
 
         let (stdout, stderr) = res.map_err(|e| {
-            ToolUseError::InvocationFailed(format!("Python code execution failed: {}", e))
+            ToolUseError::InvocationFailed(format!("Python code execution failed: {e}"))
         })?;
 
         Ok(PythonToolOutput { stdout, stderr })
@@ -472,7 +477,7 @@ fn indent(offset: u32, s: &str) -> String {
     }
 
     s.lines()
-        .map(|l| format!("{}{}", indented, l))
+        .map(|l| format!("{indented}{l}"))
         .collect::<Vec<_>>()
         .join("\n")
 }
@@ -490,8 +495,7 @@ impl ProtoToolInvoke for PythonTool {
         if l > MAX_OUTPUT_SIZE {
             return Err(ToolUseError::InvocationFailed(format!(
                 "Python code produced too much output on stdout and stderr
-        combined ({} bytes) - max is {}",
-                l, MAX_OUTPUT_SIZE
+        combined ({l} bytes) - max is {MAX_OUTPUT_SIZE}"
             )));
         }
 
@@ -548,14 +552,14 @@ mod tests {
             .to_string(),
         };
 
-        let mut toolbox = Toolbox::default();
+        let toolbox = Toolbox::default();
         // toolbox.add_tool(ArxivTool::new().await).await;
         toolbox.add_terminal_tool(ConcludeTool::default()).await;
         // toolbox.add_advanced_tool(PythonTool::default()).await;
 
         let tools = toolbox.describe().await;
 
-        let code = PythonTool::transform_code(input.code, tools).unwrap();
+        let code = PythonTool::transform_code(&input.code, tools).unwrap();
 
         assert_snapshot!(code);
     }

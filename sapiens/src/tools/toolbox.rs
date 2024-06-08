@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, info};
 
 use crate::tools;
-use crate::tools::invocation::InvocationError;
+use crate::tools::invocation::Error;
 use crate::tools::{
     AdvancedTool, TerminalTool, TerminationMessage, Tool, ToolDescription, ToolUseError,
 };
@@ -51,6 +51,8 @@ impl Debug for Toolbox {
 
 impl Toolbox {
     /// Collect the termination messages
+    #[allow(clippy::significant_drop_tightening)]
+    #[allow(clippy::significant_drop_in_scrutinee)]
     pub async fn termination_messages(&self) -> Vec<TerminationMessage> {
         let mut messages = Vec::new();
 
@@ -66,7 +68,7 @@ impl Toolbox {
     /// Add a terminal tool
     ///
     /// A [`TerminalTool`] can terminate a chain of exchanges.
-    pub async fn add_terminal_tool(&mut self, tool: impl TerminalTool + 'static) {
+    pub async fn add_terminal_tool(&self, tool: impl TerminalTool + 'static) {
         let name = tool.description().name;
         self.terminal_tools
             .write()
@@ -82,7 +84,7 @@ impl Toolbox {
     /// Add a tool
     ///
     /// A [`Tool`] can be invoked by an [`AdvancedTool`].
-    pub async fn add_tool(&mut self, tool: impl Tool + 'static) {
+    pub async fn add_tool(&self, tool: impl Tool + 'static) {
         let name = tool.description().name;
         self.tools.write().await.insert(name, Box::new(tool));
     }
@@ -90,7 +92,7 @@ impl Toolbox {
     /// Add an advanced tool
     ///
     /// An [`AdvancedTool`] is a [`Tool`] that can invoke another tool.
-    pub async fn add_advanced_tool(&mut self, tool: impl AdvancedTool + 'static) {
+    pub async fn add_advanced_tool(&self, tool: impl AdvancedTool + 'static) {
         let name = tool.description().name;
         self.advanced_tools
             .write()
@@ -99,6 +101,8 @@ impl Toolbox {
     }
 
     /// Get the descriptions of the tools
+    #[allow(clippy::significant_drop_tightening)]
+    #[allow(clippy::significant_drop_in_scrutinee)]
     pub async fn describe(&self) -> HashMap<String, ToolDescription> {
         let mut descriptions = HashMap::new();
 
@@ -159,6 +163,7 @@ impl Toolbox {
 }
 
 /// Invoke a [`Tool`] or [`AdvancedTool`] or [`TerminalTool`] from a [`Toolbox`]
+#[allow(clippy::significant_drop_tightening)]
 async fn invoke_from_toolbox(
     toolbox: Toolbox,
     tool_name: &str,
@@ -200,7 +205,7 @@ async fn invoke_from_toolbox(
         toolbox.report_inexistent(tool_name).await;
     }
 
-    let tool = tool.ok_or(ToolUseError::ToolNotFound(tool_name.to_string()))?;
+    let tool = tool.ok_or_else(|| ToolUseError::ToolNotFound(tool_name.to_string()))?;
 
     let result = tool.invoke(input).await;
     if result.is_ok() {
@@ -217,6 +222,8 @@ async fn invoke_from_toolbox(
 /// It will not invoke another [`AdvancedTool`].
 ///
 /// If you want to invoke an [`AdvancedTool`], use [`invoke_tool`].
+#[allow(clippy::significant_drop_tightening)]
+#[allow(clippy::module_name_repetitions)]
 pub async fn invoke_simple_from_toolbox(
     toolbox: Toolbox,
     tool_name: &str,
@@ -245,7 +252,7 @@ pub async fn invoke_simple_from_toolbox(
         toolbox.report_inexistent(tool_name).await;
     }
 
-    let tool = tool.ok_or(ToolUseError::ToolNotFound(tool_name.to_string()))?;
+    let tool = tool.ok_or_else(|| ToolUseError::ToolNotFound(tool_name.to_string()))?;
 
     let result = tool.invoke(input).await;
     if result.is_ok() {
@@ -262,12 +269,12 @@ pub enum InvokeResult {
     /// No invocation found in the message
     NoInvocationsFound {
         /// The error that occurred
-        e: InvocationError,
+        e: Error,
     },
     /// No valid invocation found in the message
     NoValidInvocationsFound {
         /// The error that occurred
-        e: InvocationError,
+        e: Error,
         /// The number of invocations found in the message
         invocation_count: usize,
     },
@@ -320,7 +327,7 @@ pub async fn invoke_tool(toolbox: Toolbox, data: &str) -> InvokeResult {
     // FUTURE(ssoudan) invoke corresponding tools one by one. Fail on first error.
     // FUTURE(ssoudan) document this in the initial prompt
 
-    let invocation = match tools::choose_invocation(tool_invocations).await {
+    let invocation = match tools::choose_invocation(tool_invocations) {
         Ok(invocation) => invocation,
         Err(e) => {
             return InvokeResult::NoValidInvocationsFound {

@@ -12,6 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 documentation = "https://docs.rs/sapiens"
 
+[lints]
+workspace = true
+
 [features]
 default = ["clap"]
 
@@ -36,7 +39,7 @@ tokenizers = { version = "0.19.1", features = [] }
 # GCP Vertex AI Generative Language Models
 gcp-vertex-ai-generative-language = "0.1.2"
 
-ollama-rs = "*"
+ollama-rs = "0"
 
 thiserror = "1.0.61"
 

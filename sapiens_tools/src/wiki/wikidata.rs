@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
     input = "WikidataToolInput",
     output = "WikidataToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikidataTool {
     client: Api,
 }
@@ -31,6 +32,7 @@ impl Debug for WikidataTool {
 
 /// [`WikidataTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikidataToolInput {
     /// SPARQL query to execute.
     query: String,
@@ -38,6 +40,7 @@ pub struct WikidataToolInput {
 
 /// [`WikidataTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikidataToolOutput {
     /// SPARQL query result - in JSON.
     result: String,
@@ -45,6 +48,10 @@ pub struct WikidataToolOutput {
 
 impl WikidataTool {
     /// Create a new [`WikidataTool`]
+    ///
+    /// # Panics
+    ///
+    /// Panics if the API URL is invalid.
     pub async fn new() -> Self {
         let client = Api::new("https://www.wikidata.org/w/api.php")
             .await

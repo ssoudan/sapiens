@@ -15,13 +15,15 @@ struct DeriveReceiver {
     generics: syn::Generics,
 }
 
-fn extract_type_path(ty: &syn::Type) -> Option<&Path> {
+/// Extract the path of a type
+const fn extract_type_path(ty: &syn::Type) -> Option<&Path> {
     match *ty {
         syn::Type::Path(ref typepath) if typepath.qself.is_none() => Some(&typepath.path),
         _ => None,
     }
 }
 
+/// Extract the last segment of a path if it is an `Option`.
 fn extract_option_segment(path: &Path) -> Option<&PathSegment> {
     let idents_of_path = path.segments.iter().fold(String::new(), |mut acc, v| {
         acc.push_str(&v.ident.to_string());
@@ -36,7 +38,7 @@ fn extract_option_segment(path: &Path) -> Option<&PathSegment> {
 
 impl ToTokens for DeriveReceiver {
     fn to_tokens(&self, out: &mut proc_macro2::TokenStream) {
-        let DeriveReceiver {
+        let Self {
             ref ident,
             ref generics,
             ref data,
@@ -92,7 +94,7 @@ impl ToTokens for DeriveReceiver {
                 let ty = ty.to_token_stream().to_string();
 
                 // Python-ify the type
-                let ty = pythonify(ty);
+                let ty = pythonify(&ty);
 
                 // add type information to the docstring
                 // let doc = format!("<{}> {}", ty, doc);
@@ -117,12 +119,14 @@ impl ToTokens for DeriveReceiver {
                     ].into()
                 }
             }
-        })
+        });
     }
 }
 
-fn pythonify(ty: String) -> String {
-    ty.replace(' ', "")
+/// Python-ify the type name
+fn pythonify(ty: impl AsRef<str>) -> String {
+    ty.as_ref()
+        .replace(' ', "")
         .replace("::", ".")
         .replace("Vec", "list")
         .replace("Option", "Optional")
@@ -140,7 +144,7 @@ fn pythonify(ty: String) -> String {
 }
 
 /// The entry point for the `Describe` derive macro expansion.
-pub fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
+pub(crate) fn expand_derive(input: &syn::DeriveInput) -> TokenStream {
     let receiver = match DeriveReceiver::from_derive_input(input) {
         Ok(parsed) => parsed,
         Err(e) => return e.write_errors().into(),

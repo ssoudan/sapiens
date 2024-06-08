@@ -17,6 +17,7 @@ use serde_yaml::Value;
     input = "WikipediaToolInput",
     output = "WikipediaToolOutput"
 )]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikipediaTool {
     client: Api,
 }
@@ -29,6 +30,7 @@ impl Debug for WikipediaTool {
 
 /// [`WikipediaTool`] input
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikipediaToolInput {
     /// query parameters. E.g.
     /// ```yaml
@@ -50,19 +52,23 @@ pub struct WikipediaToolInput {
 
 /// [`WikipediaTool`] output
 #[derive(Debug, Deserialize, Serialize, Describe)]
+#[allow(clippy::module_name_repetitions)]
 pub struct WikipediaToolOutput {
     /// query result - in JSON.
     result: String,
 }
 
 impl WikipediaTool {
-    /// Create a new [`WikipediaTool`]
-    pub async fn new() -> WikipediaTool {
+    /// Create a new [`WikipediaTool`]    
+    ///
+    /// # Panics
+    /// Panics if the API URL is invalid.
+    pub async fn new() -> Self {
         let client = Api::new("https://en.wikipedia.org/w/api.php")
             .await
             .unwrap();
 
-        WikipediaTool { client }
+        Self { client }
     }
 
     #[tracing::instrument(skip(self))]
@@ -82,9 +88,8 @@ impl WikipediaTool {
                             Value::String(s) => Ok(s),
                             Value::Number(n) => Ok(n.to_string()),
                             _ => Err(ToolUseError::InvocationFailed(format!(
-                                "Unsupported value type for parameter: {:?}. Only <str> or <number>
-        and list of them supported.",
-                                k
+                                "Unsupported value type for parameter: {k:?}. Only <str> or <number> and list of them supported."
+                                
                             ))),
                         })
                         .collect::<Result<Vec<_>, _>>()?
@@ -93,9 +98,7 @@ impl WikipediaTool {
                 Value::String(s) => Ok((k, s)),
                 Value::Number(n) => Ok((k, n.to_string())),
                 _ => Err(ToolUseError::InvocationFailed(format!(
-                    "Unsupported value type for parameter: {:?}. Only <str>
-        or <number> and list of them supported.",
-                    k
+                    "Unsupported value type for parameter: {k:?}. Only <str> or <number> and list of them supported."
                 ))),
             })
             .collect::<Result<_, _>>()?;
@@ -170,7 +173,7 @@ mod tests {
         let tool = WikipediaTool::new().await;
 
         let input = indoc! {
-            r#"
+            r"
                parameters:
                  action: query
                  prop:
@@ -178,7 +181,7 @@ mod tests {
                    - exintro
                    - explaintext
                  titles: Albert Einstein
-            "#
+            "
         };
         let input = serde_yaml::from_str::<WikipediaToolInput>(input).unwrap();
 

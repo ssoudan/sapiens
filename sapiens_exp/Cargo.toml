@@ -12,6 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 documentation = "https://docs.rs/sapiens_exp"
 
+[lints]
+workspace = true
+
 [features]
 default = [ ]
 

@@ -12,6 +12,9 @@ keywords.workspace = true
 categories.workspace = true
 documentation = "https://docs.rs/sapiens_cli"
 
+[lints]
+workspace = true
+
 [features]
 default = ["wiki", "arxiv", "summarize", "search"]
 # Hue lights related tools
