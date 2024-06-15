@@ -178,7 +178,7 @@ impl ChatEntryTokenNumber for OpenAI {
                             }
                             async_openai::types::ChatCompletionRequestMessage::Assistant(x) => {
                                 if let Some(content) = &x.content {
-                                    format!("ASSISTANT: {}{}\n", content, sep)
+                                    format!("ASSISTANT: {content}{sep}\n")
                                 } else {
                                     "ASSISTANT:\n".to_string()
                                 }

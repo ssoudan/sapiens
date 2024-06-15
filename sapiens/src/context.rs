@@ -76,7 +76,7 @@ impl Debug for ChatHistory {
 impl ChatHistory {
     /// Create a new chat history
     #[must_use]
-    pub fn new(config: SapiensConfig, max_token: usize) -> Self {
+    pub const fn new(config: SapiensConfig, max_token: usize) -> Self {
         Self {
             config,
             max_token,

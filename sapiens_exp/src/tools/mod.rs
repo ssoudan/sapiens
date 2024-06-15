@@ -54,7 +54,11 @@ pub struct GenericTool<I, S, O> {
 
 impl<I, S, O> GenericTool<I, S, O> {
     /// Create a new tool
-    pub fn new(name: String, tool_description: ToolDescription, state: Arc<Mutex<S>>) -> Self {
+    pub const fn new(
+        name: String,
+        tool_description: ToolDescription,
+        state: Arc<Mutex<S>>,
+    ) -> Self {
         Self {
             name,
             tool_description,
