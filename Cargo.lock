@@ -361,8 +361,10 @@ checksum = "a21f936df1771bf62b77f047b726c4625ff2e8aa607c01ec06e5a05bd8463401"
 dependencies = [
  "android-tzdata",
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-targets 0.52.5",
 ]
 
@@ -1740,19 +1742,22 @@ checksum = "0e7465ac9959cc2b1404e8e2367b43684a6d13790fe23056cc8c6c5a6b7bcb94"
 
 [[package]]
 name = "mediawiki"
-version = "0.2.15"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b41a2d023414add3e2b8fc49729d217bebee27205b1543f9e1562460d5c34e4c"
+checksum = "df5d9c97ad0abca7d5d4517c7435ab52936bde6d115d77d7271d208f44a51e6e"
 dependencies = [
  "base64 0.22.1",
+ "chrono",
  "config",
  "futures",
  "hmac",
  "nanoid",
  "reqwest 0.12.5",
+ "serde",
  "serde_json",
  "sha1",
  "tokio",
+ "unicode-case-mapping",
  "url",
  "urlencoding",
 ]
@@ -3856,6 +3861,12 @@ name = "unicode-bidi"
 version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f95100a766bf4f8f28f90d77e0a5461bbdb219042e7679bebe79004fed8d75"
+
+[[package]]
+name = "unicode-case-mapping"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b92e07ac57786e12073609c8a91417884306b753d974108ca48c8434ed9b99cb"
 
 [[package]]
 name = "unicode-ident"
