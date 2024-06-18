@@ -55,7 +55,7 @@ lazy_static = "1.4.0"
 
 pyo3 = { version = "0.20.3", features = [] }
 
-async-openai = { version = "0.23.2", optional = true }
+async-openai = { version = "0.23.3", optional = true }
 
 convert_case = "0.6.0"
 
