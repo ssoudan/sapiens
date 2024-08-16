@@ -2287,6 +2287,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "76979bea66e7875e7509c4ec5300112b316af87fa7a252ca91c448b32dfe3993"
 dependencies = [
  "bitflags 2.5.0",
+ "memchr",
+ "unicase",
+]
+
+[[package]]
+name = "pulldown-cmark"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb4e75767fbc9d92b90e4d0c011f61358cde9513b31ef07ea3631b15ffc3b4fd"
+dependencies = [
+ "bitflags 2.5.0",
  "getopts",
  "memchr",
  "pulldown-cmark-escape",
@@ -2295,9 +2306,9 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark-escape"
-version = "0.10.1"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd348ff538bc9caeda7ee8cad2d1d48236a1f443c1fa3913c6a02fe0043b1dd3"
+checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
 name = "pulldown-cmark-to-cmark"
@@ -2305,7 +2316,7 @@ version = "13.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f609795c8d835f79dcfcf768415b9fb57ef1b74891e99f86e73f43a7a257163b"
 dependencies = [
- "pulldown-cmark",
+ "pulldown-cmark 0.10.3",
 ]
 
 [[package]]
@@ -2906,7 +2917,7 @@ dependencies = [
  "huelib2",
  "indoc",
  "insta",
- "pulldown-cmark",
+ "pulldown-cmark 0.11.2",
  "pulldown-cmark-to-cmark",
  "pyo3",
  "pyo3-asyncio",
