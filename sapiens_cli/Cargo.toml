@@ -36,7 +36,7 @@ sapiens_tools = { path = "../sapiens_tools", version = "^0.10.2", default-featur
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
-tokio = { version = "1.38.0", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full"] }
 async-trait = "0.1.81"
 
 pyo3 = { version = "0.20.3", features = [] }
@@ -45,7 +45,7 @@ pyo3-asyncio = { version = "0.20.0", features = [
     "tokio-runtime",
 ] }
 
-clap = { version = "4.5.8", features = ["derive", "env"] }
+clap = { version = "4.5.16", features = ["derive", "env"] }
 colored = "2.1.0"
 dotenvy = "0.15.7"
 
