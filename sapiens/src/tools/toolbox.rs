@@ -164,6 +164,7 @@ impl Toolbox {
 
 /// Invoke a [`Tool`] or [`AdvancedTool`] or [`TerminalTool`] from a [`Toolbox`]
 #[allow(clippy::significant_drop_tightening)]
+#[allow(clippy::significant_drop_in_scrutinee)]
 async fn invoke_from_toolbox(
     toolbox: Toolbox,
     tool_name: &str,
