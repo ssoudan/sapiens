@@ -5,44 +5,58 @@
   inputs.rust-overlay.url = "github:oxalica/rust-overlay";
 
   outputs = { self, nixpkgs, flake-utils, rust-overlay, ... }:
-    flake-utils.lib.eachDefaultSystem (system: 
-    let 
+    flake-utils.lib.eachDefaultSystem (system:
+      let
         overlays = [ (import rust-overlay) ];
         pkgs = import nixpkgs {
-            inherit system overlays;
+          inherit system overlays;
         };
         rustVersion = "latest";
         rustChannel = "nightly";
         #rustChannel = "stable";
         #rustVersion = "1.62.0";
         rust = pkgs.rust-bin.${rustChannel}.${rustVersion}.default.override {
-        extensions = [
+          extensions = [
             "rust-src" # for rust-analyzer
-        ];
-  };
-    in {
+          ];
+        };
 
-          devShells.default = pkgs.mkShell {
+        testAndLint = pkgs.writeShellScriptBin "testAndLint" ''
+          set -euo pipefail
+          # Run checks
+          cargo validate
+          # Run tests
+          cargo test
+          # Run lints
+          cargo lint
+        '';
+
+      in
+      {
+        formatter = nixpkgs.legacyPackages.${system}.nixpkgs-fmt;
+
+        devShells.default = pkgs.mkShell {
           buildInputs = [
-          rust
+            rust
           ] ++ (with pkgs; [
-                  llvmPackages.bintools
-                  bashInteractive 
-                  python3
-                  protobuf
-                  just
-                  rust-analyzer
-                  rustc
-                  cargo-edit
-                  cargo-machete
-                  cargo-watch
-                  cargo-deny
-                  watchexec
-          ] ++  # if darwin
-                (if system == "aarch64-darwin" then [
-                    darwin.apple_sdk.frameworks.SystemConfiguration
-                ] else [])
-            );
-          };
-    });
+            llvmPackages.bintools
+            bashInteractive
+            python3
+            protobuf
+            just
+            rust-analyzer
+            rustc
+            cargo-edit
+            cargo-machete
+            cargo-watch
+            cargo-deny
+            testAndLint
+            watchexec
+          ] ++ # if darwin
+          (if system == "aarch64-darwin" then [
+            darwin.apple_sdk.frameworks.SystemConfiguration
+          ] else [ ])
+          );
+        };
+      });
 }
