@@ -120,7 +120,7 @@ pub struct Foo {
     let tokens = quote!(#receiver);
 
     println!(
-        r#"
+        r"
 INPUT:
 
 {input}
@@ -132,6 +132,6 @@ PARSED AS:
 EMITS:
 
 {tokens}
-    "#
+    "
     );
 }
