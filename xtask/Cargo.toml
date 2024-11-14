@@ -13,7 +13,7 @@ xshell = "0.2"
 xflags = "0.3"
 toml = "0.8"
 glob = "0.3"
-regex = "1.10"
+regex = "1.11"
 color-print = "0.3"
 
 [lints]
