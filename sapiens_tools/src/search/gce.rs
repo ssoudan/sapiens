@@ -848,7 +848,7 @@ impl QueryParameters {
     }
 
     /// Simplified/Traditional Chinese Search
-    pub fn c2coff(&mut self, c2coff: C2COff) -> &mut Self {
+    pub const fn c2coff(&mut self, c2coff: C2COff) -> &mut Self {
         self.c2coff = Some(c2coff);
         self
     }
@@ -899,7 +899,7 @@ impl QueryParameters {
     }
 
     /// Controls turning on or off the duplicate content filter.
-    pub fn filter(&mut self, filter: DuplicateContentFilter) -> &mut Self {
+    pub const fn filter(&mut self, filter: DuplicateContentFilter) -> &mut Self {
         self.filter = Some(filter);
         self
     }
@@ -929,25 +929,25 @@ impl QueryParameters {
     }
 
     /// Restricts results to images of a specified color type.
-    pub fn img_color_type(&mut self, img_color_type: ImgColorType) -> &mut Self {
+    pub const fn img_color_type(&mut self, img_color_type: ImgColorType) -> &mut Self {
         self.img_color_type = Some(img_color_type);
         self
     }
 
     /// Restricts results to images with a specific dominant color.
-    pub fn img_dominant_color(&mut self, img_dominant_color: ImgDominantColor) -> &mut Self {
+    pub const fn img_dominant_color(&mut self, img_dominant_color: ImgDominantColor) -> &mut Self {
         self.img_dominant_color = Some(img_dominant_color);
         self
     }
 
     /// Restricts results to images of a specified size.
-    pub fn img_size(&mut self, img_size: ImgSize) -> &mut Self {
+    pub const fn img_size(&mut self, img_size: ImgSize) -> &mut Self {
         self.img_size = Some(img_size);
         self
     }
 
     /// Restricts results to images of a specified type.
-    pub fn img_type(&mut self, img_type: ImgType) -> &mut Self {
+    pub const fn img_type(&mut self, img_type: ImgType) -> &mut Self {
         self.img_type = Some(img_type);
         self
     }
@@ -960,13 +960,13 @@ impl QueryParameters {
     }
 
     /// Restricts the search to documents written in a particular language
-    pub fn lr(&mut self, lr: Lr) -> &mut Self {
+    pub const fn lr(&mut self, lr: Lr) -> &mut Self {
         self.lr = Some(lr);
         self
     }
 
     /// Number of search results to return
-    pub fn num(&mut self, num: SearchResultNumber) -> &mut Self {
+    pub const fn num(&mut self, num: SearchResultNumber) -> &mut Self {
         self.num = Some(num);
         self
     }
@@ -1001,13 +1001,13 @@ impl QueryParameters {
     }
 
     /// Search safety level
-    pub fn safe(&mut self, safe: Safe) -> &mut Self {
+    pub const fn safe(&mut self, safe: Safe) -> &mut Self {
         self.safe = Some(safe);
         self
     }
 
     /// Specifies the search type: image.
-    pub fn search_type(&mut self, search_type: SearchType) -> &mut Self {
+    pub const fn search_type(&mut self, search_type: SearchType) -> &mut Self {
         self.search_type = Some(search_type);
         self
     }
@@ -1020,7 +1020,7 @@ impl QueryParameters {
     }
 
     /// Controls whether to include or exclude results from the site named
-    pub fn site_search_filter(&mut self, site_search_filter: SiteSearchFilter) -> &mut Self {
+    pub const fn site_search_filter(&mut self, site_search_filter: SiteSearchFilter) -> &mut Self {
         self.site_search_filter = Some(site_search_filter);
         self
     }
@@ -1032,13 +1032,13 @@ impl QueryParameters {
     }
 
     /// The index of the first result to return
-    pub fn start(&mut self, start: u32) -> &mut Self {
+    pub const fn start(&mut self, start: u32) -> &mut Self {
         self.start = Some(start);
         self
     }
 
     /// Build query for next page of results.
-    pub fn next_page(&mut self, n: &NextPage) -> &mut Self {
+    pub const fn next_page(&mut self, n: &NextPage) -> &mut Self {
         self.start = Some(n.start);
         self
     }

@@ -22,6 +22,6 @@ ENV PATH="/home/vscode/.cargo/bin:${PATH}"
 
 RUN rustup update
 
-RUN rustup component add clippy rustfmt rust-src rust-analysis rls 
+RUN rustup component add clippy rustfmt rust-src rust-analysis
 
 RUN cargo install cargo-edit cargo-machete cargo-update
