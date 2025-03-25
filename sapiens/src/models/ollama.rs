@@ -89,9 +89,9 @@ impl ChatEntryTokenNumber for LanguageModel {
             .messages
             .iter()
             .map(|m| match m.role {
-            ollama_rs::generation::chat::MessageRole::User => 6,
             ollama_rs::generation::chat::MessageRole::Assistant => 11,
-            ollama_rs::generation::chat::MessageRole::System => 8
+            ollama_rs::generation::chat::MessageRole::System => 8,
+            ollama_rs::generation::chat::MessageRole::Tool | ollama_rs::generation::chat::MessageRole::User => 6,
             } + m.content.chars().count())
             .sum::<usize>();
 
@@ -123,12 +123,8 @@ impl models::Model for LanguageModel {
         let resp = client.send_chat_messages(prompt).await?;
         drop(client);
 
-        if resp.message.is_none() {
-            return Err(Error::NoResponseFromModel);
-        }
-
         Ok(ModelResponse {
-            msg: resp.message.unwrap().content,
+            msg: resp.message.content,
             usage: None,
             finish_reason: None,
         })

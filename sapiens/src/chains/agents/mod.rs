@@ -18,7 +18,6 @@ pub enum Error {
 }
 
 /// Format the outcome of a task
-#[allow(clippy::ref_option)]
 pub(crate) fn format_outcome(
     task: &Task,
     invocation_count: usize,
