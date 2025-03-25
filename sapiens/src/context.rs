@@ -129,7 +129,7 @@ impl ChatHistory {
     }
 
     /// Is the chitchat history empty?
-    pub(crate) fn is_chitchat_empty(&self) -> bool {
+    pub(crate) const fn is_chitchat_empty(&self) -> bool {
         self.chitchat.is_empty()
     }
 

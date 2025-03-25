@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use async_openai::config::OpenAIConfig;
 pub use async_openai::error::OpenAIError;
@@ -11,7 +11,6 @@ use async_openai::types::{
     ChatCompletionRequestSystemMessage, ChatCompletionRequestUserMessage,
     ChatCompletionRequestUserMessageContent, CreateChatCompletionRequest,
 };
-use lazy_static::lazy_static;
 use tracing::{error, trace};
 
 use crate::context::ChatEntry;
@@ -31,7 +30,7 @@ pub fn build(
     api_key: Option<String>,
     api_base: Option<String>,
     temperature: Option<f32>,
-) -> Result<ModelRef, Error> {
+) -> Result<ModelRef, Box<Error>> {
     let mut config = OpenAIConfig::new();
 
     if let Some(api_key) = api_key.as_ref() {
@@ -135,10 +134,8 @@ impl Default for OpenAI {
 
 const LLAMA_TOKENIZER_JSON: &str = include_str!("tokenizer.json");
 
-lazy_static! {
-    static ref LLAMA_TOKENIZER: tokenizers::Tokenizer =
-        tokenizers::Tokenizer::from_str(LLAMA_TOKENIZER_JSON).unwrap();
-}
+static LLAMA_TOKENIZER: LazyLock<tokenizers::Tokenizer> =
+    LazyLock::new(|| tokenizers::Tokenizer::from_str(LLAMA_TOKENIZER_JSON).unwrap());
 
 #[async_trait::async_trait]
 impl ChatEntryTokenNumber for OpenAI {

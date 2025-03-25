@@ -33,7 +33,7 @@ impl Debug for LanguageModel {
 }
 
 /// Build an Ollama client
-pub fn build(host: String, port: u16, model: SupportedModel) -> Result<ModelRef, Error> {
+pub fn build(host: String, port: u16, model: SupportedModel) -> Result<ModelRef, Box<Error>> {
     let client = Ollama::new(host, port);
 
     let model = LanguageModel {

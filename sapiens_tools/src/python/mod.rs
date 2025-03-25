@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use convert_case::{Case, Casing};
 use pyo3::indoc::{formatdoc, indoc};
@@ -239,16 +240,17 @@ impl PythonTool {
     }
 
     #[allow(clippy::too_many_lines)]
+    #[allow(clippy::format_push_string)]
     fn transform_code(
         code: &str,
         tools: HashMap<String, ToolDescription>,
     ) -> Result<String, ToolUseError> {
-        lazy_static::lazy_static! {
-            static ref EXEC_RE: regex::Regex = regex::Regex::new(r"(exec|pip)").unwrap();
-            static ref IMPORT_RE: regex::Regex = regex::Regex::new(r"(?x)import \s+ tools.*").unwrap();
-            static ref FROM_RE: regex::Regex =
-                regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap();
-        }
+        static EXEC_RE: LazyLock<regex::Regex> =
+            LazyLock::new(|| regex::Regex::new(r"(exec|pip)").unwrap());
+        static IMPORT_RE: LazyLock<regex::Regex> =
+            LazyLock::new(|| regex::Regex::new(r"(?x)import \s+ tools.*").unwrap());
+        static FROM_RE: LazyLock<regex::Regex> =
+            LazyLock::new(|| regex::Regex::new(r"(?x)from \s+ tools \s+ import .*").unwrap());
 
         // FUTURE(ssoudan) use PyModule::from_code ?
 

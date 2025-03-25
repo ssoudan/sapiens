@@ -185,7 +185,7 @@ fn split_msgs(msg: String, max_size: usize) -> Vec<String> {
     }
     if let Some(state) = state {
         state.finalize(&mut buf).unwrap();
-    };
+    }
 
     // remove messages that are only whitespace
     msgs.retain(|msg| !msg.trim().is_empty());
