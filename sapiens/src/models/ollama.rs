@@ -51,22 +51,22 @@ impl LanguageModel {
         let context = input
             .context
             .iter()
-            .map(|c| c.msg.to_string())
+            .map(|c| c.msg.clone())
             .collect::<Vec<String>>()
             .join("\n");
 
         messages.push(ChatMessage::system(context));
 
         for (user, bot) in &input.examples {
-            messages.push(ChatMessage::user(user.msg.to_string()));
-            messages.push(ChatMessage::assistant(bot.msg.to_string()));
+            messages.push(ChatMessage::user(user.msg.clone()));
+            messages.push(ChatMessage::assistant(bot.msg.clone()));
         }
 
         for entry in &input.chat {
             match entry.role {
-                Role::User => messages.push(ChatMessage::user(entry.msg.to_string())),
-                Role::Assistant => messages.push(ChatMessage::assistant(entry.msg.to_string())),
-                Role::System => messages.push(ChatMessage::system(entry.msg.to_string())),
+                Role::User => messages.push(ChatMessage::user(entry.msg.clone())),
+                Role::Assistant => messages.push(ChatMessage::assistant(entry.msg.clone())),
+                Role::System => messages.push(ChatMessage::system(entry.msg.clone())),
                 _ => {}
             }
         }

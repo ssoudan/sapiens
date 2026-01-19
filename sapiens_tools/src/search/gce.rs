@@ -48,11 +48,11 @@ pub enum Cr {
     /// Country code - See <https://developers.google.com/custom-search/docs/json_api_reference#countryCollections>
     Country(String),
     /// Not
-    Not(Box<Cr>),
+    Not(Box<Self>),
     /// And
-    And(Box<Cr>, Box<Cr>),
+    And(Box<Self>, Box<Self>),
     /// Or
-    Or(Box<Cr>, Box<Cr>),
+    Or(Box<Self>, Box<Self>),
 }
 
 impl Display for Cr {
@@ -512,7 +512,7 @@ pub enum Rights {
     /// Creative Commons `NonCommercial` (CC NC)
     CcNonderived,
     /// And
-    And(Box<Rights>, Box<Rights>),
+    And(Box<Self>, Box<Self>),
 }
 
 impl Display for Rights {
@@ -715,11 +715,11 @@ impl QueryParameters {
         let mut params = vec![];
 
         if let Some(key) = &self.key {
-            params.push(("key".to_string(), key.to_string()));
+            params.push(("key".to_string(), key.clone()));
         }
 
         if let Some(cx) = &self.cx {
-            params.push(("cx".to_string(), cx.to_string()));
+            params.push(("cx".to_string(), cx.clone()));
         }
 
         if let Some(c2coff) = &self.c2coff {
@@ -731,19 +731,19 @@ impl QueryParameters {
         }
 
         if let Some(date_restrict) = &self.date_restrict {
-            params.push(("dateRestrict".to_string(), date_restrict.to_string()));
+            params.push(("dateRestrict".to_string(), date_restrict.clone()));
         }
 
         if let Some(exact_terms) = &self.exact_terms {
-            params.push(("exactTerms".to_string(), exact_terms.to_string()));
+            params.push(("exactTerms".to_string(), exact_terms.clone()));
         }
 
         if let Some(exclude_terms) = &self.exclude_terms {
-            params.push(("excludeTerms".to_string(), exclude_terms.to_string()));
+            params.push(("excludeTerms".to_string(), exclude_terms.clone()));
         }
 
         if let Some(file_type) = &self.file_type {
-            params.push(("fileType".to_string(), file_type.to_string()));
+            params.push(("fileType".to_string(), file_type.clone()));
         }
 
         if let Some(filter) = &self.filter {
@@ -755,19 +755,19 @@ impl QueryParameters {
         }
 
         if let Some(low_range) = &self.low_range {
-            params.push(("lowRange".to_string(), low_range.to_string()));
+            params.push(("lowRange".to_string(), low_range.clone()));
         }
 
         if let Some(high_range) = &self.high_range {
-            params.push(("highRange".to_string(), high_range.to_string()));
+            params.push(("highRange".to_string(), high_range.clone()));
         }
 
         if let Some(hl) = &self.hl {
-            params.push(("hl".to_string(), hl.to_string()));
+            params.push(("hl".to_string(), hl.clone()));
         }
 
         if let Some(hq) = &self.hq {
-            params.push(("hq".to_string(), hq.to_string()));
+            params.push(("hq".to_string(), hq.clone()));
         }
 
         if let Some(img_color_type) = &self.img_color_type {
@@ -790,7 +790,7 @@ impl QueryParameters {
         }
 
         if let Some(link_site) = &self.link_site {
-            params.push(("linkSite".to_string(), link_site.to_string()));
+            params.push(("linkSite".to_string(), link_site.clone()));
         }
 
         if let Some(lr) = &self.lr {
@@ -802,15 +802,15 @@ impl QueryParameters {
         }
 
         if let Some(or_terms) = &self.or_terms {
-            params.push(("orTerms".to_string(), or_terms.to_string()));
+            params.push(("orTerms".to_string(), or_terms.clone()));
         }
 
         if let Some(q) = &self.q {
-            params.push(("q".to_string(), q.to_string()));
+            params.push(("q".to_string(), q.clone()));
         }
 
         if let Some(related_site) = &self.related_site {
-            params.push(("relatedSite".to_string(), related_site.to_string()));
+            params.push(("relatedSite".to_string(), related_site.clone()));
         }
 
         if let Some(rights) = &self.rights {
@@ -826,7 +826,7 @@ impl QueryParameters {
         }
 
         if let Some(site_search) = &self.site_search {
-            params.push(("siteSearch".to_string(), site_search.to_string()));
+            params.push(("siteSearch".to_string(), site_search.clone()));
         }
 
         if let Some(site_search_filter) = &self.site_search_filter {
@@ -837,7 +837,7 @@ impl QueryParameters {
         }
 
         if let Some(sort) = &self.sort {
-            params.push(("sort".to_string(), sort.to_string()));
+            params.push(("sort".to_string(), sort.clone()));
         }
 
         if let Some(start) = &self.start {

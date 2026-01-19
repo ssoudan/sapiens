@@ -424,8 +424,8 @@ impl PythonTool {
         Ok(code)
     }
 
-    #[tracing::instrument(skip(self))]
-    fn invoke_sync_typed(&self, input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
+    #[tracing::instrument()]
+    fn invoke_sync_typed(input: &PythonToolInput) -> Result<PythonToolOutput, ToolUseError> {
         let code = input.code.clone();
 
         // check for forbidden keywords - with capture
@@ -490,7 +490,7 @@ impl ProtoToolInvoke for PythonTool {
         let input =
             serde_yaml::from_value(input).map_err(|e| ToolUseError::InvalidInput(e.to_string()))?;
 
-        let output = self.invoke_sync_typed(&input)?;
+        let output = Self::invoke_sync_typed(&input)?;
 
         // check the size of the output (stdout and stderr)
         let l = output.stdout.len() + output.stderr.len();

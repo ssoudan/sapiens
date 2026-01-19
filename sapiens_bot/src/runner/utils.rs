@@ -154,7 +154,7 @@ fn split_msgs(msg: String, max_size: usize) -> Vec<String> {
         // );
 
         if let Event::End(t) = &event {
-            if is_block_delimiter(t) & (current_size + event_size > max_size / 2)
+            if is_block_delimiter(t) && (current_size + event_size > max_size / 2)
                 || (current_size + event_size > max_size * 2 / 3)
             {
                 if let Some(state) = state {
