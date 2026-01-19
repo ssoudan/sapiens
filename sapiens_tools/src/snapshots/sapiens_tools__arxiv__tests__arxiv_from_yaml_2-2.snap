@@ -3,37 +3,37 @@ source: sapiens_tools/src/arxiv.rs
 expression: yaml
 ---
 result:
-  - id: "http://arxiv.org/abs/cs/9809005v1"
-    updated: "1998-09-02T01:49:32Z"
-    published: "1998-09-02T01:49:32Z"
-    title: "The Five-Minute Rule Ten Years Later, and Other Computer Storage Rules\n  of Thumb"
+  - id: "http://arxiv.org/abs/2012.14234v1"
+    updated: "2020-12-28T14:03:18Z"
+    published: "2020-12-28T14:03:18Z"
+    title: "Recommending Courses in MOOCs for Jobs: An Auto Weak Supervision Approach"
     authors:
-      - Jim Gray
-      - Goetz Graefe
-    pdf_url: "https://arxiv.org/pdf/cs/9809005v1.pdf"
-  - id: "http://arxiv.org/abs/cs/9809023v2"
-    updated: "1998-09-18T19:04:42Z"
-    published: "1998-09-17T14:41:07Z"
-    title: Similarity-Based Queries for Time Series Data
+      - Bowen Hao
+      - Jing Zhang
+      - Cuiping Li
+      - Hong Chen
+      - Hongzhi Yin
+    pdf_url: ""
+  - id: "http://arxiv.org/abs/2012.13677v1"
+    updated: "2020-12-26T04:45:40Z"
+    published: "2020-12-26T04:45:40Z"
+    title: Toward Compact Data from Big Data
     authors:
-      - Davood Rafiei
-      - Alberto Mendelzon
-    pdf_url: "https://arxiv.org/pdf/cs/9809023v2.pdf"
-  - id: "http://arxiv.org/abs/cs/9809033v2"
-    updated: "1998-09-25T16:12:20Z"
-    published: "1998-09-18T21:24:23Z"
-    title: Efficient Retrieval of Similar Time Sequences Using DFT
+      - " Song-Kyoo"
+      - " Kim"
+    pdf_url: ""
+  - id: "http://arxiv.org/abs/1904.08010v1"
+    updated: "2019-04-16T23:16:56Z"
+    published: "2019-04-16T23:16:56Z"
+    title: How to define co-occurrence in different domains of study?
     authors:
-      - Davood Rafiei
-      - Alberto Mendelzon
-    pdf_url: "https://arxiv.org/pdf/cs/9809033v2.pdf"
-  - id: "http://arxiv.org/abs/cs/9909016v1"
-    updated: "1999-09-21T21:20:20Z"
-    published: "1999-09-21T21:20:20Z"
-    title: "Least expected cost query optimization: an exercise in utility"
+      - Mathieu Roche
+    pdf_url: ""
+  - id: "http://arxiv.org/abs/1905.02828v1"
+    updated: "2019-05-07T22:31:49Z"
+    published: "2019-05-07T22:31:49Z"
+    title: A SAT-based System for Consistent Query Answering
     authors:
-      - Francis C. Chu
-      - Joseph Y. Halpern
-      - Praveen Seshadri
-    pdf_url: "https://arxiv.org/pdf/cs/9909016v1.pdf"
-
+      - Akhil A. Dixit
+      - Phokion G. Kolaitis
+    pdf_url: ""

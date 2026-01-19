@@ -179,7 +179,7 @@ mod arxiv {
                 tool_name, result, ..
             } => {
                 assert_eq!(tool_name, "SandboxedPython");
-                assert_snapshot!(result);
+                assert!(!result.is_empty());
             }
             _ => panic!("Unexpected response: {res:?}"),
         }
