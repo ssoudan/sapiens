@@ -275,6 +275,7 @@ mod tests {
         assert!(members_map.contains_key("xtask"));
         let xtask_crate = members_map.get("xtask").unwrap();
 
+        #[allow(clippy::cmp_owned)]
         let files = xtask_crate
             .files()
             .unwrap()
