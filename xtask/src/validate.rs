@@ -152,9 +152,7 @@ impl Visitor for Validate {
                 anyhow::anyhow!("Missing `package.{field}.workspace` in {crate_}")
             })?;
             let value = value.as_bool().ok_or_else(|| {
-                anyhow::anyhow!(
-                    "`package.{field}.workspace` is not a boolean in {crate_}"
-                )
+                anyhow::anyhow!("`package.{field}.workspace` is not a boolean in {crate_}")
             })?;
             if !value {
                 return Err(anyhow::anyhow!(
@@ -174,9 +172,7 @@ impl Visitor for Validate {
             .as_bool()
             .ok_or_else(|| anyhow::anyhow!("`lints.workspace` is not a boolean in {crate_}"))?;
         if !value {
-            return Err(anyhow::anyhow!(
-                "`lints.workspace` is not true in {crate_}"
-            ));
+            return Err(anyhow::anyhow!("`lints.workspace` is not true in {crate_}"));
         }
 
         // collect the files to validate
