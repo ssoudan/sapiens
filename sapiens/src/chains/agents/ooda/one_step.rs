@@ -176,7 +176,7 @@ impl Agent {
                 Message::Action { content, .. } => {
                     // Add the action to the chat history as a message from the Assistant
                     chat_history.add_chitchat(ChatEntry {
-                        msg: content.to_string(),
+                        msg: content.clone(),
                         role: Role::Assistant,
                     });
                 }

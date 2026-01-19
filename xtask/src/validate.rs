@@ -75,7 +75,7 @@ impl Visitor for Validate {
         for todo in todos {
             if RELEASE_FORBIDDEN_VERBS.contains(&todo.verb) {
                 if self.strict {
-                    return Err(anyhow::anyhow!("Incomplete task found:\n{}", todo));
+                    return Err(anyhow::anyhow!("Incomplete task found:\n{todo}"));
                 }
 
                 todo.print(1);
@@ -102,22 +102,21 @@ impl Visitor for Validate {
         // Check the `package` section
         let package = toml
             .get("package")
-            .ok_or_else(|| anyhow::anyhow!("Missing `package` section in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("Missing `package` section in {crate_}"))?;
 
         // Ensure the package name is present, is in snake_case (unless it is a Tauri
         // plugin), and is the same as the directory name
         let name = package
             .get("name")
-            .ok_or_else(|| anyhow::anyhow!("Missing `package.name` in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("Missing `package.name` in {crate_}"))?;
 
         let name = name
             .as_str()
-            .ok_or_else(|| anyhow::anyhow!("`package.name` is not a string in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("`package.name` is not a string in {crate_}"))?;
 
         if name != crate_.name {
             return Err(anyhow::anyhow!(
-                "`package.name` does not match directory name in {}",
-                crate_
+                "`package.name` does not match directory name in {crate_}"
             ));
         }
 
@@ -125,16 +124,14 @@ impl Visitor for Validate {
             PackageType::Normal => {
                 if !name.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
                     return Err(anyhow::anyhow!(
-                        "`package.name` is not in snake_case in {}",
-                        crate_
+                        "`package.name` is not in snake_case in {crate_}"
                     ));
                 }
             }
             PackageType::TauriPlugin => {
                 if !name.chars().all(|c| c.is_ascii_lowercase() || c == '-') {
                     return Err(anyhow::anyhow!(
-                        "Tauri Plugin `package.name` is not in kebab-case in {}",
-                        crate_
+                        "Tauri Plugin `package.name` is not in kebab-case in {crate_}"
                     ));
                 }
             }
@@ -143,29 +140,25 @@ impl Visitor for Validate {
         // ensure the description is present
         let _description = package
             .get("description")
-            .ok_or_else(|| anyhow::anyhow!("Missing `package.description` in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("Missing `package.description` in {crate_}"))?;
 
         // ensure inherited package settings have 'workspace' set to true
         for field in INHERITED {
             let value = package
                 .get(field)
-                .ok_or_else(|| anyhow::anyhow!("Missing `package.{}` in {}", field, crate_))?;
+                .ok_or_else(|| anyhow::anyhow!("Missing `package.{field}` in {crate_}"))?;
 
             let value = value.get("workspace").ok_or_else(|| {
-                anyhow::anyhow!("Missing `package.{}.workspace` in {}", field, crate_)
+                anyhow::anyhow!("Missing `package.{field}.workspace` in {crate_}")
             })?;
             let value = value.as_bool().ok_or_else(|| {
                 anyhow::anyhow!(
-                    "`package.{}.workspace` is not a boolean in {}",
-                    field,
-                    crate_
+                    "`package.{field}.workspace` is not a boolean in {crate_}"
                 )
             })?;
             if !value {
                 return Err(anyhow::anyhow!(
-                    "`package.{}.workspace` is not true in {}",
-                    field,
-                    crate_
+                    "`package.{field}.workspace` is not true in {crate_}"
                 ));
             }
         }
@@ -173,17 +166,16 @@ impl Visitor for Validate {
         // Check for the presence of the `lints` section
         let lints = toml
             .get("lints")
-            .ok_or_else(|| anyhow::anyhow!("Missing `lints` section in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("Missing `lints` section in {crate_}"))?;
         let workspace = lints
             .get("workspace")
-            .ok_or_else(|| anyhow::anyhow!("Missing `lints.workspace` in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("Missing `lints.workspace` in {crate_}"))?;
         let value = workspace
             .as_bool()
-            .ok_or_else(|| anyhow::anyhow!("`lints.workspace` is not a boolean in {}", crate_))?;
+            .ok_or_else(|| anyhow::anyhow!("`lints.workspace` is not a boolean in {crate_}"))?;
         if !value {
             return Err(anyhow::anyhow!(
-                "`lints.workspace` is not true in {}",
-                crate_
+                "`lints.workspace` is not true in {crate_}"
             ));
         }
 

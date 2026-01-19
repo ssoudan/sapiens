@@ -1,5 +1,5 @@
 //! Macros for sapiens
-
+#![allow(clippy::needless_continue)]
 mod describe;
 mod proto_tool_describe;
 mod proto_tool_invoke;

@@ -1,4 +1,5 @@
 //! The implementation of the `ProtoToolInvoke` derive macro.
+#![allow(clippy::needless_continue)]
 use darling::FromDeriveInput;
 use proc_macro::TokenStream;
 use quote::{quote, ToTokens};

@@ -132,7 +132,7 @@ impl RuntimeObserver for ProgressObserver {
         } else {
             // Show only the last message
             if let Some(last_msg) = last_msg {
-                let msgs = sanitize_msgs_for_discord(vec![last_msg.to_string()]);
+                let msgs = sanitize_msgs_for_discord(vec![last_msg.clone()]);
                 self.job_tx.send(JobUpdate::Vec(msgs)).await.unwrap();
             } else {
                 warn!("No messages to show - this should not happen");

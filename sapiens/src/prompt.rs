@@ -43,7 +43,7 @@ impl Manager {
 
     /// Create the prompt describing the tools
     async fn create_tool_description(&self) -> String {
-        let prefix = self.tool_prefix.to_string();
+        let prefix = self.tool_prefix.clone();
 
         let tool_desc = self.toolbox.describe().await;
 

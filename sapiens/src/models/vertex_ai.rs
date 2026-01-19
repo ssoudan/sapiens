@@ -62,7 +62,7 @@ impl LanguageModel {
         let context = input
             .context
             .iter()
-            .map(|c| c.msg.to_string())
+            .map(|c| c.msg.clone())
             .collect::<Vec<String>>()
             .join("\n");
 
@@ -72,12 +72,12 @@ impl LanguageModel {
             .map(|(user, bot)| Example {
                 input: Some(Message {
                     author: Role::User.to_string(),
-                    content: user.msg.to_string(),
+                    content: user.msg.clone(),
                     citation_metadata: None,
                 }),
                 output: Some(Message {
                     author: Role::Assistant.to_string(),
-                    content: bot.msg.to_string(),
+                    content: bot.msg.clone(),
                     citation_metadata: None,
                 }),
             })
@@ -88,7 +88,7 @@ impl LanguageModel {
             .iter()
             .map(|m| Message {
                 author: m.role.to_string(),
-                content: m.msg.to_string(),
+                content: m.msg.clone(),
                 citation_metadata: None,
             })
             .collect();

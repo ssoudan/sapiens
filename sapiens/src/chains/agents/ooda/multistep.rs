@@ -305,7 +305,7 @@ impl AgentRole {
                             // Add the observation to the chat history as a message from the
                             // Observer
                             chat_history.add_chitchat(ChatEntry {
-                                msg: content.to_string(),
+                                msg: content.clone(),
                                 role: Role::Assistant,
                             });
                         }
@@ -350,7 +350,7 @@ impl AgentRole {
                             // Add the observation to the chat history as a message from the
                             // Observer
                             chat_history.add_chitchat(ChatEntry {
-                                msg: content.to_string(),
+                                msg: content.clone(),
                                 role: Role::Assistant,
                             });
                         }
@@ -397,7 +397,7 @@ impl AgentRole {
                             }
 
                             chat_history.add_chitchat(ChatEntry {
-                                msg: content.to_string(),
+                                msg: content.clone(),
                                 role: Role::Assistant,
                             });
                         }
@@ -440,7 +440,7 @@ impl AgentRole {
                             }
 
                             chat_history.add_chitchat(ChatEntry {
-                                msg: content.to_string(),
+                                msg: content.clone(),
                                 role: Role::Assistant,
                             });
                         }
