@@ -41,13 +41,14 @@
           ] ++ (with pkgs; [
             llvmPackages.bintools
             bashInteractive
-            python3
+            python312
             protobuf
             just
             rust-analyzer
             rustc
             cargo-edit
             cargo-machete
+            cargo-insta
             cargo-watch
             cargo-deny
             testAndLint
