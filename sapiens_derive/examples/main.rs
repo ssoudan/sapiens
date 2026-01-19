@@ -1,4 +1,5 @@
 //! not much - to be removed
+#![allow(clippy::needless_continue)]
 use darling::{FromDeriveInput, FromField};
 use quote::{quote, ToTokens};
 use syn::{parse_str, Expr};
